@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Button, Card } from '../../../app/ui'
+import { Button, Card } from '../../../components/ui'
 import { exportAll, factoryReset, importAll, isBackupFile, resetProgress } from '../../../db/repositories/backupRepo'
 
 function backupFilename(): string {

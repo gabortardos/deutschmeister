@@ -1,6 +1,7 @@
 import { db } from '../dexie'
 import type { AppSettings } from '../types'
-import { getProvider } from '../../llm/providers'
+import { getProvider, PROVIDERS } from '../../llm/providers'
+import { getApiKey, setApiKey } from '../../llm/keyStore'
 
 const SETTINGS_ID = 'app' as const
 
@@ -11,7 +12,6 @@ function defaultSettings(): AppSettings {
     updatedAt: Date.now(),
     provider: provider.id,
     baseUrl: provider.baseUrl,
-    apiKey: '',
     model: provider.defaultModel,
     ttsVoice: null,
     ttsRate: 0.9,
@@ -19,11 +19,47 @@ function defaultSettings(): AppSettings {
   }
 }
 
+function normalize(row: AppSettings): AppSettings {
+  const providerValid = PROVIDERS.some((p) => p.id === row.provider)
+  return { ...row, provider: providerValid ? row.provider : 'glm' }
+}
+
 export async function getSettings(): Promise<AppSettings> {
-  const existing = await db.settings.get(SETTINGS_ID)
-  if (existing) return existing
-  const settings = defaultSettings()
-  await db.settings.put(settings)
+  const raw = await db.settings.get(SETTINGS_ID)
+  if (!raw) {
+    const settings = defaultSettings()
+    await db.settings.put(settings)
+    return settings
+  }
+
+  const row = raw as AppSettings & { apiKey?: unknown }
+  let needsWrite = false
+
+  // M0 → M0.1 migration: the API key now lives ONLY in localStorage.
+  if (typeof row.apiKey === 'string' && row.apiKey.length > 0) {
+    if (!getApiKey()) setApiKey(row.apiKey)
+    delete row.apiKey
+    needsWrite = true
+  }
+
+  // Refresh stale GLM defaults written before the live verification (only when the
+  // user never customized them and no key is set, so user intent is never overridden).
+  if (
+    row.provider === 'glm' &&
+    !getApiKey() &&
+    row.model === 'glm-4-flash' &&
+    (row.baseUrl === 'https://api.z.ai/api/paas/v4' || row.baseUrl === 'https://open.bigmodel.cn/api/paas/v4')
+  ) {
+    const defaults = getProvider('glm')
+    row.baseUrl = defaults.baseUrl
+    row.model = defaults.defaultModel
+    needsWrite = true
+  }
+
+  const settings = normalize(row)
+  if (needsWrite) {
+    await db.settings.put({ ...settings, updatedAt: Date.now() })
+  }
   return settings
 }
 

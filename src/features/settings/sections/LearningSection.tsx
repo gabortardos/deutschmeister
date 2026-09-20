@@ -1,4 +1,4 @@
-import { Button, Card, Field, inputClass } from '../../../app/ui'
+import { Button, Card, Field, inputClass } from '../../../components/ui'
 import { CEFR_LEVELS, type CefrLevel } from '../../../db/types'
 import { useAppStore } from '../../../state/store'
 

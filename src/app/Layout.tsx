@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAppStore } from '../state/store'
+import { APP_VERSION } from '../version'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Today', end: true },
@@ -52,7 +53,7 @@ export default function Layout() {
       </main>
 
       <footer className="mx-auto max-w-4xl px-4 pb-8 pt-2 text-center text-xs text-slate-400">
-        Local-first: all progress and keys stay in this browser · v0.1.0-m0
+        Local-first: all progress and keys stay in this browser · v{APP_VERSION}
       </footer>
     </div>
   )

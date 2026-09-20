@@ -1,4 +1,4 @@
-import { MilestoneStub } from '../../app/ui'
+import { MilestoneStub } from '../../components/ui'
 
 export default function ReviewPage() {
   return (

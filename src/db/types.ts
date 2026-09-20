@@ -135,7 +135,6 @@ export interface AppSettings {
   updatedAt: number
   provider: ProviderId
   baseUrl: string
-  apiKey: string
   model: string
   ttsVoice: string | null
   ttsRate: number

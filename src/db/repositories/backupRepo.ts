@@ -1,5 +1,6 @@
 import { db } from '../dexie'
-import { clearLlmLog, LLM_LOG_KEY } from '../../llm/adapter'
+import { clearLlmLog } from '../../llm/adapter'
+import { clearApiKey } from '../../llm/keyStore'
 
 export interface BackupFile {
   app: 'deutschmeister'
@@ -72,12 +73,11 @@ export async function resetProgress(): Promise<void> {
       await db.llmCache.clear()
     },
   )
-  void LLM_LOG_KEY
 }
 
-/** Full wipe: database + local diagnostics log. Reload afterwards. */
+/** Full wipe: database + localStorage (API key, diagnostics log). Reload afterwards. */
 export async function factoryReset(): Promise<void> {
   await db.delete()
   clearLlmLog()
-  void LLM_LOG_KEY
+  clearApiKey()
 }

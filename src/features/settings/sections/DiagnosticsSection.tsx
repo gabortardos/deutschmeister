@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Badge, Button, Card } from '../../../app/ui'
+import { Badge, Button, Card } from '../../../components/ui'
 import { clearLlmLog, getLlmLog, type LlmLogEntry } from '../../../llm/adapter'
 import { APP_VERSION } from '../../../version'
 

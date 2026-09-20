@@ -3,9 +3,12 @@ import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
+import { importKeyFromUrl } from './llm/keyStore'
 import { useAppStore } from './state/store'
 
 async function bootstrap(): Promise<void> {
+  // Support one-time key loading via URL fragment (#/settings?key=...) before anything renders.
+  importKeyFromUrl()
   try {
     await useAppStore.getState().hydrate()
   } catch (err) {

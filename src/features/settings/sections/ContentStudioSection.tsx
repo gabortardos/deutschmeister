@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Field, inputClass } from '../../../app/ui'
+import { Button, Card, Field, inputClass } from '../../../components/ui'
 import {
   addCustomScenario,
   addCustomWord,

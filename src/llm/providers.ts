@@ -8,17 +8,30 @@ export interface ProviderInfo {
   modelSuggestions: string[]
   keyUrl: string
   note?: string
+  /** Extra JSON body fields merged into every request (e.g. disabling GLM thinking mode). */
+  extraBody?: Record<string, unknown>
 }
 
+/**
+ * GLM defaults were LIVE-VERIFIED (2026-09-20) with a real GLM Coding Plan (Lite) key:
+ *   POST https://api.z.ai/api/coding/paas/v4/chat/completions
+ *   model "glm-4.6" (the endpoint serves it as the current glm-5.3-flash) → 200 OK in ~1.3 s.
+ * Findings from the same live test: "glm-4-flash" is retired (code 1211 Unknown Model);
+ * "glm-5.3-flash" on the standard endpoints requires account balance (code 1113).
+ * The standard pay-as-you-go endpoints are https://api.z.ai/api/paas/v4 (international)
+ * and https://open.bigmodel.cn/api/paas/v4 (China) — both remain supported by editing
+ * the base URL in Settings.
+ */
 export const PROVIDERS: readonly ProviderInfo[] = [
   {
     id: 'glm',
-    label: 'Zhipu GLM',
-    baseUrl: 'https://api.z.ai/api/paas/v4',
-    defaultModel: 'glm-4-flash',
-    modelSuggestions: ['glm-4-flash', 'glm-5.3-flash', 'glm-5.3', 'glm-5.2'],
+    label: 'Zhipu GLM (Coding Plan)',
+    baseUrl: 'https://api.z.ai/api/coding/paas/v4',
+    defaultModel: 'glm-4.6',
+    modelSuggestions: ['glm-4.6', 'glm-5.3', 'glm-4.5-flash'],
     keyUrl: 'https://z.ai',
-    note: 'Keys from the international Z.AI platform use this base. BigModel.cn keys: https://open.bigmodel.cn/api/paas/v4. GLM Coding Plan (Lite) keys: https://api.z.ai/api/coding/paas/v4',
+    note: 'Default: GLM Coding Plan endpoint (works with Lite-plan keys). Pay-as-you-go keys instead use https://api.z.ai/api/paas/v4 or https://open.bigmodel.cn/api/paas/v4. Note: glm-4-flash is retired; glm-5.3-flash needs a paid balance on standard endpoints.',
+    extraBody: { thinking: { type: 'disabled' } },
   },
   {
     id: 'openai',

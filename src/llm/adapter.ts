@@ -1,10 +1,27 @@
 import type { ZodType } from 'zod'
 import { extractJsonObject } from '../utils/json'
+import { getProvider, type ProviderId } from './providers'
 
 export interface LlmConfig {
   baseUrl: string
   apiKey: string
   model: string
+  /** Provider-specific extra request-body fields (e.g. GLM thinking mode off). */
+  extraBody?: Record<string, unknown>
+}
+
+/** Builds the adapter config from stored settings; the key comes from localStorage. */
+export function llmConfigFromSettings(
+  settings: { provider: ProviderId; baseUrl: string; model: string },
+  apiKey: string,
+): LlmConfig {
+  const info = getProvider(settings.provider)
+  return {
+    baseUrl: settings.baseUrl,
+    apiKey,
+    model: settings.model,
+    ...(info.extraBody ? { extraBody: info.extraBody } : {}),
+  }
 }
 
 export interface ChatMessage {
@@ -70,6 +87,7 @@ async function rawChat(config: LlmConfig, messages: ChatMessage[], opts?: ChatOp
       messages,
       max_tokens: opts?.maxTokens ?? 1024,
       temperature: opts?.temperature ?? 0.7,
+      ...(config.extraBody ?? {}),
     }),
   })
   if (!res.ok) {

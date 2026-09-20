@@ -1,19 +1,19 @@
 import { Link } from 'react-router-dom'
-import { Badge, Button, Card } from '../../app/ui'
+import { Badge, Button, Card } from '../../components/ui'
 import { getLlmLog } from '../../llm/adapter'
 import { stt } from '../../speech/stt'
 import { tts } from '../../speech/tts'
 import { useAppStore } from '../../state/store'
 
 export default function DashboardPage() {
-  const { hydrated, profile, settings } = useAppStore()
+  const { hydrated, profile, apiKey } = useAppStore()
 
-  if (!hydrated || !profile || !settings) {
+  if (!hydrated || !profile) {
     return <p className="text-sm text-slate-500">Loading your data…</p>
   }
 
   const lastCall = getLlmLog()[0] ?? null
-  const keyConfigured = settings.apiKey.trim().length > 0
+  const keyConfigured = apiKey.trim().length > 0
   const connectionOk = lastCall?.ok === true
 
   const checklist = [

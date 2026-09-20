@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { Button, Card, Field, inputClass } from '../../../app/ui'
-import { testConnection, type TestResult } from '../../../llm/adapter'
+import { Button, Card, Field, inputClass } from '../../../components/ui'
+import { llmConfigFromSettings, testConnection, type TestResult } from '../../../llm/adapter'
 import { getProvider, PROVIDERS, type ProviderId } from '../../../llm/providers'
 import { useAppStore } from '../../../state/store'
 
 export default function AiModelSection() {
   const settings = useAppStore((s) => s.settings)
   const patchSettings = useAppStore((s) => s.patchSettings)
+  const apiKey = useAppStore((s) => s.apiKey)
+  const patchApiKey = useAppStore((s) => s.patchApiKey)
   const [showKey, setShowKey] = useState(false)
   const [testing, setTesting] = useState(false)
   const [result, setResult] = useState<TestResult | null>(null)
@@ -21,7 +23,7 @@ export default function AiModelSection() {
   }
 
   const runTest = async (): Promise<void> => {
-    if (!settings.apiKey.trim()) {
+    if (!apiKey.trim()) {
       setResult({
         ok: false,
         ms: 0,
@@ -33,13 +35,7 @@ export default function AiModelSection() {
     }
     setTesting(true)
     try {
-      setResult(
-        await testConnection({
-          baseUrl: settings.baseUrl,
-          apiKey: settings.apiKey,
-          model: settings.model,
-        }),
-      )
+      setResult(await testConnection(llmConfigFromSettings(settings, apiKey)))
     } finally {
       setTesting(false)
     }
@@ -94,21 +90,26 @@ export default function AiModelSection() {
 
         <Field
           label="API key"
-          hint={`Get a key: ${provider.keyUrl}`}
+          hint={`Get a key: ${provider.keyUrl} · stored in this browser's localStorage only`}
         >
           <div className="flex gap-2">
             <input
               className={inputClass}
               type={showKey ? 'text' : 'password'}
-              value={settings.apiKey}
+              value={apiKey}
               placeholder="Paste your key — never leaves this browser"
               autoComplete="off"
-              onChange={(e) => void patchSettings({ apiKey: e.target.value })}
+              onChange={(e) => patchApiKey(e.target.value)}
             />
             <Button type="button" onClick={() => setShowKey((v) => !v)}>
               {showKey ? 'Hide' : 'Show'}
             </Button>
           </div>
+          <p className="mt-1 text-xs text-slate-400">
+            Tip: you can also open{' '}
+            <span className="font-mono">#/settings?key=YOUR_KEY</span> — the key is saved and the
+            URL is cleaned immediately. The fragment is never sent to any server.
+          </p>
         </Field>
       </div>
 

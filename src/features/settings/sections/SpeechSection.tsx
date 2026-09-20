@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Badge, Button, Card, Field, inputClass } from '../../../app/ui'
+import { Badge, Button, Card, Field, inputClass } from '../../../components/ui'
 import { stt } from '../../../speech/stt'
 import { tts } from '../../../speech/tts'
 import { useAppStore } from '../../../state/store'
