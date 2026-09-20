@@ -1,0 +1,18 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+coverage
+
+# Environment / secrets — API keys live ONLY in the browser's localStorage
+.env
+.env.*
+!.env.example
+
+# OS / editor noise
+.DS_Store
+*.local
+.idea
+.vscode/*
+!.vscode/extensions.json
