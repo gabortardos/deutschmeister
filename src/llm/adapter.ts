@@ -1,4 +1,4 @@
-import type { ZodType } from 'zod'
+import type { ZodType, ZodTypeDef } from 'zod'
 import { extractJsonObject } from '../utils/json'
 import { getProvider, type ProviderId } from './providers'
 
@@ -132,12 +132,39 @@ export async function chatText(
 
 /**
  * JSON completion: asks the model for JSON, defensively parses, validates with zod,
- * retries on invalid output. Retries default to 2.
+ * retries on invalid output (default 2 retries). Calls are logged for Diagnostics.
  */
 export async function chatJSON<T>(
   config: LlmConfig,
   messages: ChatMessage[],
-  schema?: ZodType<T>,
+  schema?: ZodType<T, ZodTypeDef, unknown>,
+  opts?: ChatOptions & { retries?: number },
+): Promise<T> {
+  const started = performance.now()
+  const log = (ok: boolean, error?: string): void => {
+    logCall({
+      at: Date.now(),
+      ok,
+      model: config.model,
+      baseUrl: config.baseUrl,
+      ms: Math.round(performance.now() - started),
+      ...(error !== undefined ? { error } : {}),
+    })
+  }
+  try {
+    const value = await chatJSONInner(config, messages, schema, opts)
+    log(true)
+    return value
+  } catch (e) {
+    log(false, e instanceof Error ? e.message : String(e))
+    throw e
+  }
+}
+
+async function chatJSONInner<T>(
+  config: LlmConfig,
+  messages: ChatMessage[],
+  schema?: ZodType<T, ZodTypeDef, unknown>,
   opts?: ChatOptions & { retries?: number },
 ): Promise<T> {
   const retries = opts?.retries ?? 2

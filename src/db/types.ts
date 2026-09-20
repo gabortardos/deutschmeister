@@ -111,6 +111,8 @@ export interface ConversationTurn extends BaseEntity {
   text: string
   mistakes: ConversationMistake[] | null
   translation: string | null
+  /** True when the learner sent an AI-suggested reply (Hint). Not indexed → no Dexie schema bump. */
+  assisted?: boolean
 }
 
 export interface LessonLog extends BaseEntity {

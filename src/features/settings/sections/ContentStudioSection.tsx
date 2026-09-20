@@ -1,19 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, Field, inputClass } from '../../../components/ui'
+import { getAllTopics } from '../../../db/repositories/grammarRepo'
+import { clearLlmCache } from '../../../db/repositories/llmCacheRepo'
 import {
   addCustomScenario,
   addCustomWord,
-  clearLlmCache,
   contentCounts,
   parseKeyPhrases,
   type ContentCounts,
 } from '../../../db/repositories/contentRepo'
+import type { GrammarTopic } from '../../../db/types'
+import { llmConfigFromSettings } from '../../../llm/adapter'
+import type { LlmServiceDeps } from '../../../llm/services'
+import { useAppStore } from '../../../state/store'
+import { generateAndSaveDrills } from '../../grammar/drillGeneration'
 import { CEFR_LEVELS, type CefrLevel } from '../../../db/types'
 
 const ARTICLE_OPTIONS = ['', 'der', 'die', 'das'] as const
 
 export default function ContentStudioSection() {
+  const { settings, apiKey } = useAppStore()
   const [counts, setCounts] = useState<ContentCounts | null>(null)
+  const [topics, setTopics] = useState<GrammarTopic[]>([])
+  const [topicId, setTopicId] = useState('')
+  const [genBusy, setGenBusy] = useState(false)
+  const [genMessage, setGenMessage] = useState('')
+
+  const keyReady = apiKey.trim().length > 0
+  const deps: LlmServiceDeps | null =
+    settings && keyReady ? { config: llmConfigFromSettings(settings, apiKey) } : null
 
   // Custom word form
   const [wGerman, setWGerman] = useState('')
@@ -34,10 +49,29 @@ export default function ContentStudioSection() {
 
   useEffect(() => {
     void contentCounts().then(setCounts)
+    void getAllTopics().then(setTopics)
   }, [])
 
   const refreshCounts = async (): Promise<void> => {
     setCounts(await contentCounts())
+  }
+
+  const generateDrills = async (): Promise<void> => {
+    if (!deps || !topicId || genBusy) return
+    setGenBusy(true)
+    setGenMessage('')
+    try {
+      const saved = await generateAndSaveDrills(deps, topicId, 5)
+      setGenMessage(
+        saved > 0
+          ? `Added ${saved} AI drills to “${topics.find((t) => t.id === topicId)?.title ?? topicId}”.`
+          : 'All generated drills already exist for this topic — try another one.',
+      )
+    } catch (e) {
+      setGenMessage(`Generation failed: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setGenBusy(false)
+    }
   }
 
   const submitWord = async (): Promise<void> => {
@@ -84,7 +118,7 @@ export default function ContentStudioSection() {
   return (
     <Card
       title="Content Studio"
-      description="Add your own vocabulary and conversation scenarios. AI-generated drills arrive in M3."
+      description="Add your own vocabulary and conversation scenarios, or let the AI write extra grammar drills."
     >
       {counts && (
         <p className="mb-4 text-xs text-slate-500">
@@ -161,17 +195,42 @@ export default function ContentStudioSection() {
         </div>
       </div>
 
+      <div className="mt-4 space-y-3 rounded-lg border border-slate-200 p-4">
+        <h3 className="text-sm font-semibold text-slate-800">Generate drills with AI</h3>
+        {deps ? (
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[240px] flex-1">
+              <Field label="Grammar topic">
+                <select className={inputClass} value={topicId} onChange={(e) => setTopicId(e.target.value)}>
+                  <option value="">— pick a topic —</option>
+                  {topics.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.cefr} · {t.title}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <Button variant="primary" disabled={!topicId || genBusy} onClick={() => void generateDrills()}>
+              {genBusy ? 'Generating…' : '✨ Generate 5 more drills'}
+            </Button>
+            {genMessage && <span className="text-sm text-slate-600">{genMessage}</span>}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">
+            Add an AI key in “AI Model” above to unlock AI drill generation.
+          </p>
+        )}
+      </div>
+
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button disabled title="Arrives in Milestone 3">
-          Generate drills with AI (M3)
-        </Button>
         <Button
           disabled={!counts || counts.cachedLlmItems === 0}
           onClick={() => {
             void clearLlmCache().then(refreshCounts)
           }}
         >
-          Clear AI cache
+          Clear AI cache ({counts?.cachedLlmItems ?? 0} cached generations)
         </Button>
         {message && <span className="text-sm text-emerald-700">{message}</span>}
       </div>

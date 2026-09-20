@@ -1,66 +1,76 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { MiniMarkdown } from '../../components/markdown'
 import { Badge, Button, Card } from '../../components/ui'
 import type { DrillItem, GrammarTopic } from '../../db/types'
-import { getDrillsForTopic, getTopic } from '../../db/repositories/grammarRepo'
+import { getDrillsForTopic, getTopic, recentWrongAnswers } from '../../db/repositories/grammarRepo'
+import { llmCachePort } from '../../db/repositories/llmCacheRepo'
+import { hintForLlmError, llmConfigFromSettings } from '../../llm/adapter'
+import { explainGrammar, type LlmServiceDeps } from '../../llm/services'
 import { useAppStore } from '../../state/store'
 import DrillRunner from './DrillRunner'
-
-/** Renders the small markdown subset used by seed explanations: ##, -, **bold**. */
-function renderMarkdown(md: string): React.ReactNode[] {
-  const bold = (line: string): React.ReactNode[] =>
-    line.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))
-  const blocks: React.ReactNode[] = []
-  let list: React.ReactNode[] = []
-  const flush = (): void => {
-    if (list.length > 0) {
-      blocks.push(
-        <ul key={`ul-${blocks.length}`} className="list-disc space-y-1 pl-5">
-          {list}
-        </ul>,
-      )
-      list = []
-    }
-  }
-  for (const line of md.split('\n')) {
-    const trimmed = line.trim()
-    if (trimmed.length === 0) {
-      flush()
-      continue
-    }
-    if (trimmed.startsWith('## ')) {
-      flush()
-      blocks.push(
-        <h3 key={`h-${blocks.length}`} className="mt-4 text-sm font-bold uppercase tracking-wide text-indigo-700">
-          {trimmed.slice(3)}
-        </h3>,
-      )
-    } else if (trimmed.startsWith('- ')) {
-      list.push(
-        <li key={`li-${blocks.length}-${list.length}`} className="text-sm text-slate-700">
-          {bold(trimmed.slice(2))}
-        </li>,
-      )
-    } else {
-      flush()
-      blocks.push(
-        <p key={`p-${blocks.length}`} className="text-sm text-slate-700">
-          {bold(trimmed)}
-        </p>,
-      )
-    }
-  }
-  flush()
-  return blocks
-}
+import { generateAndSaveDrills } from './drillGeneration'
 
 export default function GrammarTopicPage() {
   const { topicId } = useParams<{ topicId: string }>()
-  const { profile, patchProfile, bumpDrills, refreshToday } = useAppStore()
+  const { profile, patchProfile, bumpDrills, refreshToday, settings, apiKey } = useAppStore()
   const [topic, setTopic] = useState<GrammarTopic | null>(null)
   const [drills, setDrills] = useState<DrillItem[] | null>(null)
   const [practicing, setPracticing] = useState(false)
   const [done, setDone] = useState(false)
+
+  // AI extras (only shown when a key is configured)
+  const [explainMd, setExplainMd] = useState<string | null>(null)
+  const [explainBusy, setExplainBusy] = useState(false)
+  const [genBusy, setGenBusy] = useState(false)
+  const [aiMessage, setAiMessage] = useState('')
+  const [aiError, setAiError] = useState<{ message: string; hint?: string } | null>(null)
+
+  const keyReady = apiKey.trim().length > 0
+  const deps: LlmServiceDeps | null =
+    settings && keyReady ? { config: llmConfigFromSettings(settings, apiKey), cache: llmCachePort } : null
+
+  async function runExplain(): Promise<void> {
+    if (!deps || !topic || explainBusy) return
+    setExplainBusy(true)
+    setAiError(null)
+    try {
+      const mistakesContext = await recentWrongAnswers((drills ?? []).map((d) => d.id))
+      const md = await explainGrammar(deps, {
+        topic: {
+          id: topic.id,
+          title: topic.title,
+          cefr: topic.cefr,
+          focus: topic.focus,
+          explanationMd: topic.explanationMd,
+        },
+        mistakesContext,
+      })
+      setExplainMd(md)
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      setAiError({ message, hint: hintForLlmError(message) })
+    } finally {
+      setExplainBusy(false)
+    }
+  }
+
+  async function runGenerate(): Promise<void> {
+    if (!deps || !topicId || genBusy) return
+    setGenBusy(true)
+    setAiError(null)
+    setAiMessage('')
+    try {
+      const saved = await generateAndSaveDrills(deps, topicId, 5)
+      setAiMessage(saved > 0 ? `Added ${saved} AI drills to this topic.` : 'All generated drills already exist here — try again later.')
+      setDrills(await getDrillsForTopic(topicId))
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      setAiError({ message, hint: hintForLlmError(message) })
+    } finally {
+      setGenBusy(false)
+    }
+  }
 
   useEffect(() => {
     setTopic(null)
@@ -80,8 +90,6 @@ export default function GrammarTopicPage() {
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId])
-
-  const explanation = useMemo(() => (topic ? renderMarkdown(topic.explanationMd) : null), [topic])
 
   if (!topic) {
     return (
@@ -127,7 +135,36 @@ export default function GrammarTopicPage() {
           <Badge tone="ok">{topic.cefr}</Badge>
           {topic.relatedVocabTheme && <Badge tone="warn">Pairs with “{topic.relatedVocabTheme}” vocabulary</Badge>}
         </div>
-        <div className="mt-3 space-y-2">{explanation}</div>
+        <div className="mt-3 space-y-2">
+          <MiniMarkdown md={topic.explanationMd} />
+        </div>
+        {deps && (
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={explainBusy} onClick={() => void runExplain()}>
+                {explainBusy ? 'Explaining…' : '✨ Explain for me'}
+              </Button>
+              <Button disabled={genBusy} onClick={() => void runGenerate()}>
+                {genBusy ? 'Generating…' : '✨ Generate 5 more drills'}
+              </Button>
+            </div>
+            {aiMessage && <p className="text-xs text-emerald-700">{aiMessage}</p>}
+            {aiError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                <p className="text-xs font-medium text-red-700">AI call failed: {aiError.message}</p>
+                {aiError.hint && <p className="mt-1 text-xs text-red-600">{aiError.hint}</p>}
+              </div>
+            )}
+            {explainMd && (
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                  AI explanation · tailored to your recent mistakes
+                </p>
+                <MiniMarkdown md={explainMd} />
+              </div>
+            )}
+          </div>
+        )}
         <div className="mt-5 flex flex-wrap gap-2">
           <Button variant="primary" onClick={() => setPracticing(true)} disabled={(drills?.length ?? 0) === 0}>
             Practice {drills?.length ?? 0} drills →

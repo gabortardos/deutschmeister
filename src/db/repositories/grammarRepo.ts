@@ -104,3 +104,29 @@ export async function nextTopic(level: CefrLevel): Promise<GrammarTopic | null> 
     .sort((a, b) => rank(a) - rank(b) || a.order - b.order)
   return candidates[0] ?? topics[topics.length - 1] ?? null
 }
+
+/** Bulk-saves drill items (LLM-generated and conversation-mistake drills). */
+export async function saveDrills(items: readonly DrillItem[]): Promise<void> {
+  if (items.length > 0) await db.drillItems.bulkPut([...items])
+}
+
+/**
+ * Latest distinct wrong answers for a set of drills — the "recent mistakes"
+ * context for the "Explain for me" feature.
+ */
+export async function recentWrongAnswers(itemIds: readonly string[], limit = 8): Promise<string[]> {
+  if (itemIds.length === 0) return []
+  const attempts = await db.drillAttempts
+    .where('itemId')
+    .anyOf([...itemIds])
+    .filter((a) => a.correct !== true)
+    .toArray()
+  attempts.sort((a, b) => b.at - a.at)
+  const out: string[] = []
+  for (const a of attempts) {
+    const answer = a.userAnswer.trim()
+    if (answer.length > 0 && answer !== '(revealed)' && !out.includes(answer)) out.push(answer)
+    if (out.length >= limit) break
+  }
+  return out
+}

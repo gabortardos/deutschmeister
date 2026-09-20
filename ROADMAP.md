@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M3–M4 ⬜
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M3 ✅ · M4 ⬜
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -11,7 +11,8 @@
 | M0.1 Handoff hardening | ✅ done | (this commit) | apiKey→localStorage, `src/components/`, `#/settings?key=` import, live-verified GLM defaults, AGENT/ROADMAP/MASTER_PROMPT docs |
 | M1 Vocab core | ✅ done | (this commit) | 461-word corpus (A1 184 / A2 154 / B1 123), SM-2 + planner + grader + matcher engines, vocabRepo/lessonRepo, Vocab/Review/Today UI |
 | M2 Grammar core | ✅ done | (this commit) | 35 topics (A1 13 / A2 12 / B1 10), runner+mastery+placement engines, grammarRepo, PLACEMENT_BANK 30, Grammar/Topic/Placement UI, v0.4.0-m2 |
-| M3 LLM layer | ⬜ | — | adapter features, conversations, feedback, drill gen |
+| M2.1 Fixes | ✅ done | `aea0bda` | GLM key self-heal (stale-defaults migration, endpoint probe, error hints) + German TTS voice race fix, v0.4.1 |
+| M3 LLM layer | ✅ done | (this commit) | 5 zod service contracts + LlmCache, 11 scenarios, conversation UI (STT/TTS/hints/feedback→drills), AI drill gen + "Explain for me" + AI examples, v0.5.0-m3 |
 | M4 Polish | ⬜ | — | speak/listen drills, PWA, README |
 
 ## M1 checklist (vocab core)
@@ -44,14 +45,29 @@
 
 ## M3 checklist (LLM layer)
 
-- [ ] 5 service contracts with zod schemas + LlmCache: conversationTurn, sessionFeedback,
-      generateDrillItems, explainGrammar, exampleSentences
-- [ ] Scenario library: 11 seed scenarios (incl. Fitnessstudio A2/B1 — machines, duration,
-      weights/reps/sets, training partner)
-- [ ] Conversation UI: text + STT mic + TTS speaker + Hint button (marked assisted)
-- [ ] End-of-session feedback + "add mistakes as drills"; "Explain for me" on grammar pages
-- [ ] Content Studio: "Generate 5 more drills with AI" per topic; cache stats
-- [ ] DoD: verified with GLM coding-plan key via Test Connection; invalid JSON recovers; no-key mode fully offline
+- [x] `src/llm/services.ts` — 5 service contracts with zod schemas + LlmCache via injectable
+      `LlmCachePort` (`src/db/repositories/llmCacheRepo.ts`): conversationTurn (+ opener mode),
+      sessionFeedback (category normalization → gender/case/word-order/vocab/verb-form/other),
+      generateDrillItems (over-generation n+3 → deterministic sanitize → DrillItem[]),
+      explainGrammar (mistakes-tailored markdown, cache-keyed by context hash),
+      exampleSentences (level-tagged) + suggestReply (Hint) + pure mistakesToDrills;
+      chatJSON now logs every call for Diagnostics
+- [x] `src/content/scenarios/index.ts` — 11 seed scenarios (incl. Fitnessstudio A2 with
+      Gerät/Beinpresse/Gewicht/Sätze/Wiederholungen/duration/partner phrases), integrity-tested;
+      seeded idempotently via `src/db/repositories/scenarioRepo.ts`
+- [x] Conversation UI: `ConversationPage` (library + recent sessions + drill replay) and
+      `ConversationSessionPage` (chat bubbles, STT mic, per-message TTS 🔊 + EN toggle,
+      Hint panel marked ✨ assisted, mistake chips under user turns, end-of-session report)
+      + `src/db/repositories/conversationRepo.ts` (sessions/turns, `assisted` flag)
+- [x] End-of-session feedback → "Add mistakes as drills" (transform drills owned by the
+      scenario) → practice via DrillRunner (`?practice=1`); "Explain for me" + "Generate 5
+      more drills" on `GrammarTopicPage` (recent-wrong-answers context via
+      `grammarRepo.recentWrongAnswers`); ✨ AI examples in StudySession flashcards
+- [x] Content Studio: per-topic "Generate 5 more drills with AI" + cache stats + clear cache
+      (moved to llmCacheRepo); `generateAndSaveDrills` dedupes prompts per topic
+- [x] DoD: gate green (tsc + vitest 100 + build 540 KB/169 KB gzip + dev-smoke 200);
+      invalid JSON recovers (retry test); no-key mode fully offline (AI buttons hidden,
+      conversation shows key notice); live-key verification tracked in M3.1 below
 
 ## M4 checklist (polish)
 
@@ -68,3 +84,4 @@
 | 2026-09-20 | M1: tsc+vitest(44)+build | ✅ green (361 KB / 118 KB gzip) |
 | 2026-09-20 | M2: tsc+vitest(80)+build | ✅ green (443 KB / 142 KB gzip) |
 | 2026-09-20 | M2.1 fixes: tsc+vitest(85)+build | ✅ green — GLM key self-heal (stale-defaults migration even with key set, endpoint probe, error hints) + German TTS voice race fix |
+| 2026-09-20 | M3: tsc+vitest(100)+build(540 KB/169 KB gzip)+dev-smoke 200 | ✅ green — LLM services, 11 scenarios, conversation UI, AI drill gen / explain / examples |

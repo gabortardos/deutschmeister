@@ -88,6 +88,3 @@ export async function contentCounts(): Promise<ContentCounts> {
   return { words, customWords, scenarios, customScenarios, cachedLlmItems: cached }
 }
 
-export async function clearLlmCache(): Promise<void> {
-  await db.llmCache.clear()
-}

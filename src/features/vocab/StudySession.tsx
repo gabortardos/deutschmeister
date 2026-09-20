@@ -1,7 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
 import { Badge, Button, Card, inputClass } from '../../components/ui'
+import { llmCachePort } from '../../db/repositories/llmCacheRepo'
 import type { VocabWord } from '../../db/types'
 import { gradeAnswer } from '../../engine/grader'
+import { llmConfigFromSettings } from '../../llm/adapter'
+import { exampleSentences, type ExampleSentence, type LlmServiceDeps } from '../../llm/services'
 import { useAppStore } from '../../state/store'
 import { tts } from '../../speech/tts'
 
@@ -54,9 +57,40 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const speechSettings = useAppStore((s) => s.settings)
+  const apiKey = useAppStore((s) => s.apiKey)
+
+  // AI example sentences (M3) — only available with a configured key
+  const [aiExamples, setAiExamples] = useState<ExampleSentence[] | null>(null)
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+  const aiDeps: LlmServiceDeps | null = useMemo(
+    () =>
+      speechSettings && apiKey.trim().length > 0
+        ? { config: llmConfigFromSettings(speechSettings, apiKey), cache: llmCachePort }
+        : null,
+    [speechSettings, apiKey],
+  )
 
   const word = words[index]
   const options = useMemo(() => (word ? choiceOptions(word, bank) : []), [word, bank])
+
+  async function loadExamples(): Promise<void> {
+    if (!aiDeps || !word || aiBusy) return
+    setAiBusy(true)
+    setAiError(null)
+    try {
+      const list = await exampleSentences(aiDeps, {
+        word: { german: word.german, english: word.english },
+        cefr: word.cefr,
+        n: 3,
+      })
+      setAiExamples(list)
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setAiBusy(false)
+    }
+  }
 
   function speakWord(): void {
     if (word)
@@ -76,6 +110,8 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
     setChoicePick(null)
     setTyped('')
     setTypeResult(null)
+    setAiExamples(null)
+    setAiError(null)
   }
 
   async function completeWord(quality: number): Promise<void> {
@@ -157,7 +193,32 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
             <div className="mt-3 flex justify-center gap-2">
               <Button onClick={speakWord}>🔊 Word</Button>
               {word.exampleSentenceDe && <Button onClick={speakExample}>🔊 Example</Button>}
+              {aiDeps && (
+                <Button disabled={aiBusy} onClick={() => void loadExamples()}>
+                  {aiBusy ? '✨ …' : '✨ AI examples'}
+                </Button>
+              )}
             </div>
+            {aiExamples && aiExamples.length > 0 && (
+              <ul className="mt-3 space-y-1.5 text-left">
+                {aiExamples.map((ex) => (
+                  <li key={ex.de} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-sm">
+                    <button
+                      type="button"
+                      className="mr-1 text-slate-400 hover:text-slate-600"
+                      onClick={() =>
+                        tts.speak(ex.de, { rate: speechSettings?.ttsRate, voiceURI: speechSettings?.ttsVoice })
+                      }
+                    >
+                      🔊
+                    </button>
+                    <span className="font-medium text-slate-800">{ex.de}</span>{' '}
+                    <span className="text-xs text-slate-400">({ex.cefr}) — {ex.en}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {aiError && <p className="mt-2 text-xs text-red-600">AI examples failed: {aiError}</p>}
             {word.exampleSentenceDe && (
               <p className="mt-4 text-sm italic text-slate-600">{word.exampleSentenceDe}</p>
             )}
