@@ -2,6 +2,7 @@ import { buildLessonPlan } from '../../engine/lessonPlanner'
 import { dateKey } from '../../engine/text'
 import { db } from '../dexie'
 import type { LessonLog, UserProfile } from '../types'
+import { ensureGrammarSeeded } from './grammarRepo'
 import { ensureVocabSeeded } from './vocabRepo'
 
 async function themeBiasFor(profile: UserProfile): Promise<string | null> {
@@ -17,7 +18,7 @@ async function themeBiasFor(profile: UserProfile): Promise<string | null> {
  * so refreshing the page or restarting the app never reshuffles the day.
  */
 export async function getOrCreateTodayLog(profile: UserProfile): Promise<LessonLog> {
-  await ensureVocabSeeded()
+  await Promise.all([ensureVocabSeeded(), ensureGrammarSeeded()])
   const date = dateKey()
   const id = `lesson-${date}`
   const existing = await db.lessonLogs.get(id)

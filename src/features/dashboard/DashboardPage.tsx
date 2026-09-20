@@ -67,6 +67,11 @@ export default function DashboardPage() {
               {dueCount > 0 ? `Review ${dueCount} due →` : 'Nothing due ✓'}
             </Button>
           </Link>
+          <Link to="/grammar">
+            <Button variant={!profile.placementResult ? 'primary' : 'secondary'}>
+              {!profile.placementResult ? 'Take grammar placement →' : 'Grammar topic of the day →'}
+            </Button>
+          </Link>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
           <div
@@ -115,7 +120,7 @@ export default function DashboardPage() {
         <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
           <li><span className="font-medium text-emerald-700">M0 — Foundation ✅</span> app shell, local database, full Settings &amp; Admin hub, AI adapter + test connection, speech adapters, CI/CD.</li>
           <li><span className="font-medium text-emerald-700">M1 — Vocabulary ✅</span> 461-word corpus (A1→B1), SM-2 spaced repetition, daily lesson planner, flashcards &amp; drills.</li>
-          <li><span className="font-medium">M2 — Grammar</span> topic tree, drill runner with rule-based grader, placement quiz.</li>
+          <li><span className="font-medium text-emerald-700">M2 — Grammar ✅</span> 35-topic A1→B1 tree, drill runner with rule-based grader, mastery tracking, adaptive placement quiz.</li>
           <li><span className="font-medium">M3 — AI layer</span> role-play conversations (11 scenarios incl. Fitnessstudio), feedback reports, LLM drill generation.</li>
           <li><span className="font-medium">M4 — Polish</span> speaking/listening drills, PWA/offline, final QA.</li>
         </ol>

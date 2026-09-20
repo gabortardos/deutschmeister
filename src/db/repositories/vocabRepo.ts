@@ -58,6 +58,11 @@ export async function reviewWord(
   return next
 }
 
+/** Marks a word as already known (perfect review) — used by grammar drills. */
+export async function markWordKnown(wordId: string, now: number = Date.now()): Promise<VocabCard> {
+  return reviewWord(wordId, 5, now)
+}
+
 export async function vocabStats(now: number = Date.now()): Promise<VocabStats> {
   const [totalWords, cards] = await Promise.all([db.vocabWords.count(), db.vocabCards.toArray()])
   let learning = 0

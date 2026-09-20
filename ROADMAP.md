@@ -3,14 +3,14 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2–M4 ⬜
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M3–M4 ⬜
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
 | M0 Foundation | ✅ done | `8f91ba8` | app shell, Dexie+repos, Settings hub, speech+LLM adapters, CI/CD, live |
 | M0.1 Handoff hardening | ✅ done | (this commit) | apiKey→localStorage, `src/components/`, `#/settings?key=` import, live-verified GLM defaults, AGENT/ROADMAP/MASTER_PROMPT docs |
 | M1 Vocab core | ✅ done | (this commit) | 461-word corpus (A1 184 / A2 154 / B1 123), SM-2 + planner + grader + matcher engines, vocabRepo/lessonRepo, Vocab/Review/Today UI |
-| M2 Grammar core | ⬜ | — | topic tree, drill runner, grader, placement |
+| M2 Grammar core | ✅ done | (this commit) | 35 topics (A1 13 / A2 12 / B1 10), runner+mastery+placement engines, grammarRepo, PLACEMENT_BANK 30, Grammar/Topic/Placement UI, v0.4.0-m2 |
 | M3 LLM layer | ⬜ | — | adapter features, conversations, feedback, drill gen |
 | M4 Polish | ⬜ | — | speak/listen drills, PWA, README |
 
@@ -29,10 +29,18 @@
 
 ## M2 checklist (grammar core)
 
-- [ ] `src/content/grammar/` ~35 topics A1→B1 (explanationMd, focus, relatedVocabTheme, ≥6 seed drills each)
-- [ ] Exercise runner: cloze | choice | transform | wordorder | translate_de_en | translate_en_de; Enter submits
-- [ ] Mastery tracking per topic; topic tree grouped by CEFR
-- [ ] Placement quiz (15–20 adaptive items → level + known words), skippable
+- [x] `src/content/grammar/` 35 topics A1→B1 (A1 13 / A2 12 / B1 10; explanationMd, focus, relatedVocabTheme, ≥6 seed drills each) — integrity-tested
+- [x] `src/engine/exerciseRunner.ts` (deterministic option/token shuffles, needsGermanKeys, gradeDrill) + unit tests
+- [x] `src/engine/mastery.ts` (8-attempt window, ≥6 attempts, ≥75 % → mastered) + unit tests
+- [x] `src/engine/placement.ts` (A1→B1 staircase, promote 5/≥4, fail-stop 5/≤2, cap 20, ≥60 % pass) + unit tests
+- [x] `src/content/grammar/placement.ts` PLACEMENT_BANK: 30 items (10/level, vocab+grammar alternating, all germanWord in corpus) — integrity-tested
+- [x] `src/db/repositories/grammarRepo.ts` (idempotent seed, getters, attempt recording, masteryByTopic, nextTopic) + `markWordKnown` in vocabRepo; seeding piggybacks on `getOrCreateTodayLog`
+- [x] GrammarPage: CEFR tree with mastery %, placement banner, Continue button
+- [x] GrammarTopicPage: markdown explanation, drill practice round, sets `currentGrammarTopicId`
+- [x] DrillRunner: all 6 types, Enter submits, 1–4 keys pick options, ä ö ü ß keys, show-answer counts wrong
+- [x] PlacementPage: skippable adaptive quiz → writes level + placementResult
+- [x] Dashboard wiring + APP_VERSION `0.4.0-m2`
+- [x] DoD: gate green (tsc + vitest 80 + build)
 
 ## M3 checklist (LLM layer)
 
@@ -58,3 +66,4 @@
 | 2026-09-20 | M0: tsc+vitest(6)+build+dev-smoke | ✅ green, deployed |
 | 2026-09-20 | M0.1: tsc+vitest(6)+build | ✅ green (299 KB / 98.5 KB gzip) |
 | 2026-09-20 | M1: tsc+vitest(44)+build | ✅ green (361 KB / 118 KB gzip) |
+| 2026-09-20 | M2: tsc+vitest(80)+build | ✅ green (443 KB / 142 KB gzip) |
