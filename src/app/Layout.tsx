@@ -5,6 +5,7 @@ import { APP_VERSION } from '../version'
 const NAV_ITEMS = [
   { to: '/', label: 'Today', end: true },
   { to: '/vocab', label: 'Vocabulary', end: false },
+  { to: '/words', label: 'Word bank', end: false },
   { to: '/grammar', label: 'Grammar', end: false },
   { to: '/review', label: 'Review', end: false },
   { to: '/conversation', label: 'Conversation', end: false },

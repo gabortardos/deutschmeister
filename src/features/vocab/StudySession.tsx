@@ -7,6 +7,7 @@ import { llmConfigFromSettings } from '../../llm/adapter'
 import { exampleSentences, type ExampleSentence, type LlmServiceDeps } from '../../llm/services'
 import { useAppStore } from '../../state/store'
 import { tts } from '../../speech/tts'
+import { ARTICLE_CLASS, WordFormsPanel } from './WordForms'
 
 export interface StudySessionProps {
   words: VocabWord[]
@@ -17,12 +18,6 @@ export interface StudySessionProps {
 }
 
 type Phase = 'intro' | 'choice' | 'type'
-
-const ARTICLE_CLASS: Record<string, string> = {
-  der: 'text-sky-600',
-  die: 'text-rose-600',
-  das: 'text-emerald-600',
-}
 
 function shuffle<T>(items: readonly T[]): T[] {
   const out = [...items]
@@ -189,7 +184,9 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
               {word.article && <span className={`mr-2 ${ARTICLE_CLASS[word.article]}`}>{word.article}</span>}
               {word.german}
             </p>
-            {word.plural && <p className="mt-1 text-sm text-slate-500">Plural: {word.plural}</p>}
+            <div className="mx-auto mt-3 w-full max-w-sm">
+              <WordFormsPanel word={word} />
+            </div>
             <div className="mt-3 flex justify-center gap-2">
               <Button onClick={speakWord}>🔊 Word</Button>
               {word.exampleSentenceDe && <Button onClick={speakExample}>🔊 Example</Button>}

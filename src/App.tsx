@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import Layout from './app/Layout'
 import DashboardPage from './features/dashboard/DashboardPage'
 import VocabPage from './features/vocab/VocabPage'
+import WordBankPage from './features/vocab/WordBankPage'
 import GrammarPage from './features/grammar/GrammarPage'
 import GrammarTopicPage from './features/grammar/GrammarTopicPage'
 import PlacementPage from './features/grammar/PlacementPage'
@@ -16,6 +17,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<DashboardPage />} />
         <Route path="vocab" element={<VocabPage />} />
+        <Route path="words" element={<WordBankPage />} />
         <Route path="grammar" element={<GrammarPage />} />
         <Route path="grammar/placement" element={<PlacementPage />} />
         <Route path="grammar/:topicId" element={<GrammarTopicPage />} />

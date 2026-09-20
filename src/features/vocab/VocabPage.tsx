@@ -193,6 +193,11 @@ export default function VocabPage() {
             Total words available: <span className="font-semibold text-slate-700">{stats.totalWords}</span> (1,000+ A1–B1
             seed corpus + your custom words). Review direction alternates; typing accepts ae/oe/ue/ss for umlauts.
           </p>
+          <div className="mt-4">
+            <Link to="/words">
+              <Button>Browse & practice learned words →</Button>
+            </Link>
+          </div>
         </Card>
       )}
     </div>
