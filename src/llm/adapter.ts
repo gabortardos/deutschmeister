@@ -169,6 +169,29 @@ export interface TestResult {
   baseUrl: string
   reply?: string
   error?: string
+  /** Plain-English next step decoded from the raw provider error. */
+  hint?: string
+}
+
+/**
+ * Maps raw provider errors to a human-readable next step. Zhipu error codes:
+ * 401/403 key rejected by that endpoint · 1113 key OK but no balance for it ·
+ * 1211 model ID unknown/retired on that endpoint. Pure function (unit-tested).
+ */
+export function hintForLlmError(error: string): string | undefined {
+  if (/\b(401|403)\b/.test(error)) {
+    return 'This endpoint rejected the key. Zhipu keys are platform-specific: Coding Plan keys only work on the /api/coding/ endpoint, pay-as-you-go keys on /api/paas/v4 (api.z.ai or open.bigmodel.cn). Try another endpoint — Settings can probe them for you.'
+  }
+  if (error.includes('1113')) {
+    return 'The key was accepted, but this endpoint requires a paid balance or resource package. GLM Coding Plan (Lite) keys work on the /api/coding/ endpoint.'
+  }
+  if (error.includes('1211')) {
+    return 'This model ID is not available on the endpoint (e.g. "glm-4-flash" is retired). Use a current model such as "glm-4.6".'
+  }
+  if (/failed to fetch|networkerror|load failed|cors/i.test(error)) {
+    return 'The browser could not reach the endpoint (offline, DNS, or CORS). Check the URL spelling and your connection.'
+  }
+  return undefined
 }
 
 /** Minimal real request used by the Settings "Test connection" button. */
@@ -186,6 +209,6 @@ export async function testConnection(config: LlmConfig): Promise<TestResult> {
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e)
     logCall({ at: Date.now(), ok: false, model: config.model, baseUrl: config.baseUrl, ms: ms(), error })
-    return { ok: false, ms: ms(), model: config.model, baseUrl: config.baseUrl, error }
+    return { ok: false, ms: ms(), model: config.model, baseUrl: config.baseUrl, error, hint: hintForLlmError(error) }
   }
 }

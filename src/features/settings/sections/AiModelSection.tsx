@@ -12,6 +12,7 @@ export default function AiModelSection() {
   const [showKey, setShowKey] = useState(false)
   const [testing, setTesting] = useState(false)
   const [result, setResult] = useState<TestResult | null>(null)
+  const [probe, setProbe] = useState<{ baseUrl: string } | null>(null)
 
   if (!settings) return null
   const provider = getProvider(settings.provider)
@@ -22,7 +23,7 @@ export default function AiModelSection() {
     await patchSettings({ provider: id, baseUrl: p.baseUrl, model: p.defaultModel })
   }
 
-  const runTest = async (): Promise<void> => {
+  const runTest = async (baseUrlOverride?: string): Promise<void> => {
     if (!apiKey.trim()) {
       setResult({
         ok: false,
@@ -34,11 +35,36 @@ export default function AiModelSection() {
       return
     }
     setTesting(true)
+    setProbe(null)
+    // baseUrlOverride lets applyProbe retest the *new* URL immediately, without
+    // waiting for the settings re-render to refresh this closure.
+    const baseUrl = baseUrlOverride ?? settings.baseUrl
     try {
-      setResult(await testConnection(llmConfigFromSettings(settings, apiKey)))
+      const r = await testConnection(llmConfigFromSettings({ ...settings, baseUrl }, apiKey))
+      setResult(r)
+      // Self-heal endpoint mix-ups: when the configured endpoint fails, probe the
+      // provider's other known endpoints with the same key and offer a one-click fix.
+      if (!r.ok && provider.altBaseUrls) {
+        for (const alt of provider.altBaseUrls) {
+          if (alt === baseUrl) continue
+          const altResult = await testConnection(llmConfigFromSettings({ ...settings, baseUrl: alt }, apiKey))
+          if (altResult.ok) {
+            setProbe({ baseUrl: alt })
+            break
+          }
+        }
+      }
     } finally {
       setTesting(false)
     }
+  }
+
+  const applyProbe = async (): Promise<void> => {
+    if (!probe) return
+    const baseUrl = probe.baseUrl
+    setProbe(null)
+    await patchSettings({ baseUrl })
+    await runTest(baseUrl)
   }
 
   return (
@@ -130,6 +156,18 @@ export default function AiModelSection() {
       {result && !result.ok && (
         <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           <p className="font-mono text-xs">{result.error}</p>
+          {result.hint && <p className="mt-2 font-medium">{result.hint}</p>}
+          {probe && (
+            <p className="mt-2 flex flex-wrap items-center gap-2">
+              <span>
+                Your key <span className="font-semibold">works</span> on{' '}
+                <span className="font-mono text-xs">{probe.baseUrl}</span>
+              </span>
+              <Button type="button" onClick={() => void applyProbe()}>
+                Use this endpoint
+              </Button>
+            </p>
+          )}
           <p className="mt-2 text-red-600">
             Checklist: key has no extra spaces · base URL matches the platform the key came from ·
             model ID exists in your account (copy it exactly from the provider console).

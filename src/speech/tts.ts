@@ -6,7 +6,53 @@ export interface SpeakOptions {
 /**
  * Text-to-speech adapter (Web Speech API). All speech usage must go through this
  * module so the future iOS (Capacitor) build can swap in a native implementation.
+ *
+ * Voice selection is defensive by necessity: `getVoices()` returns [] until the
+ * browser finishes loading voices (async; fires `voiceschanged` once). Speaking
+ * before that leaves the utterance without a voice, and most engines then use the
+ * OS default (English) voice — so German text sounds English. We therefore prime
+ * a German-voice cache at module load, refresh it on `voiceschanged`, prefer
+ * de-DE over other German locales, and briefly wait for voices on first speak.
  */
+
+const LANG = 'de-DE'
+const VOICE_WAIT_MS = 800
+
+let germanVoiceCache: SpeechSynthesisVoice[] = []
+
+function refreshVoiceCache(): void {
+  const all = window.speechSynthesis.getVoices()
+  if (all.length === 0) return // voices not loaded yet — keep any previous cache
+  germanVoiceCache = all
+    .filter((v) => v.lang.toLowerCase().startsWith('de'))
+    .sort(
+      (a, b) =>
+        Number(b.lang.toLowerCase().startsWith('de-de')) - Number(a.lang.toLowerCase().startsWith('de-de')),
+    )
+}
+
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  refreshVoiceCache()
+  window.speechSynthesis.addEventListener('voiceschanged', refreshVoiceCache)
+}
+
+function resolveVoice(voiceURI?: string | null): SpeechSynthesisVoice | undefined {
+  if (voiceURI) {
+    const exact = germanVoiceCache.find((v) => v.voiceURI === voiceURI)
+    if (exact) return exact
+    // Stale saved preference (voice uninstalled / different browser) → automatic.
+  }
+  return germanVoiceCache[0]
+}
+
+function speakWith(text: string, opts: SpeakOptions, voice: SpeechSynthesisVoice | undefined): void {
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = LANG
+  utterance.rate = opts.rate ?? 0.9
+  if (voice) utterance.voice = voice
+  window.speechSynthesis.speak(utterance)
+}
+
 export const tts = {
   get supported(): boolean {
     return typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -14,9 +60,8 @@ export const tts = {
 
   germanVoices(): SpeechSynthesisVoice[] {
     if (!this.supported) return []
-    return window.speechSynthesis
-      .getVoices()
-      .filter((v) => v.lang.toLowerCase().startsWith('de'))
+    if (germanVoiceCache.length === 0) refreshVoiceCache()
+    return [...germanVoiceCache]
   },
 
   onVoicesChanged(cb: () => void): () => void {
@@ -28,15 +73,24 @@ export const tts = {
   speak(text: string, opts: SpeakOptions = {}): boolean {
     if (!this.supported || !text) return false
     window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'de-DE'
-    utterance.rate = opts.rate ?? 0.9
-    const voices = this.germanVoices()
-    const voice = opts.voiceURI
-      ? voices.find((v) => v.voiceURI === opts.voiceURI)
-      : voices[0]
-    if (voice) utterance.voice = voice
-    window.speechSynthesis.speak(utterance)
+    if (germanVoiceCache.length === 0) refreshVoiceCache()
+    const voice = resolveVoice(opts.voiceURI)
+    if (voice) {
+      speakWith(text, opts, voice)
+      return true
+    }
+    // No German voice known yet (typical on the first speak after page load).
+    // Poll briefly for the voice list instead of letting the engine read German
+    // text with its default English voice; last resort: lang tag only.
+    const started = performance.now()
+    const attempt = (): void => {
+      refreshVoiceCache()
+      const v = resolveVoice(opts.voiceURI)
+      if (v) speakWith(text, opts, v)
+      else if (performance.now() - started < VOICE_WAIT_MS) window.setTimeout(attempt, 100)
+      else speakWith(text, opts, undefined)
+    }
+    attempt()
     return true
   },
 

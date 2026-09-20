@@ -15,6 +15,7 @@ interface QueueItem {
 /** Reviews due SM-2 cards with alternating direction (DE→EN, then EN→DE). */
 export default function ReviewPage() {
   const { refreshToday } = useAppStore()
+  const speechSettings = useAppStore((s) => s.settings)
   const [queue, setQueue] = useState<QueueItem[] | null>(null)
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState('')
@@ -54,7 +55,8 @@ export default function ReviewPage() {
     setResult(graded.correct)
     setScore((s) => ({ ok: s.ok + (graded.correct ? 1 : 0), bad: s.bad + (graded.correct ? 0 : 1) }))
     await reviewWord(word.id, graded.correct ? 4 : 1)
-    if (graded.correct) tts.speak(word.german)
+    if (graded.correct)
+      tts.speak(word.german, { rate: speechSettings?.ttsRate, voiceURI: speechSettings?.ttsVoice })
     setBusy(false)
   }
 
@@ -132,7 +134,16 @@ export default function ReviewPage() {
               <p className="mt-2 text-center text-sm italic text-slate-500">{word.exampleSentenceDe}</p>
             )}
             <div className="mt-3 flex justify-center">
-              <Button onClick={() => tts.speak(word.german)}>🔊 Listen</Button>
+              <Button
+                onClick={() =>
+                  tts.speak(word.german, {
+                    rate: speechSettings?.ttsRate,
+                    voiceURI: speechSettings?.ttsVoice,
+                  })
+                }
+              >
+                🔊 Listen
+              </Button>
             </div>
           </>
         ) : (

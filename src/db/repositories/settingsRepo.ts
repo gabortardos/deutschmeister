@@ -42,18 +42,25 @@ export async function getSettings(): Promise<AppSettings> {
     needsWrite = true
   }
 
-  // Refresh stale GLM defaults written before the live verification (only when the
-  // user never customized them and no key is set, so user intent is never overridden).
-  if (
-    row.provider === 'glm' &&
-    !getApiKey() &&
-    row.model === 'glm-4-flash' &&
-    (row.baseUrl === 'https://api.z.ai/api/paas/v4' || row.baseUrl === 'https://open.bigmodel.cn/api/paas/v4')
-  ) {
+  // Refresh stale GLM defaults written before the live verification. These exact
+  // values were only ever written by our own M0 defaults ("glm-4-flash" is retired
+  // on every endpoint — error 1211; the pay-as-you-go URLs reject Coding Plan keys
+  // with error 1113, which looks like an auth failure), so refreshing them cannot
+  // override deliberate user input. Runs even when a key is set: that is exactly
+  // the "user pasted a key and the test fails" case it must heal.
+  if (row.provider === 'glm') {
     const defaults = getProvider('glm')
-    row.baseUrl = defaults.baseUrl
-    row.model = defaults.defaultModel
-    needsWrite = true
+    if (row.model === 'glm-4-flash') {
+      row.model = defaults.defaultModel
+      needsWrite = true
+    }
+    if (
+      row.baseUrl === 'https://api.z.ai/api/paas/v4' ||
+      row.baseUrl === 'https://open.bigmodel.cn/api/paas/v4'
+    ) {
+      row.baseUrl = defaults.baseUrl
+      needsWrite = true
+    }
   }
 
   const settings = normalize(row)

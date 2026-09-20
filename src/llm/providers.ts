@@ -10,6 +10,8 @@ export interface ProviderInfo {
   note?: string
   /** Extra JSON body fields merged into every request (e.g. disabling GLM thinking mode). */
   extraBody?: Record<string, unknown>
+  /** Other endpoints the same platform offers; Settings probes them on test failure. */
+  altBaseUrls?: string[]
 }
 
 /**
@@ -32,6 +34,7 @@ export const PROVIDERS: readonly ProviderInfo[] = [
     keyUrl: 'https://z.ai',
     note: 'Default: GLM Coding Plan endpoint (works with Lite-plan keys). Pay-as-you-go keys instead use https://api.z.ai/api/paas/v4 or https://open.bigmodel.cn/api/paas/v4. Note: glm-4-flash is retired; glm-5.3-flash needs a paid balance on standard endpoints.',
     extraBody: { thinking: { type: 'disabled' } },
+    altBaseUrls: ['https://api.z.ai/api/paas/v4', 'https://open.bigmodel.cn/api/paas/v4'],
   },
   {
     id: 'openai',

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Badge, Button, Card, inputClass } from '../../components/ui'
 import type { VocabWord } from '../../db/types'
 import { gradeAnswer } from '../../engine/grader'
+import { useAppStore } from '../../state/store'
 import { tts } from '../../speech/tts'
 
 export interface StudySessionProps {
@@ -52,16 +53,22 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
   const [score, setScore] = useState({ introduced: 0, correct: 0, wrong: 0 })
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const speechSettings = useAppStore((s) => s.settings)
 
   const word = words[index]
   const options = useMemo(() => (word ? choiceOptions(word, bank) : []), [word, bank])
 
   function speakWord(): void {
-    if (word) tts.speak(word.german)
+    if (word)
+      tts.speak(word.german, { rate: speechSettings?.ttsRate, voiceURI: speechSettings?.ttsVoice })
   }
 
   function speakExample(): void {
-    if (word?.exampleSentenceDe) tts.speak(word.exampleSentenceDe)
+    if (word?.exampleSentenceDe)
+      tts.speak(word.exampleSentenceDe, {
+        rate: speechSettings?.ttsRate,
+        voiceURI: speechSettings?.ttsVoice,
+      })
   }
 
   function resetWordState(): void {
