@@ -76,7 +76,9 @@ human can take over development with zero tribal knowledge:
 
 - **M0** Foundation: scaffold, DB, Settings & Admin hub, LLM adapter + test connection, speech
   adapters, CI/CD, GitHub Pages. ✅
-- **M1** Vocabulary core: seed corpus, SRS engine, daily lesson planner, flashcards/drills.
+- **M1** Vocabulary core: 1,000+-word seed corpus (A1–B1, frequency-ordered), SRS engine, daily lesson
+  planner, flashcards/drills — plus anytime **practice** of learned words and **extra new-word
+  sessions** beyond the daily goal. ✅
 - **M2** Grammar core: topic tree, exercise runner + rule-based grader, placement quiz.
 - **M3** AI layer: conversation role-plays (incl. Fitnessstudio), feedback reports, LLM
   drill-item generation.

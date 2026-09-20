@@ -11,11 +11,13 @@ export interface VocabStats {
   dueNow: number
 }
 
-/** Idempotent seeding: checks seed ids in bulk and inserts only missing rows. */
+/**
+ * Idempotent seeding: upserts the full seed corpus. Ids are append-stable, so
+ * existing rows keep their identity while releases extend the bank and refresh
+ * frequencyRanks (ranks are derived from corpus position, see content/vocab).
+ */
 export async function ensureVocabSeeded(): Promise<void> {
-  const existing = await db.vocabWords.bulkGet(SEED_VOCAB.map((w) => w.id))
-  const missing = SEED_VOCAB.filter((_, i) => existing[i] === undefined)
-  if (missing.length > 0) await db.vocabWords.bulkPut([...missing])
+  await db.vocabWords.bulkPut([...SEED_VOCAB])
 }
 
 export async function getWord(id: string): Promise<VocabWord | undefined> {
@@ -32,6 +34,25 @@ export async function getWords(wordIds: readonly string[]): Promise<VocabWord[]>
 
 export async function getAllWords(): Promise<VocabWord[]> {
   return db.vocabWords.toArray()
+}
+
+/** Words that already have an SRS card (i.e. have been introduced), rank-ordered. */
+export async function introducedWords(): Promise<VocabWord[]> {
+  const cards = await db.vocabCards.toArray()
+  return (await getWords(cards.map((c) => c.wordId))).sort((a, b) => a.frequencyRank - b.frequencyRank)
+}
+
+/**
+ * The next unseen words in frequency order — powers "learn extra words today".
+ * Custom words (rank 999999) come last, after the seed corpus.
+ */
+export async function nextUnseenWords(count: number): Promise<VocabWord[]> {
+  const [cards, all] = await Promise.all([db.vocabCards.toArray(), db.vocabWords.toArray()])
+  const introduced = new Set(cards.map((c) => c.wordId))
+  return all
+    .filter((w) => !introduced.has(w.id))
+    .sort((a, b) => a.frequencyRank - b.frequencyRank)
+    .slice(0, Math.max(1, Math.round(count)))
 }
 
 export async function getCards(wordIds: readonly string[]): Promise<VocabCard[]> {

@@ -28,7 +28,7 @@ const a1 = build(A1_ROWS, 'A1', 1, 'w-a1')
 const a2 = build(A2_ROWS, 'A2', a1.length + 1, 'w-a2')
 const b1 = build(B1_ROWS, 'B1', a1.length + a2.length + 1, 'w-b1')
 
-/** Full seed corpus (~457 words, A1–B1), ordered by frequencyRank. */
+/** Full seed corpus (1,028 words, A1–B1), ordered by frequencyRank. */
 export const SEED_VOCAB: readonly VocabWord[] = [...a1, ...a2, ...b1]
 
 export const SEED_VOCAB_COUNTS: Readonly<Record<CefrLevel, number>> = {

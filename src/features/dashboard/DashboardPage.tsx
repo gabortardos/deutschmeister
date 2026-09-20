@@ -119,7 +119,7 @@ export default function DashboardPage() {
       <Card title="Roadmap" description="Where DeutschMeister is heading.">
         <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
           <li><span className="font-medium text-emerald-700">M0 — Foundation ✅</span> app shell, local database, full Settings &amp; Admin hub, AI adapter + test connection, speech adapters, CI/CD.</li>
-          <li><span className="font-medium text-emerald-700">M1 — Vocabulary ✅</span> 461-word corpus (A1→B1), SM-2 spaced repetition, daily lesson planner, flashcards &amp; drills.</li>
+          <li><span className="font-medium text-emerald-700">M1 — Vocabulary ✅</span> 1,000+-word corpus (A1→B1), SM-2 spaced repetition, daily lesson planner + extra/practice sessions, flashcards &amp; drills.</li>
           <li><span className="font-medium text-emerald-700">M2 — Grammar ✅</span> 35-topic A1→B1 tree, drill runner with rule-based grader, mastery tracking, adaptive placement quiz.</li>
           <li><span className="font-medium">M3 — AI layer</span> role-play conversations (11 scenarios incl. Fitnessstudio), feedback reports, LLM drill generation.</li>
           <li><span className="font-medium">M4 — Polish</span> speaking/listening drills, PWA/offline, final QA.</li>

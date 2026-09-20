@@ -9,7 +9,8 @@
 |---|---|---|---|
 | M0 Foundation | ✅ done | `8f91ba8` | app shell, Dexie+repos, Settings hub, speech+LLM adapters, CI/CD, live |
 | M0.1 Handoff hardening | ✅ done | (this commit) | apiKey→localStorage, `src/components/`, `#/settings?key=` import, live-verified GLM defaults, AGENT/ROADMAP/MASTER_PROMPT docs |
-| M1 Vocab core | ✅ done | (this commit) | 461-word corpus (A1 184 / A2 154 / B1 123), SM-2 + planner + grader + matcher engines, vocabRepo/lessonRepo, Vocab/Review/Today UI |
+| M1 Vocab core | ✅ done | (this commit) | 449-word corpus (A1 180 / A2 150 / B1 119), SM-2 + planner + grader + matcher engines, vocabRepo/lessonRepo, Vocab/Review/Today UI |
+| M1.1 Vocab expansion | ✅ done | (this commit) | corpus 449 → **1,028 words** (A1 381 / A2 345 / B1 302) from German frequency lists, append-stable ids + rank-refresh seeding, Vocab "Want more?" card: anytime practice of learned words + extra new-word sessions (5/10/15/20), v0.6.0 |
 | M2 Grammar core | ✅ done | (this commit) | 35 topics (A1 13 / A2 12 / B1 10), runner+mastery+placement engines, grammarRepo, PLACEMENT_BANK 30, Grammar/Topic/Placement UI, v0.4.0-m2 |
 | M2.1 Fixes | ✅ done | `aea0bda` | GLM key self-heal (stale-defaults migration, endpoint probe, error hints) + German TTS voice race fix, v0.4.1 |
 | M3 LLM layer | ✅ done | (this commit) | 5 zod service contracts + LlmCache, 11 scenarios, conversation UI (STT/TTS/hints/feedback→drills), AI drill gen + "Explain for me" + AI examples, v0.5.0-m3 |
@@ -17,7 +18,7 @@
 
 ## M1 checklist (vocab core)
 
-- [x] `src/content/vocab/` seed corpus ≥400 words A1–B1 (themes, frequencyRank, examples) — 461 words, integrity-tested
+- [x] `src/content/vocab/` seed corpus ≥400 words A1–B1 (themes, frequencyRank, examples) — 449 words at M1; extended to 1,028 in M1.1, integrity-tested (uniqueness + noun-in-example)
 - [x] `src/engine/srs.ts` SM-2 (quality 0–5, ease ≥1.3, fail→relearn) + unit tests
 - [x] `src/engine/text.ts` + `src/engine/grader.ts` (normalization + umlaut variants ae/oe/ue/ss both directions, article-optional) + unit tests
 - [x] `src/engine/matcher.ts` (Levenshtein ≥0.85 ok / 0.7–0.85 almost / else wrong) + unit tests
@@ -85,3 +86,4 @@
 | 2026-09-20 | M2: tsc+vitest(80)+build | ✅ green (443 KB / 142 KB gzip) |
 | 2026-09-20 | M2.1 fixes: tsc+vitest(85)+build | ✅ green — GLM key self-heal (stale-defaults migration even with key set, endpoint probe, error hints) + German TTS voice race fix |
 | 2026-09-20 | M3: tsc+vitest(100)+build(540 KB/169 KB gzip)+dev-smoke 200 | ✅ green — LLM services, 11 scenarios, conversation UI, AI drill gen / explain / examples |
+| 2026-09-20 | M1.1: tsc+vitest(101)+build+dev-smoke | ✅ green — vocab corpus 449→1,028 (A1 381/A2 345/B1 302, unique headwords), rank-refresh seeding, anytime practice + extra new-word sessions |

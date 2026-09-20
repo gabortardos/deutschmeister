@@ -5,8 +5,18 @@ import { A2_ROWS } from '../a2'
 import { B1_ROWS } from '../b1'
 
 describe('seed vocab corpus', () => {
-  it('contains at least 400 words', () => {
-    expect(SEED_VOCAB.length).toBeGreaterThanOrEqual(400)
+  it('contains at least 1000 words', () => {
+    expect(SEED_VOCAB.length).toBeGreaterThanOrEqual(1000)
+  })
+
+  it('has unique German headwords (case-sensitive)', () => {
+    // Case matters in German: "der Morgen" (morning) vs "morgen" (tomorrow) are distinct words.
+    const seen = new Set<string>()
+    for (const w of SEED_VOCAB) {
+      const key = w.german.trim()
+      expect(seen.has(key), `duplicate headword: ${w.german}`).toBe(false)
+      seen.add(key)
+    }
   })
 
   it('has unique ids and unique frequency ranks in corpus order', () => {
