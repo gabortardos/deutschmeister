@@ -30,20 +30,23 @@ All AI configuration happens inside the app — no code editing needed:
 
 | Provider | Default base URL | Default model | Where to get a key |
 |---|---|---|---|
-| Zhipu GLM (Coding Plan) | `https://api.z.ai/api/coding/paas/v4` | `glm-4.6` | https://z.ai (Coding Plan keys) |
+| Zhipu GLM (bigmodel.cn) | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.5-flash` | https://open.bigmodel.cn/usercenter/apikeys |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | https://platform.openai.com/api-keys |
 | DeepSeek | `https://api.deepseek.com` | `deepseek-chat` | https://platform.deepseek.com/api_keys |
 
 Notes:
-- GLM defaults above were **live-verified** (2026-09-20) with a GLM Coding Plan (Lite) key:
-  the coding endpoint serves `glm-4.6` as the current flash model, and the app automatically
-  disables GLM "thinking mode" for fast replies (~1.3 s). `glm-4-flash` is retired; `glm-5.3-flash`
-  on the standard endpoints requires a paid balance.
-- **Pay-as-you-go GLM keys** instead use `https://api.z.ai/api/paas/v4` (international Z.AI)
-  or `https://open.bigmodel.cn/api/paas/v4` (Chinese BigModel platform).
-- The model lineup changes over time. If *Test connection* fails, copy the exact model ID
-  shown in your provider console and paste it into the Model field — the app never needs a
-  code change for that.
+- **CORS reality (verified 2026-09-20 via OPTIONS preflight):** `api.z.ai` (both the Coding Plan
+  and pay-as-you-go endpoints) sends **no CORS headers**, so z.ai keys — including GLM Coding
+  Plan (Lite) keys — **cannot be used from this browser app at all** (the browser blocks every
+  request: "Failed to fetch"). The coding endpoint does work server-side (`glm-4.6` via curl,
+  ~1.3 s replies, thinking mode auto-disabled by the app).
+- GLM in the browser works only via `https://open.bigmodel.cn/api/paas/v4` (Zhipu's BigModel
+  platform, full CORS support) with a **bigmodel.cn API key** — z.ai keys are platform-specific
+  and rejected there. `glm-4.5-flash` is free-tier; `glm-4-flash` is retired; `glm-5.3-flash`
+  needs a paid balance. No bigmodel.cn key? Use OpenAI or DeepSeek — both are browser-compatible.
+- The model lineup changes over time. Pick a model from the dropdown (or *Custom…* to paste any
+  ID) — the app never needs a code change for that. OpenAI reasoning models (gpt-5+, o-series)
+  are auto-handled: the adapter sends `max_completion_tokens` and omits `temperature` for them.
 - Tip: you can load a key without typing it — open
   `https://gabortardos.github.io/deutschmeister/#/settings?key=YOUR_KEY`. The URL fragment
   never reaches a server; the app stores the key in localStorage and cleans the URL instantly.

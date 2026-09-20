@@ -13,6 +13,7 @@ export default function AiModelSection() {
   const [testing, setTesting] = useState(false)
   const [result, setResult] = useState<TestResult | null>(null)
   const [probe, setProbe] = useState<{ baseUrl: string } | null>(null)
+  const [customModel, setCustomModel] = useState(false)
 
   if (!settings) return null
   const provider = getProvider(settings.provider)
@@ -20,6 +21,7 @@ export default function AiModelSection() {
   const changeProvider = async (id: ProviderId): Promise<void> => {
     const p = getProvider(id)
     setResult(null)
+    setCustomModel(false)
     await patchSettings({ provider: id, baseUrl: p.baseUrl, model: p.defaultModel })
   }
 
@@ -87,19 +89,54 @@ export default function AiModelSection() {
           </select>
         </Field>
 
-        <Field label="Model ID" hint="Free-text on purpose: paste any model your account offers.">
-          <input
-            className={inputClass}
-            value={settings.model}
-            list="dm-model-suggestions"
-            placeholder={provider.defaultModel}
-            onChange={(e) => void patchSettings({ model: e.target.value })}
-          />
-          <datalist id="dm-model-suggestions">
-            {provider.modelSuggestions.map((m) => (
-              <option key={m} value={m} />
-            ))}
-          </datalist>
+        <Field
+          label="Model ID"
+          hint="Pick a model, or choose Custom… to paste any ID your account offers."
+        >
+          {customModel || (settings.model !== '' && !provider.modelSuggestions.includes(settings.model)) ? (
+            <div className="flex gap-2">
+              <input
+                className={inputClass}
+                value={settings.model}
+                placeholder={provider.defaultModel}
+                name="dm-model-id"
+                autoComplete="off"
+                spellCheck={false}
+                onChange={(e) => void patchSettings({ model: e.target.value })}
+              />
+              <Button
+                type="button"
+                onClick={() => {
+                  setCustomModel(false)
+                  void patchSettings({ model: provider.defaultModel })
+                }}
+              >
+                Back to list
+              </Button>
+            </div>
+          ) : (
+            <select
+              className={inputClass}
+              value={provider.modelSuggestions.includes(settings.model) ? settings.model : provider.defaultModel}
+              onChange={(e) => {
+                if (e.target.value === '__custom__') {
+                  setCustomModel(true)
+                  void patchSettings({ model: '' })
+                } else {
+                  setCustomModel(false)
+                  void patchSettings({ model: e.target.value })
+                }
+              }}
+            >
+              {provider.modelSuggestions.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                  {m === provider.defaultModel ? ' (default)' : ''}
+                </option>
+              ))}
+              <option value="__custom__">Custom…</option>
+            </select>
+          )}
         </Field>
 
         <Field
@@ -110,6 +147,8 @@ export default function AiModelSection() {
             className={inputClass}
             value={settings.baseUrl}
             placeholder={provider.baseUrl}
+            autoComplete="off"
+            spellCheck={false}
             onChange={(e) => void patchSettings({ baseUrl: e.target.value })}
           />
         </Field>

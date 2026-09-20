@@ -74,6 +74,39 @@ interface ChatOptions {
   temperature?: number
 }
 
+/**
+ * OpenAI reasoning models (gpt-5 and later, o1/o3/o4 series) only support the default
+ * temperature and bill thinking against the completion budget, so they must not receive
+ * `temperature` and need `max_completion_tokens` instead of `max_tokens`.
+ */
+export function isOpenAiReasoningModel(model: string): boolean {
+  return /^(gpt-[5-9]|o[134])/i.test(model.trim())
+}
+
+/**
+ * Pure request-body builder (unit-tested): maps ChatOptions to provider-correct fields.
+ * Classic chat models get `max_tokens` + `temperature`; reasoning models get
+ * `max_completion_tokens` with headroom for thinking and no `temperature`.
+ */
+export function buildRequestBody(
+  config: LlmConfig,
+  messages: ChatMessage[],
+  opts?: ChatOptions,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model: config.model,
+    messages,
+    ...(config.extraBody ?? {}),
+  }
+  if (isOpenAiReasoningModel(config.model)) {
+    body.max_completion_tokens = Math.max(opts?.maxTokens ?? 1024, 2048)
+  } else {
+    body.max_tokens = opts?.maxTokens ?? 1024
+    body.temperature = opts?.temperature ?? 0.7
+  }
+  return body
+}
+
 async function rawChat(config: LlmConfig, messages: ChatMessage[], opts?: ChatOptions): Promise<string> {
   const url = `${config.baseUrl.replace(/\/+$/, '')}/chat/completions`
   const res = await fetch(url, {
@@ -82,13 +115,7 @@ async function rawChat(config: LlmConfig, messages: ChatMessage[], opts?: ChatOp
       'Content-Type': 'application/json',
       Authorization: `Bearer ${config.apiKey}`,
     },
-    body: JSON.stringify({
-      model: config.model,
-      messages,
-      max_tokens: opts?.maxTokens ?? 1024,
-      temperature: opts?.temperature ?? 0.7,
-      ...(config.extraBody ?? {}),
-    }),
+    body: JSON.stringify(buildRequestBody(config, messages, opts)),
   })
   if (!res.ok) {
     const body = await res.text().catch(() => '')
@@ -216,7 +243,7 @@ export function hintForLlmError(error: string): string | undefined {
     return 'This model ID is not available on the endpoint (e.g. "glm-4-flash" is retired). Use a current model such as "glm-4.6".'
   }
   if (/failed to fetch|networkerror|load failed|cors/i.test(error)) {
-    return 'The browser could not reach the endpoint (offline, DNS, or CORS). Check the URL spelling and your connection.'
+    return 'The browser could not reach the endpoint. If this is api.z.ai (GLM Coding Plan or pay-as-you-go), it blocks browser apps entirely — no CORS headers (verified 2026-09-20) — so z.ai keys cannot be used from this app. GLM works here only via https://open.bigmodel.cn/api/paas/v4 with a bigmodel.cn API key; OpenAI and DeepSeek are browser-compatible too.'
   }
   return undefined
 }

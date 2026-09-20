@@ -48,11 +48,13 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
 
 - macOS, zsh. The workspace path contains spaces — ALWAYS quote it in shell commands.
 - `gh` CLI is not on PATH: use the full path `/opt/homebrew/bin/gh` (authed as `gabortardos`).
-- Provider facts, live-verified 2026-09-20 with a GLM Coding Plan (Lite) key:
-  GLM works at `https://api.z.ai/api/coding/paas/v4` with model `glm-4.6` (served as
-  glm-5.3-flash; the adapter sends `thinking:{type:'disabled'}` for GLM → ~1.3 s replies).
-  `glm-4-flash` is retired (1211); `glm-5.3-flash` on standard endpoints needs balance (1113).
-  Standard endpoints (also supported): `https://api.z.ai/api/paas/v4`, `https://open.bigmodel.cn/api/paas/v4`.
+- Provider facts, live-verified 2026-09-20 (curl OPTIONS preflights from github.io + localhost origins):
+  api.z.ai (coding AND paas endpoints) answers preflight 200 but sends NO access-control-allow-origin
+  → z.ai keys (incl. GLM Coding Plan Lite) CANNOT be used from the browser app ("Failed to fetch").
+  Server-side the coding endpoint works with `glm-4.6` (~1.3 s, thinking disabled by the adapter).
+  Browser-usable GLM: `https://open.bigmodel.cn/api/paas/v4` (full CORS) with a bigmodel.cn key
+  (default model `glm-4.5-flash`, free tier). `glm-4-flash` retired (1211); `glm-5.3-flash` needs
+  balance (1113). api.openai.com and api.deepseek.com are browser-compatible.
   The user's key is NOT stored in this repo — the user pastes it into Settings in the browser
   (or opens `#/settings?key=…`, which stores + strips it). Never echo real keys into files/logs/commits.
 

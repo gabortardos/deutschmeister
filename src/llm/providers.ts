@@ -15,33 +15,39 @@ export interface ProviderInfo {
 }
 
 /**
- * GLM defaults were LIVE-VERIFIED (2026-09-20) with a real GLM Coding Plan (Lite) key:
- *   POST https://api.z.ai/api/coding/paas/v4/chat/completions
- *   model "glm-4.6" (the endpoint serves it as the current glm-5.3-flash) → 200 OK in ~1.3 s.
- * Findings from the same live test: "glm-4-flash" is retired (code 1211 Unknown Model);
- * "glm-5.3-flash" on the standard endpoints requires account balance (code 1113).
- * The standard pay-as-you-go endpoints are https://api.z.ai/api/paas/v4 (international)
- * and https://open.bigmodel.cn/api/paas/v4 (China) — both remain supported by editing
- * the base URL in Settings.
+ * Browser-CORS reality, verified 2026-09-20 with curl OPTIONS preflights from BOTH
+ * https://gabortardos.github.io and http://localhost:5173 origins:
+ *   - api.z.ai (coding AND pay-as-you-go endpoints) answers the preflight with 200 but
+ *     sends NO access-control-allow-origin → every browser fetch fails ("Failed to fetch").
+ *     z.ai keys — including GLM Coding Plan (Lite) keys — therefore CANNOT be used from
+ *     this browser app at all. (The coding endpoint does work server-side: curl POST with
+ *     model "glm-4.6" → 200 in ~1.3 s, served as the current flash model.)
+ *   - open.bigmodel.cn (Zhipu's mainland platform) sends full CORS headers → the ONLY
+ *     GLM endpoint usable from the browser. It needs a bigmodel.cn API key: z.ai keys
+ *     are platform-specific and are rejected here (401).
+ *   - api.openai.com and api.deepseek.com also send full CORS headers.
+ * Model notes: "glm-4-flash" is retired (1211); "glm-5.3-flash" needs a paid balance
+ * (1113); "glm-4.5-flash" is free-tier. The adapter sends thinking:{type:'disabled'}
+ * for GLM (fast, cheap replies).
  */
 export const PROVIDERS: readonly ProviderInfo[] = [
   {
     id: 'glm',
-    label: 'Zhipu GLM (Coding Plan)',
-    baseUrl: 'https://api.z.ai/api/coding/paas/v4',
-    defaultModel: 'glm-4.6',
-    modelSuggestions: ['glm-4.6', 'glm-5.3', 'glm-4.5-flash'],
-    keyUrl: 'https://z.ai',
-    note: 'Default: GLM Coding Plan endpoint (works with Lite-plan keys). Pay-as-you-go keys instead use https://api.z.ai/api/paas/v4 or https://open.bigmodel.cn/api/paas/v4. Note: glm-4-flash is retired; glm-5.3-flash needs a paid balance on standard endpoints.',
+    label: 'Zhipu GLM (bigmodel.cn)',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    defaultModel: 'glm-4.5-flash',
+    modelSuggestions: ['glm-4.5-flash', 'glm-4.6', 'glm-4.7', 'glm-5.3', 'glm-5.3-flash'],
+    keyUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
+    note: 'Only browser-usable GLM endpoint (bigmodel.cn sends CORS headers; api.z.ai blocks browser apps entirely — GLM Coding Plan keys cannot be used here). Needs a bigmodel.cn API key. glm-4.5-flash is free-tier; glm-5.3-flash needs balance.',
     extraBody: { thinking: { type: 'disabled' } },
-    altBaseUrls: ['https://api.z.ai/api/paas/v4', 'https://open.bigmodel.cn/api/paas/v4'],
+    altBaseUrls: ['https://api.z.ai/api/paas/v4', 'https://api.z.ai/api/coding/paas/v4'],
   },
   {
     id: 'openai',
     label: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
     defaultModel: 'gpt-4o-mini',
-    modelSuggestions: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'],
+    modelSuggestions: ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4o'],
     keyUrl: 'https://platform.openai.com/api-keys',
   },
   {
