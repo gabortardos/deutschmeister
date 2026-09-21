@@ -54,6 +54,7 @@ describe('conjugateVerb — corpus coverage', () => {
       'machen', 'kaufen', 'räumen', 'füllen', 'holen', 'wachen', 'hören', 'tauschen',
       'ruhen', 'passen', 'lehnen', 'drücken', 'bereiten', 'stellen', 'hängen',
       'trocknen', 'saugen', 'arbeiten', 'fassen', 'setzen', 'stimmen',
+      'reichen', 'beugen', 'bauen', 'handeln',
     ])
     for (const [verb, { base }] of Object.entries(SEPARABLE_VERBS)) {
       expect(corpusVerbs.includes(verb), verb).toBe(true)

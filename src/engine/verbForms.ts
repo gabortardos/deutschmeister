@@ -31,7 +31,12 @@ export function isVerbWord(word: {
   german: string
   english: string
 }): boolean {
-  return word.article === null && (MODAL_EXTRA.has(word.german) || /^to\b/i.test(word.english))
+  if (word.article !== null) return false
+  // Only single-token infinitives ("sich …" reflexives stripped) conjugate;
+  // multi-word headwords (B2 phrase pack) are never treated as verbs.
+  const head = word.german.trim().replace(/^sich\s+/, '')
+  if (/\s/.test(head)) return false
+  return MODAL_EXTRA.has(word.german) || /^to\b/i.test(word.english)
 }
 
 interface IrregularEntry {
@@ -135,6 +140,33 @@ export const IRREGULAR_VERBS: Readonly<Record<string, IrregularEntry>> = {
     praeteritum: 'hing ab',
     partizip: 'abgehangen',
   },
+  // B2 strong verbs (and bases of B2 separable verbs)
+  beißen: { du: 'beißt', er: 'beißt', praeteritum: 'biss', partizip: 'gebissen' },
+  bestreiten: { du: 'bestreitest', er: 'bestreitet', praeteritum: 'bestritt', partizip: 'bestritten' },
+  betreiben: { du: 'betreibst', er: 'betreibt', praeteritum: 'betrieb', partizip: 'betrieben' },
+  beziehen: { du: 'beziehst', er: 'bezieht', praeteritum: 'bezog', partizip: 'bezogen' },
+  entstehen: { du: 'entstehst', er: 'entsteht', praeteritum: 'entstand', partizip: 'entstanden', ist: true },
+  entziehen: { du: 'entziehst', er: 'entzieht', praeteritum: 'entzog', partizip: 'entzogen' },
+  ertragen: { du: 'erträgst', er: 'erträgt', praeteritum: 'ertrug', partizip: 'ertragen' },
+  genießen: { du: 'genießt', er: 'genießt', praeteritum: 'genoss', partizip: 'genossen' },
+  geraten: { du: 'gerätst', er: 'gerät', praeteritum: 'geriet', partizip: 'geraten', ist: true },
+  misslingen: { du: 'misslingst', er: 'misslingt', praeteritum: 'misslang', partizip: 'misslungen', ist: true },
+  übernehmen: { du: 'übernimmst', er: 'übernimmt', praeteritum: 'übernahm', partizip: 'übernommen' },
+  übertragen: { du: 'überträgst', er: 'überträgt', praeteritum: 'übertrug', partizip: 'übertragen' },
+  unternehmen: { du: 'unternimmst', er: 'unternimmt', praeteritum: 'unternahm', partizip: 'unternommen' },
+  unterschreiben: { du: 'unterschreibst', er: 'unterschreibt', praeteritum: 'unterschrieb', partizip: 'unterschrieben' },
+  verschieben: { du: 'verschiebst', er: 'verschiebt', praeteritum: 'verschob', partizip: 'verschoben' },
+  versehen: { du: 'versiehst', er: 'versieht', praeteritum: 'versah', partizip: 'versehen' },
+  vertreten: { du: 'vertrittst', er: 'vertritt', praeteritum: 'vertrat', partizip: 'vertreten' },
+  verhalten: { du: 'verhältst', er: 'verhält', praeteritum: 'verhielt', partizip: 'verhalten' },
+  verschwinden: { du: 'verschwindest', er: 'verschwindet', praeteritum: 'verschwand', partizip: 'verschwunden', ist: true },
+  schweigen: { du: 'schweigst', er: 'schweigt', praeteritum: 'schwieg', partizip: 'geschwiegen' },
+  // bases that only occur inside separable B2 verbs
+  treten: { du: 'trittst', er: 'tritt', praeteritum: 'trat', partizip: 'getreten', ist: true },
+  weisen: { du: 'weist', er: 'weist', praeteritum: 'wies', partizip: 'gewiesen' },
+  lassen: { du: 'lässt', er: 'lässt', praeteritum: 'ließ', partizip: 'gelassen' },
+  brechen: { du: 'brichst', er: 'bricht', praeteritum: 'brach', partizip: 'gebrochen', ist: true },
+  schmeißen: { du: 'schmeißt', er: 'schmeißt', praeteritum: 'schmiss', partizip: 'geschmissen' },
 }
 
 /** Corpus separable verbs (explicit map — no prefix guessing, no false positives). */
@@ -199,6 +231,32 @@ export const SEPARABLE_VERBS: Readonly<
   fortsetzen: { prefix: 'fort', base: 'setzen' },
   übereinstimmen: { prefix: 'überein', base: 'stimmen' },
   umsetzen: { prefix: 'um', base: 'setzen' },
+  // B2 separables
+  aufgeben: { prefix: 'auf', base: 'geben' },
+  aufkommen: { prefix: 'auf', base: 'kommen' },
+  aufnehmen: { prefix: 'auf', base: 'nehmen' },
+  auftreten: { prefix: 'auf', base: 'treten' },
+  ausbauen: { prefix: 'aus', base: 'bauen' },
+  aushandeln: { prefix: 'aus', base: 'handeln' },
+  ausschließen: { prefix: 'aus', base: 'schließen' },
+  einreichen: { prefix: 'ein', base: 'reichen' },
+  einsetzen: { prefix: 'ein', base: 'setzen' },
+  entgegenwirken: { prefix: 'entgegen', base: 'wirken' },
+  freistellen: { prefix: 'frei', base: 'stellen' },
+  hervorheben: { prefix: 'hervor', base: 'heben' },
+  hinschmeißen: { prefix: 'hin', base: 'schmeißen' },
+  hinweisen: { prefix: 'hin', base: 'weisen' },
+  nachlassen: { prefix: 'nach', base: 'lassen' },
+  vorbeugen: { prefix: 'vor', base: 'beugen' },
+  vorziehen: { prefix: 'vor', base: 'ziehen' },
+  wahrnehmen: { prefix: 'wahr', base: 'nehmen' },
+  weitergeben: { prefix: 'weiter', base: 'geben' },
+  zurückgehen: { prefix: 'zurück', base: 'gehen' },
+  zusammenbrechen: { prefix: 'zusammen', base: 'brechen' },
+  zusammenleben: { prefix: 'zusammen', base: 'leben' },
+  zusammentragen: { prefix: 'zusammen', base: 'tragen' },
+  zurechtweisen: { prefix: 'zurecht', base: 'weisen' },
+  zutreffen: { prefix: 'zu', base: 'treffen' },
 }
 
 /** Verbs that form the Perfekt with sein (movement / change of state). */
@@ -228,6 +286,17 @@ export const SEIN_VERBS: ReadonlySet<string> = new Set([
   'einschlafen',
   'kaputtgehen',
   'auffallen',
+  'auftreten',
+  'aufkommen',
+  'entstehen',
+  'geraten',
+  'misslingen',
+  'scheitern',
+  'verschwinden',
+  'verhungern',
+  'zurückgehen',
+  'zusammenbrechen',
+  'erscheinen',
 ])
 
 /** Inseparable prefixes (no ge- in the Partizip II). */

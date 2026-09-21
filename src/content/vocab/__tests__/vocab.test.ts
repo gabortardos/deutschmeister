@@ -3,6 +3,7 @@ import { SEED_VOCAB, SEED_VOCAB_COUNTS } from '../index'
 import { A1_ROWS } from '../a1'
 import { A2_ROWS } from '../a2'
 import { B1_ROWS } from '../b1'
+import { B2_ROWS } from '../b2'
 
 describe('seed vocab corpus', () => {
   it('contains at least 1000 words', () => {
@@ -30,9 +31,13 @@ describe('seed vocab corpus', () => {
     expect(SEED_VOCAB_COUNTS.A1).toBe(A1_ROWS.length)
     expect(SEED_VOCAB_COUNTS.A2).toBe(A2_ROWS.length)
     expect(SEED_VOCAB_COUNTS.B1).toBe(B1_ROWS.length)
-    expect(SEED_VOCAB.length).toBe(A1_ROWS.length + A2_ROWS.length + B1_ROWS.length)
+    expect(SEED_VOCAB_COUNTS.B2).toBe(B2_ROWS.length)
+    expect(SEED_VOCAB.length).toBe(
+      A1_ROWS.length + A2_ROWS.length + B1_ROWS.length + B2_ROWS.length,
+    )
     expect(SEED_VOCAB.filter((w) => w.cefr === 'A1').length).toBe(A1_ROWS.length)
     expect(SEED_VOCAB.filter((w) => w.cefr === 'B1').length).toBe(B1_ROWS.length)
+    expect(SEED_VOCAB.filter((w) => w.cefr === 'B2').length).toBe(B2_ROWS.length)
   })
 
   it('every word is fully populated (german, english, theme, both example sentences)', () => {
