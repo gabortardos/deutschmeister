@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
 import { importKeyFromUrl } from './llm/keyStore'
+import { registerServiceWorker } from './pwa'
 import { useAppStore } from './state/store'
 
 async function bootstrap(): Promise<void> {
@@ -23,6 +24,7 @@ async function bootstrap(): Promise<void> {
       </HashRouter>
     </React.StrictMode>,
   )
+  registerServiceWorker()
 }
 
 void bootstrap()

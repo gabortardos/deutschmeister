@@ -57,6 +57,19 @@ Notes:
 - **Safari:** text-to-speech works; microphone input is limited.
 - **Firefox:** no microphone support — the app automatically falls back to typing.
 
+## Install as an app (PWA)
+
+DeutschMeister is an installable PWA, scoped to `/deutschmeister/`:
+
+- **Chrome / Edge:** menu → *Install DeutschMeister…* (or the install icon in the address bar).
+- **Safari (iOS 16.4+):** Share → *Add to Home Screen*.
+- **Offline:** after the first visit, the app shell and assets are cached by a small
+  dependency-free service worker (`public/sw.js`). Vocab SRS, grammar drills, the word bank,
+  Speak & Listen and your reviews keep working offline; AI conversation features need a
+  connection (your LLM API traffic is never intercepted by the service worker).
+- **Updates:** the app shell is fetched network-first, so new deploys are picked up on the next
+  online visit — the cache only kicks in when you are offline.
+
 ## Your data
 
 - Stored locally in IndexedDB (per browser profile). Nothing is sent anywhere except your own
@@ -85,9 +98,10 @@ human can take over development with zero tribal knowledge:
   conjugation for all six persons, Präteritum and Perfekt), and the **Word bank** page
   (browse/search/filter learned words, expand any word for forms + SRS status, practice the
   current selection). ✅
-- **M2** Grammar core: topic tree, exercise runner + rule-based grader, placement quiz.
+- **M2** Grammar core: topic tree, exercise runner + rule-based grader, placement quiz. ✅
 - **M3** AI layer: conversation role-plays (incl. Fitnessstudio), feedback reports, LLM
-  drill-item generation.
-- **M4** Polish: speaking/listening drills, PWA/offline, final QA.
+  drill-item generation. ✅
+- **M4** Polish: speaking/listening drills, PWA install + offline shell, data export/import
+  (Settings → Data), README/browser notes, final QA. ✅
 
 A future iOS app will wrap this same UI via Capacitor with native speech and iCloud sync.

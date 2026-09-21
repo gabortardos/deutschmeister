@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ⬜ (PWA, export, final QA)
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -18,7 +18,7 @@
 | M2.3 Chat reliability | ✅ done | (this commit) | conversation-turn failures fixed (truncation at maxTokens 600→1400 mid-JSON = "not parseable JSON"/"Required"; blind retries → corrective retries showing the bad reply; finish_reason=length detected), gpt-5 latency fix (reasoning_effort low), prompt hardening (latest-message mistakes only, ≤80-word replies, JSON shape), hint 200→300, session feedback 700→1200, 2 new adapter tests, v0.8.1 |
 | M3 LLM layer | ✅ done | (this commit) | 5 zod service contracts + LlmCache, 11 scenarios, conversation UI (STT/TTS/hints/feedback→drills), AI drill gen + "Explain for me" + AI examples, v0.5.0-m3 |
 | M4.1 Speak & Listen drills | ✅ done | (this commit) | `/practice` page: listening (TTS word → type it, replay + 🐢 slower) and speaking (English cue → mic → matcher verdict/similarity, best-attempt-wins retries, typed fallback when mic fails), interleaved 10-word sessions from the learned bank feeding SM-2, engine `speakListen.ts` + 9 tests, nav + vocab cross-link, v0.9.0 |
-| M4 Polish | ⬜ | — | PWA (manifest+SW under subpath), data export/import, README/browser notes, final QA |
+| M4 Polish | ✅ done | (this commit) | PWA: manifest + dependency-free SW scoped to `/deutschmeister/` (network-first shell, cache-first hashed assets, SWR statics, cross-origin LLM traffic never intercepted), icons 192/512/maskable via `scripts/gen-icons.mjs`, prod-only registration `src/pwa.ts`; export/import verified (`backupRepo` + Settings→Data, shipped M0); README final (PWA install/offline); 7 PWA integrity tests, v1.0.0 |
 
 ## M1 checklist (vocab core)
 
@@ -77,9 +77,18 @@
 ## M4 checklist (polish)
 
 - [x] Speaking drills (see English → say German, matcher diff feedback), listening drills (TTS) — M4.1: `/practice`, engine `speakListen.ts`, SM-2 integrated
-- [ ] PWA: manifest + service worker scoped to `/deutschmeister/`
-- [ ] Data export/import (JSON backup of all local data)
-- [ ] README final (setup, env, browsers); clean build
+- [x] PWA: manifest + service worker scoped to `/deutschmeister/` — `public/manifest.webmanifest`
+      (standalone, indigo theme, 192/512/maskable icons) + hand-rolled `public/sw.js`
+      (plain JS, no deps; network-first navigations with offline fallback, cache-first for
+      content-hashed `/assets/`, stale-while-revalidate for manifest/icons; skips non-GET and
+      cross-origin requests so LLM API calls are never touched), registration prod-only in
+      `src/pwa.ts` (dev server stays uncached); `node --check` + 7 integrity tests
+      (`src/__tests__/pwa.test.ts`: manifest fields/scope, PNG icon dimensions from IHDR,
+      index.html wiring, SW shape)
+- [x] Data export/import (JSON backup of all local data) — `backupRepo.exportAll/importAll`
+      (transactional replace, 12 tables) + Settings→Data UI (export download, import with
+      confirm, progress reset, factory reset) — shipped with M0, verified + README-documented in M4
+- [x] README final (setup, env, browsers, PWA install/offline, data/privacy); clean build
 
 ## Verification log (append after every gate run)
 
@@ -96,3 +105,4 @@
 | 2026-09-20 | M2.2: tsc+vitest(124)+build+dev-smoke 200 | ✅ green — CORS root cause found via curl preflights (api.z.ai unusable from browsers; bigmodel.cn OK), GLM default endpoint healed, gpt-5/o-series adapter params, model dropdown (no more password-manager popup), 5 new adapter tests |
 | 2026-09-20 | M2.3: tsc+vitest(126)+build+dev-smoke 200 | ✅ green — role-play JSON failures root-caused (600-token cap truncated growing replies; identical-message retries), corrective retry loop + truncation detection + bigger caps, gpt-5 reasoning_effort low |
 | 2026-09-20 | M4.1: tsc+vitest(135)+build+dev-smoke 200 | ✅ green — Speak & Listen trainer at `/practice`: TTS listening drills + mic speaking drills with matcher feedback, SM-2 integrated, 9 new engine tests |
+| 2026-09-21 | M4: tsc+vitest(142)+build(634.1 KB/196.8 KB gzip)+dev-smoke 200+node --check sw.js+dist PWA assets | ✅ green — PWA (manifest + subpath-scoped SW, 192/512/maskable icons), export/import verified, README final, v1.0.0 |
