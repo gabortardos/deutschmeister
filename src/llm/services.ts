@@ -121,9 +121,10 @@ function conversationMessages(input: ConversationTurnInput): ChatMessage[] {
     '- ALWAYS stay in character and keep the scene moving; end your reply with a natural question.',
     `- Write your reply in German suited to CEFR ${input.level} (short, simple sentences for A1/A2).`,
     '- NEVER interrupt the role-play with corrections or meta-comments — mistakes are reported only in JSON.',
-    `- In "mistakes", quote the learner's German exactly as said and give the minimal correction; empty array if the message was fine.`,
-    '- "reply" = your full in-character German answer; "tutorQuestion" = the German question you ended with; "replyTranslationEn" = natural English translation of "reply".',
-    'Return ONLY valid JSON.',
+    `- In "mistakes", quote the learner's German exactly as said and give the minimal correction; empty array if the message was fine. Cover ONLY the learner's latest message — never repeat earlier mistakes.`,
+    '- "reply" = your full in-character German answer (keep it under ~80 words); "tutorQuestion" = the German question you ended with; "replyTranslationEn" = natural English translation of "reply".',
+    'JSON shape: { "reply": "...", "mistakes": [ { "said": "...", "corrected": "...", "type": "..." } ], "replyTranslationEn": "...", "tutorQuestion": "..." }',
+    'Return ONLY raw JSON — every key above, no prose, no markdown fences.',
   ].join('\n')
   const history = input.history
     .filter((t) => t.text.trim().length > 0)
@@ -141,7 +142,7 @@ export async function conversationTurn(
   input: ConversationTurnInput,
 ): Promise<ConversationTurnResult> {
   const parsed = await chatJSON(deps.config, conversationMessages(input), ConversationReplySchema, {
-    maxTokens: 600,
+    maxTokens: 1400,
     temperature: 0.7,
   })
   return {
@@ -181,7 +182,7 @@ export async function suggestReply(
     .slice(-12)
     .map<ChatMessage>((t) => ({ role: t.role === 'user' ? 'user' : 'assistant', content: t.text }))
   const parsed = await chatJSON(deps.config, [{ role: 'system', content: system }, ...history], SuggestReplySchema, {
-    maxTokens: 200,
+    maxTokens: 300,
     temperature: 0.5,
   })
   return { suggestion: parsed.suggestion.trim(), translationEn: parsed.translationEn }
@@ -259,7 +260,7 @@ export async function sessionFeedback(
     },
     { role: 'user', content: transcript || '(empty session)' },
   ]
-  const parsed = await chatJSON(deps.config, messages, SessionFeedbackSchema, { maxTokens: 700, temperature: 0.3 })
+  const parsed = await chatJSON(deps.config, messages, SessionFeedbackSchema, { maxTokens: 1200, temperature: 0.3 })
   return {
     overallScore: Math.round(parsed.overallScore),
     summary: parsed.summary,

@@ -100,6 +100,9 @@ export function buildRequestBody(
   }
   if (isOpenAiReasoningModel(config.model)) {
     body.max_completion_tokens = Math.max(opts?.maxTokens ?? 1024, 2048)
+    // gpt-5+ models accept an effort knob: 'low' keeps role-play/drill latency close
+    // to classic chat models (they stop burning hidden reasoning tokens).
+    if (/^gpt-[5-9]/i.test(config.model.trim())) body.reasoning_effort = 'low'
   } else {
     body.max_tokens = opts?.maxTokens ?? 1024
     body.temperature = opts?.temperature ?? 0.7
@@ -121,9 +124,17 @@ async function rawChat(config: LlmConfig, messages: ChatMessage[], opts?: ChatOp
     const body = await res.text().catch(() => '')
     throw new Error(`HTTP ${res.status}: ${body.slice(0, 200)}`)
   }
-  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] }
-  const content = data.choices?.[0]?.message?.content
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string }; finish_reason?: string }[]
+  }
+  const choice = data.choices?.[0]
+  const content = choice?.message?.content
   if (typeof content !== 'string') throw new Error('Unexpected response shape from provider')
+  if (choice?.finish_reason === 'length') {
+    // The provider cut the answer at the token cap — usually mid-JSON in our case.
+    // Surface it explicitly instead of a confusing parse error downstream.
+    throw new Error('Output truncated (finish_reason=length): the reply exceeded the token cap')
+  }
   return content
 }
 
@@ -190,16 +201,18 @@ export async function chatJSON<T>(
 
 async function chatJSONInner<T>(
   config: LlmConfig,
-  messages: ChatMessage[],
+  messages0: ChatMessage[],
   schema?: ZodType<T, ZodTypeDef, unknown>,
   opts?: ChatOptions & { retries?: number },
 ): Promise<T> {
   const retries = opts?.retries ?? 2
   let lastError: Error | null = null
+  let messages = messages0
   for (let attempt = 0; attempt <= retries; attempt++) {
+    let raw: string | null = null
     try {
-      const text = await rawChat(config, messages, opts)
-      const parsed = extractJsonObject(text)
+      raw = await rawChat(config, messages, opts)
+      const parsed = extractJsonObject(raw)
       if (parsed === null) throw new Error('Model did not return parseable JSON')
       if (schema) {
         const result = schema.safeParse(parsed)
@@ -211,6 +224,20 @@ async function chatJSONInner<T>(
       return parsed as T
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e))
+      // Retry WITH feedback: re-sending identical messages makes the model repeat
+      // the same mistake. Show it the bad reply and say exactly what to fix.
+      if (attempt < retries) {
+        messages = [
+          ...messages,
+          ...(raw !== null && raw.trim().length > 0
+            ? [{ role: 'assistant' as const, content: raw.slice(0, 500) }]
+            : []),
+          {
+            role: 'user' as const,
+            content: `That reply was invalid: ${lastError.message}. Reply again with ONLY raw JSON — no prose, no markdown fences — containing every required key.`,
+          },
+        ]
+      }
     }
   }
   throw lastError ?? new Error('chatJSON failed')

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { buildRequestBody, hintForLlmError, isOpenAiReasoningModel } from '../adapter'
+import { describe, expect, it, vi, afterEach } from 'vitest'
+import { buildRequestBody, chatJSON, hintForLlmError, isOpenAiReasoningModel } from '../adapter'
 
 describe('isOpenAiReasoningModel', () => {
   it('matches the gpt-5 family and o-series', () => {
@@ -26,11 +26,13 @@ describe('buildRequestBody', () => {
     expect(body.max_tokens).toBe(8)
     expect(body.temperature).toBe(0)
     expect(body.max_completion_tokens).toBeUndefined()
+    expect(body.reasoning_effort).toBeUndefined()
   })
 
-  it('uses max_completion_tokens and omits temperature for gpt-5 family', () => {
+  it('uses max_completion_tokens, low reasoning effort and no temperature for gpt-5 family', () => {
     const body = buildRequestBody(cfg('gpt-5-nano'), [msg], { maxTokens: 8, temperature: 0 })
     expect(body.max_completion_tokens).toBeGreaterThanOrEqual(2048)
+    expect(body.reasoning_effort).toBe('low')
     expect(body.temperature).toBeUndefined()
     expect(body.max_tokens).toBeUndefined()
   })
@@ -46,6 +48,43 @@ describe('buildRequestBody', () => {
       temperature: 0.7,
       thinking: { type: 'disabled' },
     })
+  })
+})
+
+describe('chatJSON robustness', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const cfg = (model: string) => ({ baseUrl: 'https://x.example/v1', apiKey: 'k', model })
+  const msgs = [{ role: 'user' as const, content: 'hi' }]
+  const res = (payload: unknown): Response =>
+    ({ ok: true, json: async () => payload, text: async () => '' }) as unknown as Response
+  const completion = (content: string, finish_reason = 'stop') => ({
+    choices: [{ message: { content }, finish_reason }],
+  })
+
+  it('throws a clear error when the provider truncates the reply (finish_reason=length)', async () => {
+    const fetchMock = vi.fn(async () => res(completion('{"reply": "abc', 'length')))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(chatJSON(cfg('gpt-4o-mini'), msgs)).rejects.toThrow(/truncated/i)
+    expect(fetchMock).toHaveBeenCalledTimes(3) // retried, still truncated
+  })
+
+  it('recovers on retry by telling the model what was invalid', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(res(completion('Sorry, I would rather chat freely.'))) // no JSON at all
+      .mockResolvedValueOnce(res(completion('{"reply": "Hallo"}')))
+    vi.stubGlobal('fetch', fetchMock)
+    const out = await chatJSON<{ reply: string }>(cfg('gpt-4o-mini'), msgs)
+    expect(out).toEqual({ reply: 'Hallo' })
+    const secondBody = JSON.parse((fetchMock.mock.calls[1]?.[1] as { body: string }).body) as {
+      messages: { role: string; content: string }[]
+    }
+    const corrective = secondBody.messages.find((m) => m.content.includes('ONLY raw JSON'))
+    expect(corrective?.role).toBe('user')
+    expect(secondBody.messages[secondBody.messages.length - 2]?.role).toBe('assistant') // the bad reply is shown
   })
 })
 

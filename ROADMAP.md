@@ -15,6 +15,7 @@
 | M2 Grammar core | ✅ done | (this commit) | 35 topics (A1 13 / A2 12 / B1 10), runner+mastery+placement engines, grammarRepo, PLACEMENT_BANK 30, Grammar/Topic/Placement UI, v0.4.0-m2 |
 | M2.1 Fixes | ✅ done | `aea0bda` | GLM key self-heal (stale-defaults migration, endpoint probe, error hints) + German TTS voice race fix, v0.4.1 |
 | M2.2 LLM compat | ✅ done | (this commit) | gpt-5/o-series support (max_completion_tokens, no temperature, reasoning headroom), Model picker dropdown (datalist→select+Custom…, fixes password-manager popup), GLM default → browser-usable bigmodel.cn endpoint + self-heal migration (api.z.ai sends no CORS — preflight-verified), honest CORS error hint, v0.8.0 |
+| M2.3 Chat reliability | ✅ done | (this commit) | conversation-turn failures fixed (truncation at maxTokens 600→1400 mid-JSON = "not parseable JSON"/"Required"; blind retries → corrective retries showing the bad reply; finish_reason=length detected), gpt-5 latency fix (reasoning_effort low), prompt hardening (latest-message mistakes only, ≤80-word replies, JSON shape), hint 200→300, session feedback 700→1200, 2 new adapter tests, v0.8.1 |
 | M3 LLM layer | ✅ done | (this commit) | 5 zod service contracts + LlmCache, 11 scenarios, conversation UI (STT/TTS/hints/feedback→drills), AI drill gen + "Explain for me" + AI examples, v0.5.0-m3 |
 | M4 Polish | ⬜ | — | speak/listen drills, PWA, README |
 
@@ -91,3 +92,4 @@
 | 2026-09-20 | M1.1: tsc+vitest(101)+build+dev-smoke | ✅ green — vocab corpus 449→1,028 (A1 381/A2 345/B1 302, unique headwords), rank-refresh seeding, anytime practice + extra new-word sessions |
 | 2026-09-20 | M1.2: tsc+vitest(119)+build(620.7 KB/193.4 KB gzip)+dev-smoke 200 | ✅ green — verbForms engine (255 corpus verbs: Präsens/Präteritum/Perfekt, 18 new tests incl. full-corpus coverage), noun plurals + verb conjugation on flashcards, `/words` word-bank page with search/filter/sort + practice |
 | 2026-09-20 | M2.2: tsc+vitest(124)+build+dev-smoke 200 | ✅ green — CORS root cause found via curl preflights (api.z.ai unusable from browsers; bigmodel.cn OK), GLM default endpoint healed, gpt-5/o-series adapter params, model dropdown (no more password-manager popup), 5 new adapter tests |
+| 2026-09-20 | M2.3: tsc+vitest(126)+build+dev-smoke 200 | ✅ green — role-play JSON failures root-caused (600-token cap truncated growing replies; identical-message retries), corrective retry loop + truncation detection + bigger caps, gpt-5 reasoning_effort low |
