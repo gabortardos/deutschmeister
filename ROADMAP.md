@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2 planned (M4.2 → M11)** — full plan: `docs/PHASE2_PLAN.md`
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2 underway: M4.2 ✅ (v1.0.1)** — full plan: `docs/PHASE2_PLAN.md`
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -24,7 +24,7 @@
 
 | Milestone | State | Scope |
 |---|---|---|
-| M4.2 UX cleanup | ⬜ | Setup checklist → Settings + guided onboarding, API-key manuals per provider, Roadmap card out of dashboard, version footer, dashboard focus |
+| M4.2 UX cleanup | ✅ done | Setup checklist → Settings + guided onboarding, API-key manuals per provider, Roadmap card out of dashboard, version footer, dashboard focus |
 | M5 B2 content | ⬜ | M5.1 vocab → ~2,000 words incl. phrases · M5.2 grammar → ~50 topics · M5.3 +8–10 B1/B2 scenarios |
 | M6 Speech | ⬜ | TTS voice-quality fix + previews, optional HD cloud TTS, hands-free voice conversation |
 | M7 Accounts | ⬜ | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode |
@@ -32,6 +32,19 @@
 | M9 Payments (hybrid) | ⬜ | Paddle checkout (subscription + top-ups), webhooks → entitlements, Account & Billing UI |
 | M10 Graphics/UI | ⬜ | design system, dark mode, code-splitting, mobile nav, `progressStats` engine + stats zone |
 | M11 Learning depth | ⬜ | mistake bank, custom scenarios, tutor chat, sentence listening, cloze reviews, insights, placement, free writing |
+
+## M4.2 checklist (UX cleanup — v1.0.1)
+
+- [x] Setup checklist moved from dashboard to Settings (`GettingStartedSection.tsx`, auto-hides
+      when complete; dashboard shows a one-line "Finish setup" hint linking to it until done)
+- [x] Dashboard "What's next" focus: exactly one primary CTA by priority — placement → today's
+      new words → due reviews → grammar of the day
+- [x] Per-provider API-key manuals in Settings → AI Model (`PROVIDER_MANUALS`, native
+      `<details>`: GLM bigmodel.cn incl. z.ai-won't-work warning, OpenAI, DeepSeek)
+- [x] Roadmap card removed from dashboard (repo docs are the roadmap); dead `MilestoneStub`
+      removed from `src/components/ui.tsx`
+- [x] Version footer in Settings (`v1.0.1` from `src/version.ts`); `package.json` bumped
+- [x] DoD: gate green (tsc + vitest 142 + build + dev-smoke 200)
 
 ## M1 checklist (vocab core)
 
@@ -119,3 +132,5 @@
 | 2026-09-20 | M2.3: tsc+vitest(126)+build+dev-smoke 200 | ✅ green — role-play JSON failures root-caused (600-token cap truncated growing replies; identical-message retries), corrective retry loop + truncation detection + bigger caps, gpt-5 reasoning_effort low |
 | 2026-09-20 | M4.1: tsc+vitest(135)+build+dev-smoke 200 | ✅ green — Speak & Listen trainer at `/practice`: TTS listening drills + mic speaking drills with matcher feedback, SM-2 integrated, 9 new engine tests |
 | 2026-09-21 | M4: tsc+vitest(142)+build(634.1 KB/196.8 KB gzip)+dev-smoke 200+node --check sw.js+dist PWA assets | ✅ green — PWA (manifest + subpath-scoped SW, 192/512/maskable icons), export/import verified, README final, v1.0.0 |
+| 2026-09-21 | Docs: Phase 2 plan committed (M4.2→M11, accounts/teaser/payments) + tsc+vitest(142)+build | ✅ green — `docs/PHASE2_PLAN.md`, ROADMAP/AGENT/MASTER_PROMPT/README updated |
+| 2026-09-21 | M4.2: tsc+vitest(142)+build+dev-smoke 200 | ✅ green — Getting-started card in Settings, API-key manuals, dashboard focus CTA + setup hint, Roadmap card & MilestoneStub removed, version footer, v1.0.1 |

@@ -27,15 +27,20 @@ export default function DashboardPage() {
     return <p className="text-sm text-slate-500">Loading your data…</p>
   }
 
-  const lastCall = getLlmLog()[0] ?? null
-  const keyConfigured = apiKey.trim().length > 0
-  const connectionOk = lastCall?.ok === true
+  const connectionOk = getLlmLog()[0]?.ok === true
+  const setupDone = apiKey.trim().length > 0 && connectionOk && (stats?.introduced ?? 0) > 0
 
-  const checklist = [
-    { done: keyConfigured, label: 'Add your AI API key in Settings → AI Model', link: '/settings' },
-    { done: connectionOk, label: 'Run “Test connection” once (Settings → AI Model)', link: '/settings' },
-    { done: (stats?.introduced ?? 0) > 0, label: 'Learn your first words in Vocabulary', link: '/vocab' },
-  ]
+  // One primary "What's next" action, by learning priority: placement → today's new words →
+  // due reviews → grammar topic of the day. The other cards stay secondary.
+  const newWordsTotal = todayLog?.newWordIds.length ?? 0
+  const wordsLeft = newWordsTotal - introToday
+  const focus = !profile.placementResult
+    ? 'placement'
+    : wordsLeft > 0
+      ? 'words'
+      : dueCount > 0
+        ? 'review'
+        : 'grammar'
 
   return (
     <div className="space-y-6">
@@ -51,6 +56,15 @@ export default function DashboardPage() {
           <Badge tone={tts.supported ? 'ok' : 'bad'}>TTS {tts.supported ? 'available' : 'unsupported'}</Badge>
           <Badge tone={stt.supported ? 'ok' : 'warn'}>Microphone {stt.supported ? 'available' : 'fallback to typing'}</Badge>
         </div>
+        {!setupDone && (
+          <p className="mt-4 text-sm text-slate-600">
+            ⚙️ New here? Finish the short{' '}
+            <Link to="/settings" className="font-medium text-indigo-700 underline">
+              Getting started
+            </Link>{' '}
+            checklist in Settings — AI features need an API key.
+          </p>
+        )}
       </Card>
 
       <Card title="Today" description="Your daily vocabulary plan, generated once per calendar day.">
@@ -60,15 +74,19 @@ export default function DashboardPage() {
           </span>
           <span className="text-slate-300">·</span>
           <Link to="/vocab">
-            <Button variant="secondary">{introToday >= (todayLog?.newWordIds.length ?? 0) ? 'Words ✓ — visit Vocabulary' : 'Continue studying →'}</Button>
+            <Button variant={focus === 'words' ? 'primary' : 'secondary'}>
+              {wordsLeft > 0
+                ? `Continue today’s words (${introToday}/${newWordsTotal}) →`
+                : 'Words ✓ — visit Vocabulary'}
+            </Button>
           </Link>
           <Link to="/review">
-            <Button variant={dueCount > 0 ? 'primary' : 'secondary'}>
+            <Button variant={focus === 'review' ? 'primary' : 'secondary'}>
               {dueCount > 0 ? `Review ${dueCount} due →` : 'Nothing due ✓'}
             </Button>
           </Link>
           <Link to="/grammar">
-            <Button variant={!profile.placementResult ? 'primary' : 'secondary'}>
+            <Button variant={focus === 'placement' || focus === 'grammar' ? 'primary' : 'secondary'}>
               {!profile.placementResult ? 'Take grammar placement →' : 'Grammar topic of the day →'}
             </Button>
           </Link>
@@ -91,39 +109,6 @@ export default function DashboardPage() {
             {stats.totalWords} total
           </p>
         )}
-      </Card>
-
-      <Card title="Setup checklist" description="Two quick steps to switch the AI layer on.">
-        <ul className="space-y-2">
-          {checklist.map((item) => (
-            <li key={item.label} className="flex items-center gap-2 text-sm">
-              <span className={item.done ? 'text-emerald-600' : 'text-slate-300'}>{item.done ? '✔' : '○'}</span>
-              <span className={item.done ? 'text-slate-500 line-through' : 'text-slate-700'}>{item.label}</span>
-              {!item.done && (
-                <Link to={item.link}>
-                  <Button variant="ghost" className="ml-1">
-                    Go →
-                  </Button>
-                </Link>
-              )}
-            </li>
-          ))}
-        </ul>
-        {lastCall && (
-          <p className="mt-3 text-xs text-slate-400">
-            Last AI call: {lastCall.ok ? '✓ succeeded' : '✗ failed'} · {lastCall.model} · {lastCall.ms} ms
-          </p>
-        )}
-      </Card>
-
-      <Card title="Roadmap" description="Where DeutschMeister is heading.">
-        <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
-          <li><span className="font-medium text-emerald-700">M0 — Foundation ✅</span> app shell, local database, full Settings &amp; Admin hub, AI adapter + test connection, speech adapters, CI/CD.</li>
-          <li><span className="font-medium text-emerald-700">M1 — Vocabulary ✅</span> 1,000+-word corpus (A1→B1), SM-2 spaced repetition, daily lesson planner + extra/practice sessions, flashcards &amp; drills.</li>
-          <li><span className="font-medium text-emerald-700">M2 — Grammar ✅</span> 35-topic A1→B1 tree, drill runner with rule-based grader, mastery tracking, adaptive placement quiz.</li>
-          <li><span className="font-medium">M3 — AI layer</span> role-play conversations (11 scenarios incl. Fitnessstudio), feedback reports, LLM drill generation.</li>
-          <li><span className="font-medium">M4 — Polish</span> speaking/listening drills, PWA/offline, final QA.</li>
-        </ol>
       </Card>
     </div>
   )

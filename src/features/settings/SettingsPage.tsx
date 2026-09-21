@@ -1,9 +1,11 @@
 import AiModelSection from './sections/AiModelSection'
+import GettingStartedSection from './sections/GettingStartedSection'
 import LearningSection from './sections/LearningSection'
 import SpeechSection from './sections/SpeechSection'
 import ContentStudioSection from './sections/ContentStudioSection'
 import DataSection from './sections/DataSection'
 import DiagnosticsSection from './sections/DiagnosticsSection'
+import { APP_VERSION } from '../../version'
 
 export default function SettingsPage() {
   return (
@@ -14,12 +16,18 @@ export default function SettingsPage() {
           Everything is stored locally in this browser. Changes save automatically.
         </p>
       </div>
+      <GettingStartedSection />
       <AiModelSection />
       <LearningSection />
       <SpeechSection />
       <ContentStudioSection />
       <DataSection />
       <DiagnosticsSection />
+      <p className="pt-2 text-center text-xs text-slate-400">
+        DeutschMeister v{APP_VERSION} · local-first PWA · your data never leaves this browser
+        (except your own AI requests)
+      </p>
     </div>
   )
 }
+

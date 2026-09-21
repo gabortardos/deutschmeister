@@ -4,6 +4,39 @@ import { llmConfigFromSettings, testConnection, type TestResult } from '../../..
 import { getProvider, PROVIDERS, type ProviderId } from '../../../llm/providers'
 import { useAppStore } from '../../../state/store'
 
+/** Step-by-step key guides per provider (M4.2). Native <details> keeps this dependency-free. */
+const PROVIDER_MANUALS: Record<ProviderId, { steps: string[]; warn?: string }> = {
+  glm: {
+    steps: [
+      'Sign up at https://open.bigmodel.cn (phone or email).',
+      'Open User Center → API Keys: https://open.bigmodel.cn/usercenter/apikeys',
+      'Click “Create API key” and copy the whole key immediately.',
+      'Paste it into the API key field above and press “Test connection”.',
+    ],
+    warn:
+      'z.ai keys (including GLM Coding Plan keys) do NOT work in this browser app — api.z.ai sends no CORS headers. You need a key from open.bigmodel.cn; the default model glm-4.5-flash is free-tier.',
+  },
+  openai: {
+    steps: [
+      'Sign in at https://platform.openai.com (create an account if needed).',
+      'Open API keys: https://platform.openai.com/api-keys → “Create new secret key”.',
+      'Copy the key — it is shown only once.',
+      'Add a few dollars of credit under Billing (API billing is separate from a ChatGPT subscription).',
+      'Paste it into the API key field above and press “Test connection”.',
+    ],
+    warn:
+      'API usage is pay-as-you-go. The default model gpt-4o-mini costs a small fraction of a cent per conversation turn.',
+  },
+  deepseek: {
+    steps: [
+      'Sign up at https://platform.deepseek.com.',
+      'Open API keys: https://platform.deepseek.com/api_keys → create and copy the key.',
+      'Top up a couple of dollars — DeepSeek is among the cheapest providers.',
+      'Paste it into the API key field above and press “Test connection”.',
+    ],
+  },
+}
+
 export default function AiModelSection() {
   const settings = useAppStore((s) => s.settings)
   const patchSettings = useAppStore((s) => s.patchSettings)
@@ -177,6 +210,24 @@ export default function AiModelSection() {
           </p>
         </Field>
       </div>
+
+      {(() => {
+        const manual = PROVIDER_MANUALS[settings.provider]
+        if (!manual) return null
+        return (
+          <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-slate-700">
+              📖 How to get a {provider.label} API key
+            </summary>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-600">
+              {manual.steps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            {manual.warn && <p className="mt-2 text-xs font-medium text-amber-700">⚠ {manual.warn}</p>}
+          </details>
+        )
+      })()}
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button type="button" variant="primary" disabled={testing} onClick={() => void runTest()}>

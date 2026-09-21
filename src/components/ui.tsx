@@ -75,27 +75,3 @@ export function Badge({ tone, children }: { tone: 'ok' | 'warn' | 'bad'; childre
     </span>
   )
 }
-
-export function MilestoneStub({
-  milestone,
-  title,
-  points,
-}: {
-  milestone: string
-  title: string
-  points: string[]
-}) {
-  return (
-    <Card title={title}>
-      <p className="text-sm text-slate-500">
-        This area ships in <span className="font-semibold text-indigo-700">{milestone}</span>. The
-        foundation (database, settings, AI connection, speech) is already in place from M0.
-      </p>
-      <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600">
-        {points.map((point) => (
-          <li key={point}>{point}</li>
-        ))}
-      </ul>
-    </Card>
-  )
-}
