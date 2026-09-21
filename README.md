@@ -3,7 +3,9 @@
 A local-first, single-user browser app for learning German — daily vocabulary with spaced
 repetition, interactive grammar drills (written **and** spoken), and LLM-powered role-play
 conversations with structured feedback. No backend, no accounts: all data lives in your
-browser (IndexedDB), and your API key never leaves your browser's localStorage.
+browser (IndexedDB), and your API key never leaves your browser's localStorage. (Optional
+accounts and cloud sync arrive in Phase 2 — see the Roadmap below — while the app stays fully
+usable without them.)
 
 ## Live URL
 
@@ -103,5 +105,12 @@ human can take over development with zero tribal knowledge:
   drill-item generation. ✅
 - **M4** Polish: speaking/listening drills, PWA install + offline shell, data export/import
   (Settings → Data), README/browser notes, final QA. ✅
+
+**Phase 2 (v2.x, planned — full plan: `docs/PHASE2_PLAN.md`):** M4.2 UX cleanup → M5 B2 content
+(~2,000 words, ~50 grammar topics, more scenarios) → M6 speech (voice-quality fix, HD TTS option,
+hands-free conversation) → M7 accounts (Supabase: Google + email with verification and password
+reset; guest mode stays) → M8 platform-AI teaser ($1 free AI for verified accounts; your own key
+stays free forever) → M9 hybrid payments (subscription and/or top-ups via Paddle/Stripe) →
+M10 graphics/UI → M11 learning depth.
 
 A future iOS app will wrap this same UI via Capacitor with native speech and iCloud sync.

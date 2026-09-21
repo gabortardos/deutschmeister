@@ -10,6 +10,9 @@ here, do not re-ask — just build.**
 
 **DeutschMeister** — local-first, single-user German learning app (browser MVP → iOS later).
 Deterministic core (vocab/grammar/SRS, offline, free) + optional LLM layer (BYO key).
+- Phase 2 (v2.x): accounts (Supabase), $1 platform-AI teaser, hybrid payments — plan:
+  `docs/PHASE2_PLAN.md`. The single-user/no-backend description applies through M6; from M7 a
+  backend becomes OPTIONAL (guest/local-only mode stays forever).
 - Live: https://gabortardos.github.io/deutschmeister/ (auto-deploys on every push to `main`)
 - Repo: `gabortardos/deutschmeister` (public, GitHub Pages via Actions)
 - Stack: React 18 + Vite 5 + TypeScript strict (no `any`) + Tailwind + Zustand + Dexie +
@@ -42,7 +45,9 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
 - Commits: conventional style with milestone prefix, e.g. `M1: vocab SRS engine, drills, dashboard`.
 - Secrets scan before every commit: `git diff --cached | grep -nEi '(sk-[A-Za-z0-9]|api[_-]?key.*=|Bearer )'`
   — if a real key shows up, abort the commit.
-- German content uses proper orthography (ä ö ü ß). No lorem-ipsum German. No gamification.
+- German content uses proper orthography (ä ö ü ß). No lorem-ipsum German. No gamification
+  (deliberate dormant option — see `docs/PHASE2_PLAN.md` § Dormant options before building
+  anything that could block it later).
 
 ## Environment quirks (this machine)
 
@@ -62,6 +67,7 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
 2. Run the verification gate — it must already be green before you change anything.
-3. Build the next unchecked item from `ROADMAP.md`. Update ROADMAP + relevant docs as you go.
+3. Build the next unchecked item from `ROADMAP.md` (Phase 2 milestones: `docs/PHASE2_PLAN.md`).
+   Update ROADMAP + relevant docs as you go.
 4. Gate → docs → secrets scan → commit → `git push origin main --tags` → verify CI+deploy green
    (`/opt/homebrew/bin/gh run list --limit 3`) → verify live URL.

@@ -281,6 +281,22 @@ The same hub ships unchanged in the future iOS app.
 - The verification gate and handoff rules (see top sections) apply to EVERY step, not just
   milestones.
 
-## OUT OF SCOPE (do not build now)
+## OUT OF SCOPE (v1, M0–M4 — shipped)
 Auth/accounts, cloud sync, C1–C2 content, native iOS packaging, push notifications,
 STT beyond Web Speech API, gamification.
+
+## V3 ADDENDUM — Phase 2 (2026-09-21, owner-approved; full plan: `docs/PHASE2_PLAN.md`)
+- **Supersedes for v2.x:** the "no backend / no accounts" constraint (guest local-first mode
+  stays) and the monetization-free assumption. Freemium: deterministic core free forever; BYO
+  key = all AI free; verified keyless accounts get a **$1 metered platform-AI teaser**; then
+  **hybrid payments** (monthly subscription with usage allowance AND/OR never-expiring top-ups).
+- **Auth:** Supabase — Google OAuth + email/password with verification + forgot-password
+  (email login doubles as fallback). Auth emails via Resend free SMTP.
+- **Platform-key security:** the owner's provider key lives ONLY as a Supabase Edge Function
+  secret; keyless users' AI calls go through `ai-proxy` with server-side metering, caps, and
+  rate limits. Never in the client bundle, repo, or docs.
+- **Payments:** hosted checkout (Paddle preferred as merchant-of-record — EU VAT handled;
+  Stripe fallback). Webhooks signature-verified before granting entitlements/credit.
+- **Gamification:** still not built — but no longer "never": Phase 2 must not preclude it
+  (streaks/XP computable retroactively from existing logs; stats zone in M10 is designed to be
+  decoratable). See Dormant options in `docs/PHASE2_PLAN.md`.

@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2 planned (M4.2 → M11)** — full plan: `docs/PHASE2_PLAN.md`
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -19,6 +19,19 @@
 | M3 LLM layer | ✅ done | (this commit) | 5 zod service contracts + LlmCache, 11 scenarios, conversation UI (STT/TTS/hints/feedback→drills), AI drill gen + "Explain for me" + AI examples, v0.5.0-m3 |
 | M4.1 Speak & Listen drills | ✅ done | (this commit) | `/practice` page: listening (TTS word → type it, replay + 🐢 slower) and speaking (English cue → mic → matcher verdict/similarity, best-attempt-wins retries, typed fallback when mic fails), interleaved 10-word sessions from the learned bank feeding SM-2, engine `speakListen.ts` + 9 tests, nav + vocab cross-link, v0.9.0 |
 | M4 Polish | ✅ done | (this commit) | PWA: manifest + dependency-free SW scoped to `/deutschmeister/` (network-first shell, cache-first hashed assets, SWR statics, cross-origin LLM traffic never intercepted), icons 192/512/maskable via `scripts/gen-icons.mjs`, prod-only registration `src/pwa.ts`; export/import verified (`backupRepo` + Settings→Data, shipped M0); README final (PWA install/offline); 7 PWA integrity tests, v1.0.0 |
+
+## Phase 2 (v2.x) — approved 2026-09-21, execution starts at M4.2 (detail: `docs/PHASE2_PLAN.md`)
+
+| Milestone | State | Scope |
+|---|---|---|
+| M4.2 UX cleanup | ⬜ | Setup checklist → Settings + guided onboarding, API-key manuals per provider, Roadmap card out of dashboard, version footer, dashboard focus |
+| M5 B2 content | ⬜ | M5.1 vocab → ~2,000 words incl. phrases · M5.2 grammar → ~50 topics · M5.3 +8–10 B1/B2 scenarios |
+| M6 Speech | ⬜ | TTS voice-quality fix + previews, optional HD cloud TTS, hands-free voice conversation |
+| M7 Accounts | ⬜ | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode |
+| M8 Platform AI teaser | ⬜ | `ai-proxy` Edge Function, $1 metered teaser, rate limits, paywall + BYO escape hatch |
+| M9 Payments (hybrid) | ⬜ | Paddle checkout (subscription + top-ups), webhooks → entitlements, Account & Billing UI |
+| M10 Graphics/UI | ⬜ | design system, dark mode, code-splitting, mobile nav, `progressStats` engine + stats zone |
+| M11 Learning depth | ⬜ | mistake bank, custom scenarios, tutor chat, sentence listening, cloze reviews, insights, placement, free writing |
 
 ## M1 checklist (vocab core)
 
