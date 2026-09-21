@@ -2,7 +2,7 @@ import { SEED_SCENARIOS } from '../../content/scenarios'
 import { db } from '../dexie'
 import type { Scenario } from '../types'
 
-/** Idempotent seeding of the 11 built-in scenarios (checked in bulk). */
+/** Idempotent seeding of the 20 built-in scenarios (checked in bulk). */
 export async function ensureScenariosSeeded(): Promise<void> {
   const existing = await db.scenarios.bulkGet(SEED_SCENARIOS.map((s) => s.id))
   const missing = SEED_SCENARIOS.filter((_, i) => existing[i] === undefined)

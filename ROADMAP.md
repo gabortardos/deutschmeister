@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2 underway: M4.2 ✅ (v1.0.1) · M5.1 ✅ (v1.1.0) · M5.2 ✅ (v1.1.1)** — full plan: `docs/PHASE2_PLAN.md`
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2 underway: M4.2 ✅ (v1.0.1) · M5 ✅ complete: M5.1 vocab (v1.1.0) · M5.2 grammar (v1.1.1) · M5.3 scenarios (v1.1.2)** — full plan: `docs/PHASE2_PLAN.md`
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -21,7 +21,7 @@
 | M4 Polish | ✅ done | (this commit) | PWA: manifest + dependency-free SW scoped to `/deutschmeister/` (network-first shell, cache-first hashed assets, SWR statics, cross-origin LLM traffic never intercepted), icons 192/512/maskable via `scripts/gen-icons.mjs`, prod-only registration `src/pwa.ts`; export/import verified (`backupRepo` + Settings→Data, shipped M0); README final (PWA install/offline); 7 PWA integrity tests, v1.0.0 |
 | M4.2 UX cleanup | ✅ done | `86c5a38` | Setup checklist → Settings (`GettingStartedSection`, auto-hides), API-key manuals per provider, Roadmap card out of dashboard, version footer, dashboard focus CTA, v1.0.1 |
 | M5.1 B2 vocab corpus | ✅ done | (this commit) | corpus 1,028 → **1,902** (B2 874: abstract/work/media/law/science/environment/health nouns, 130 verbs, 186 adjectives, 39 connectors, 94-phrase pack); verbForms +26 irregulars, +25 separables, +11 sein-verbs; multi-word headwords exempt from conjugation; v1.1.0 |
-| M5 B2 content | 🔄 in progress | — | M5.1 vocab ✅ (v1.1.0) · M5.2 grammar ✅ 50 topics (v1.1.1) · M5.3 +8–10 B1/B2 scenarios ⬜ |
+| M5 B2 content | ✅ done | — | M5.1 vocab ✅ (v1.1.0) · M5.2 grammar ✅ 50 topics (v1.1.1) · M5.3 scenarios ✅ 11→20 (v1.1.2) |
 | M6 Speech | ⬜ planned | — | TTS voice-quality fix + previews, optional HD cloud TTS, hands-free voice conversation, v1.2 |
 | M7 Accounts | ⬜ planned | — | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode, v2.0 |
 | M8 Platform AI teaser | ⬜ planned | — | `ai-proxy` Edge Function, $1 metered teaser, rate limits, paywall + BYO escape hatch |
@@ -157,6 +157,23 @@ Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHAS
       staircase A1→A2→B1→B2 (20-item cap) + B2 counters
 - [x] DoD: gate green (tsc + vitest 142 + build); v1.1.1
 
+## M5.3 checklist (conversation scenarios 11 → 20)
+
+- [x] `src/content/scenarios/index.ts` — +9 B1/B2 life situations (6 key phrases each, idiomatic
+      German, register-aware Sie/du, append-stable ids):
+      B1 — Bewerbungsgespräch 🤝, Reklamation im Geschäft 🧾, Verspätung im Zug 🚆, Pläne mit
+      Freunden 🎬 (du-form); B2 — Beim Amt: Bescheid anfragen 📄, Konflikt im Team 🗣️,
+      Nachrichten diskutieren 📰, Mit dem Vermieter verhandeln 🧑‍⚖️, Präsentation halten 🎤
+      (B2 set exercises M5.2 grammar: Konjunktiv II politely, Nominalstil/Handlungsbedarf, Passiv)
+- [x] Themed to M5.1 B2 vocab (Law, Work, Media, Education, Abstract, Everyday) — no lorem German,
+      real umlauts/ß, correct orthography
+- [x] Seeding idempotent (`ensureScenariosSeeded` bulk-puts missing rows) — existing DBs get the
+      9 new scenarios on next load; `getAllScenarios` orders seed rows by array position
+- [x] Tests: 20 unique ids; level distribution A1 4 / A2 3 / B1 7 / B2 6; all 9 new ids are B1/B2
+      with ≥5 key phrases (4 scenario tests → 5)
+- [x] Docs: scenarioRepo comment, MASTER_PROMPT seed-content line, README/PHASE2_PLAN counts
+- [x] DoD: gate green (tsc + vitest + build); v1.1.2 — closes milestone M5
+
 ## Verification log (append after every gate run)
 
 | Date | Gate | Result |
@@ -177,3 +194,4 @@ Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHAS
 | 2026-09-21 | M4.2: tsc+vitest(142)+build+dev-smoke 200 | ✅ green — Getting-started card in Settings, API-key manuals, dashboard focus CTA + setup hint, Roadmap card & MilestoneStub removed, version footer, v1.0.1 |
 | 2026-09-21 | M5.1: tsc+vitest(142)+build(732.8 KB JS)+dev-smoke 200 | ✅ green — B2 vocab corpus 1,028→1,902 headwords (874 B2 rows incl. 94 phrases, zero collisions), B2 wired into seed/index + counts test, verbForms +26 irregulars/+25 separables/+11 sein-verbs, phrase headwords excluded from conjugation, v1.1.0 |
 | 2026-09-21 | M5.2: tsc+vitest(142)+build(781.8 KB JS / 242.9 KB gzip) | ✅ green — grammar bank 35→50 topics (15 B2, ~120 drills, `b2-*` append-stable ids), placement bank 30→40 + `PLACEMENT_LEVELS`+B2 (quiz assesses/places at B2), GrammarPage B2 filter, Settings→Learning placement link replaces stale M2 stub, v1.1.1 |
+| 2026-09-21 | M5.3: tsc+vitest(143)+build(776 KB JS) | ✅ green — conversation scenarios 11→20 (+9 B1/B2: Bewerbungsgespräch, Reklamation, Zugverspätung, Pläne mit Freunden, Amt/Bescheid, Konflikt im Team, Nachrichten diskutieren, Vermieter-Verhandlung, Präsentation halten), level spread A1 4/A2 3/B1 7/B2 6, idempotent seeding, v1.1.2 — closes M5 |

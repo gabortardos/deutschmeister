@@ -221,7 +221,8 @@ The same hub ships unchanged in the future iOS app.
   Konjunktiv II (würde/hätte/wäre), infinitive with zu, relative clauses, genitiv, passive,
   verben mit präpositionen, conjunctive adverbs — each with concise English explanation +
   German examples + ≥6 seed drill items (mixed types).
-- The 11 scenarios above with keyPhrases seed.
+- The 11 scenarios above plus 9 M5.3 B1/B2 life-situation additions (20 seed scenarios), each
+  with keyPhrases.
 ## GIT, GITHUB, CI & DEPLOYMENT (from M0 onward)
 - GitHub CLI is installed at /opt/homebrew/bin/gh and already authenticated as "gabortardos"
   (token scopes include repo + workflow). If a shell cannot find gh, use the full path.
