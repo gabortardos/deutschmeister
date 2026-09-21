@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/grammar', label: 'Grammar', end: false },
   { to: '/review', label: 'Review', end: false },
   { to: '/conversation', label: 'Conversation', end: false },
+  { to: '/practice', label: 'Speak & Listen', end: false },
   { to: '/settings', label: 'Settings', end: false },
 ]
 

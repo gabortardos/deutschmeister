@@ -155,6 +155,9 @@ export default function VocabPage() {
           <Button disabled={introduced === 0} onClick={() => void startPractice()}>
             🔁 Practice {introduced === 0 ? 'learned words' : `${Math.min(PRACTICE_SIZE, introduced)} learned words`}
           </Button>
+          <Link to="/practice">
+            <Button disabled={introduced === 0}>🎧 Speak &amp; Listen</Button>
+          </Link>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-slate-500">➕ Learn</span>
             <select

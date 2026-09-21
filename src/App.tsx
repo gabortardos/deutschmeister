@@ -9,6 +9,7 @@ import PlacementPage from './features/grammar/PlacementPage'
 import ReviewPage from './features/review/ReviewPage'
 import ConversationPage from './features/conversation/ConversationPage'
 import ConversationSessionPage from './features/conversation/ConversationSessionPage'
+import SpeakListenPage from './features/practice/SpeakListenPage'
 import SettingsPage from './features/settings/SettingsPage'
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="review" element={<ReviewPage />} />
         <Route path="conversation" element={<ConversationPage />} />
         <Route path="conversation/:scenarioId" element={<ConversationSessionPage />} />
+        <Route path="practice" element={<SpeakListenPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>

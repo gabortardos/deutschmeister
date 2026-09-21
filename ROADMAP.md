@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M3 ✅ · M4 ⬜
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ⬜ (PWA, export, final QA)
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -17,7 +17,8 @@
 | M2.2 LLM compat | ✅ done | (this commit) | gpt-5/o-series support (max_completion_tokens, no temperature, reasoning headroom), Model picker dropdown (datalist→select+Custom…, fixes password-manager popup), GLM default → browser-usable bigmodel.cn endpoint + self-heal migration (api.z.ai sends no CORS — preflight-verified), honest CORS error hint, v0.8.0 |
 | M2.3 Chat reliability | ✅ done | (this commit) | conversation-turn failures fixed (truncation at maxTokens 600→1400 mid-JSON = "not parseable JSON"/"Required"; blind retries → corrective retries showing the bad reply; finish_reason=length detected), gpt-5 latency fix (reasoning_effort low), prompt hardening (latest-message mistakes only, ≤80-word replies, JSON shape), hint 200→300, session feedback 700→1200, 2 new adapter tests, v0.8.1 |
 | M3 LLM layer | ✅ done | (this commit) | 5 zod service contracts + LlmCache, 11 scenarios, conversation UI (STT/TTS/hints/feedback→drills), AI drill gen + "Explain for me" + AI examples, v0.5.0-m3 |
-| M4 Polish | ⬜ | — | speak/listen drills, PWA, README |
+| M4.1 Speak & Listen drills | ✅ done | (this commit) | `/practice` page: listening (TTS word → type it, replay + 🐢 slower) and speaking (English cue → mic → matcher verdict/similarity, best-attempt-wins retries, typed fallback when mic fails), interleaved 10-word sessions from the learned bank feeding SM-2, engine `speakListen.ts` + 9 tests, nav + vocab cross-link, v0.9.0 |
+| M4 Polish | ⬜ | — | PWA (manifest+SW under subpath), data export/import, README/browser notes, final QA |
 
 ## M1 checklist (vocab core)
 
@@ -75,8 +76,9 @@
 
 ## M4 checklist (polish)
 
-- [ ] Speaking drills (see English → say German, diff feedback), listening drills (TTS)
+- [x] Speaking drills (see English → say German, matcher diff feedback), listening drills (TTS) — M4.1: `/practice`, engine `speakListen.ts`, SM-2 integrated
 - [ ] PWA: manifest + service worker scoped to `/deutschmeister/`
+- [ ] Data export/import (JSON backup of all local data)
 - [ ] README final (setup, env, browsers); clean build
 
 ## Verification log (append after every gate run)
@@ -93,3 +95,4 @@
 | 2026-09-20 | M1.2: tsc+vitest(119)+build(620.7 KB/193.4 KB gzip)+dev-smoke 200 | ✅ green — verbForms engine (255 corpus verbs: Präsens/Präteritum/Perfekt, 18 new tests incl. full-corpus coverage), noun plurals + verb conjugation on flashcards, `/words` word-bank page with search/filter/sort + practice |
 | 2026-09-20 | M2.2: tsc+vitest(124)+build+dev-smoke 200 | ✅ green — CORS root cause found via curl preflights (api.z.ai unusable from browsers; bigmodel.cn OK), GLM default endpoint healed, gpt-5/o-series adapter params, model dropdown (no more password-manager popup), 5 new adapter tests |
 | 2026-09-20 | M2.3: tsc+vitest(126)+build+dev-smoke 200 | ✅ green — role-play JSON failures root-caused (600-token cap truncated growing replies; identical-message retries), corrective retry loop + truncation detection + bigger caps, gpt-5 reasoning_effort low |
+| 2026-09-20 | M4.1: tsc+vitest(135)+build+dev-smoke 200 | ✅ green — Speak & Listen trainer at `/practice`: TTS listening drills + mic speaking drills with matcher feedback, SM-2 integrated, 9 new engine tests |
