@@ -4,7 +4,7 @@ import type { CefrLevel } from '../db/types'
  * Adaptive placement quiz: a "staircase" over CEFR levels.
  * Pure module — no React, no browser APIs.
  *
- * Rules (bank is sampled A1 → B1 to match the seeded content):
+ * Rules (bank is sampled A1 → B2 to match the seeded content):
  *  - start at A1; after 5 answers at a level with ≥ 4 correct, move up a level;
  *  - stop failing a level after 5 answers with ≤ 2 correct;
  *  - stop gathering evidence after 7 answers at one level;
@@ -28,7 +28,7 @@ export interface PlacementAnswer {
   correct: boolean
 }
 
-export const PLACEMENT_LEVELS: readonly CefrLevel[] = ['A1', 'A2', 'B1']
+export const PLACEMENT_LEVELS: readonly CefrLevel[] = ['A1', 'A2', 'B1', 'B2']
 
 export const PROMOTE_AFTER = 5
 export const PROMOTE_CORRECT = 4

@@ -2,6 +2,7 @@ import type { CefrLevel, DrillItem, GrammarTopic } from '../../db/types'
 import { A1_TOPICS } from './a1'
 import { A2_TOPICS } from './a2'
 import { B1_TOPICS } from './b1'
+import { B2_TOPICS } from './b2'
 import type { SeedTopic } from './types'
 
 /** Deterministic build stamp for seed rows (never changes per release). */
@@ -49,6 +50,7 @@ const LEVELS: ReadonlyArray<{ cefr: CefrLevel; topics: readonly SeedTopic[] }> =
   { cefr: 'A1', topics: A1_TOPICS },
   { cefr: 'A2', topics: A2_TOPICS },
   { cefr: 'B1', topics: B1_TOPICS },
+  { cefr: 'B2', topics: B2_TOPICS },
 ]
 
 const topics: GrammarTopic[] = []
@@ -64,7 +66,7 @@ for (const level of LEVELS) {
   })
 }
 
-/** Full grammar syllabus (~35 topics, A1–B1), ordered by curriculum position. */
+/** Full grammar syllabus (50 topics, A1–B2), ordered by curriculum position. */
 export const SEED_GRAMMAR_TOPICS: readonly GrammarTopic[] = topics
 
 /** All seed drill items (≥6 per topic), ids deterministic per topic. */
@@ -74,7 +76,7 @@ export const SEED_GRAMMAR_COUNTS: Readonly<Record<CefrLevel, number>> = {
   A1: A1_TOPICS.length,
   A2: A2_TOPICS.length,
   B1: B1_TOPICS.length,
-  B2: 0,
+  B2: B2_TOPICS.length,
   C1: 0,
   C2: 0,
 }

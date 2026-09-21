@@ -106,8 +106,9 @@ human can take over development with zero tribal knowledge:
 - **M4** Polish: speaking/listening drills, PWA install + offline shell, data export/import
   (Settings → Data), README/browser notes, final QA. ✅
 
-**Phase 2 (v2.x, planned — full plan: `docs/PHASE2_PLAN.md`):** M4.2 UX cleanup → M5 B2 content
-(~2,000 words, ~50 grammar topics, more scenarios) → M6 speech (voice-quality fix, HD TTS option,
+**Phase 2 (v2.x, planned — full plan: `docs/PHASE2_PLAN.md`):** M4.2 UX cleanup ✅ → M5 B2
+content (B2 vocab corpus → 1,902 words ✅ · grammar 35 → 50 topics A1–B2 ✅ · more scenarios)
+→ M6 speech (voice-quality fix, HD TTS option,
 hands-free conversation) → M7 accounts (Supabase: Google + email with verification and password
 reset; guest mode stays) → M8 platform-AI teaser ($1 free AI for verified accounts; your own key
 stays free forever) → M9 hybrid payments (subscription and/or top-ups via Paddle/Stripe) →

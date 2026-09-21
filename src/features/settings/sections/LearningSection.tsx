@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Button, Card, Field, inputClass } from '../../../components/ui'
 import { CEFR_LEVELS, type CefrLevel } from '../../../db/types'
 import { useAppStore } from '../../../state/store'
@@ -19,7 +20,7 @@ export default function LearningSection() {
           />
         </Field>
 
-        <Field label="Level" hint="Placement quiz arrives in M2.">
+        <Field label="Level" hint="Set manually or via the placement quiz.">
           <select
             className={inputClass}
             value={profile.level}
@@ -50,11 +51,11 @@ export default function LearningSection() {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button disabled title="Arrives in Milestone 2">
-          Re-run placement quiz (M2)
-        </Button>
-        <Button disabled title="Arrives in Milestone 1">
-          Regenerate today&apos;s lesson (M1)
+        <Link to="/grammar/placement">
+          <Button>Re-run placement quiz</Button>
+        </Link>
+        <Button disabled title="Arrives in a later milestone">
+          Regenerate today&apos;s lesson
         </Button>
       </div>
     </Card>

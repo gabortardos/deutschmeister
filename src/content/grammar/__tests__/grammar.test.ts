@@ -5,11 +5,12 @@ import { SEED_VOCAB } from '../../vocab'
 import { drillInstruction, drillOptions, drillTokens, gradeDrill, needsGermanKeys } from '../../../engine/exerciseRunner'
 
 describe('seed grammar syllabus', () => {
-  it('covers ~35 topics across A1–B1 (13/12/10)', () => {
-    expect(SEED_GRAMMAR_TOPICS.length).toBe(35)
+  it('covers 50 topics across A1–B2 (13/12/10/15)', () => {
+    expect(SEED_GRAMMAR_TOPICS.length).toBe(50)
     expect(SEED_GRAMMAR_COUNTS.A1).toBe(13)
     expect(SEED_GRAMMAR_COUNTS.A2).toBe(12)
     expect(SEED_GRAMMAR_COUNTS.B1).toBe(10)
+    expect(SEED_GRAMMAR_COUNTS.B2).toBe(15)
   })
 
   it('has unique topic ids, keys and strictly increasing order', () => {
@@ -99,9 +100,9 @@ describe('seed grammar syllabus', () => {
 })
 
 describe('placement bank', () => {
-  it('has exactly 30 items, 10 per level, 5 vocab + 5 grammar', () => {
-    expect(PLACEMENT_BANK.length).toBe(30)
-    for (const level of ['A1', 'A2', 'B1'] as const) {
+  it('has exactly 40 items, 10 per level, 5 vocab + 5 grammar', () => {
+    expect(PLACEMENT_BANK.length).toBe(40)
+    for (const level of ['A1', 'A2', 'B1', 'B2'] as const) {
       const items = PLACEMENT_BANK.filter((q) => q.cefr === level)
       expect(items.length).toBe(10)
       expect(items.filter((q) => q.kind === 'vocab').length).toBe(5)
@@ -110,7 +111,7 @@ describe('placement bank', () => {
   })
 
   it('has unique ids, 4 distinct options containing the answer, germanWord only on vocab', () => {
-    expect(new Set(PLACEMENT_BANK.map((q) => q.id)).size).toBe(30)
+    expect(new Set(PLACEMENT_BANK.map((q) => q.id)).size).toBe(40)
     for (const q of PLACEMENT_BANK) {
       expect(q.options.length).toBe(4)
       expect(new Set(q.options).size).toBe(4)

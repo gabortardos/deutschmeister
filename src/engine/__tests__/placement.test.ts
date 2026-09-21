@@ -10,7 +10,7 @@ import {
 } from '../placement'
 
 function miniBank(): PlacementQuestion[] {
-  const mk = (id: string, cefr: 'A1' | 'A2' | 'B1', kind: 'vocab' | 'grammar'): PlacementQuestion => ({
+  const mk = (id: string, cefr: 'A1' | 'A2' | 'B1' | 'B2', kind: 'vocab' | 'grammar'): PlacementQuestion => ({
     id,
     kind,
     cefr,
@@ -26,6 +26,8 @@ function miniBank(): PlacementQuestion[] {
     mk('a2-g', 'A2', 'grammar'),
     mk('b1-v', 'B1', 'vocab'),
     mk('b1-g', 'B1', 'grammar'),
+    mk('b2-v', 'B2', 'vocab'),
+    mk('b2-g', 'B2', 'grammar'),
   ]
 }
 
@@ -61,17 +63,17 @@ describe('nextPlacementQuestion', () => {
     expect(nextPlacementQuestion(PLACEMENT_BANK, big)).toBeNull()
   })
 
-  it('walks the staircase: A1 → A2 → B1 on a strong run and stops at 17 items', () => {
+  it('walks the staircase: A1 → A2 → B1 → B2 on a strong run and caps at 20 items', () => {
     const history: PlacementAnswer[] = []
     for (let guard = 0; guard < 30; guard += 1) {
       const q = nextPlacementQuestion(PLACEMENT_BANK, history)
       if (q === null) break
       history.push({ id: q.id, cefr: q.cefr, correct: true })
     }
-    // 5 at A1 (promote) + 5 at A2 (promote) + 7 at B1 (last level → evidence-stop)
-    expect(history.length).toBe(17)
-    expect(currentLevel(history)).toBe('B1')
-    expect(assessPlacement(history).assessedLevel).toBe('B1')
+    // 5 at A1 (promote) + 5 at A2 (promote) + 5 at B1 (promote) + 5 at B2 (hard cap)
+    expect(history.length).toBe(20)
+    expect(currentLevel(history)).toBe('B2')
+    expect(assessPlacement(history).assessedLevel).toBe('B2')
   })
 
   it('stops early on a failing run and stays at A1', () => {
@@ -107,8 +109,8 @@ describe('assessPlacement', () => {
   it('counts per level and defaults to A1 with an empty history', () => {
     const assessment = assessPlacement([])
     expect(assessment.assessedLevel).toBe('A1')
-    expect(assessment.askedByLevel).toEqual({ A1: 0, A2: 0, B1: 0 })
-    expect(assessment.correctByLevel).toEqual({ A1: 0, A2: 0, B1: 0 })
+    expect(assessment.askedByLevel).toEqual({ A1: 0, A2: 0, B1: 0, B2: 0 })
+    expect(assessment.correctByLevel).toEqual({ A1: 0, A2: 0, B1: 0, B2: 0 })
   })
 
   it('requires ≥60% at a level to pass it', () => {

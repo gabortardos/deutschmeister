@@ -2,7 +2,7 @@ import type { CefrLevel } from '../../db/types'
 import type { PlacementQuestion } from '../../engine/placement'
 
 /**
- * Curated placement bank: 10 items per level, alternating vocabulary
+ * Curated placement bank: 10 items per level (A1–B2), alternating vocabulary
  * recognition (marked germanWord → word becomes "known") and grammar cloze.
  * Every option list has exactly 4 distinct options including the answer.
  */
@@ -52,4 +52,15 @@ export const PLACEMENT_BANK: readonly PlacementQuestion[] = [
   q('p-b1-08', 'vocab', 'B1', 'der Erfolg', 'success', ['supply', 'successor', 'surplus'], 'Erfolg'),
   q('p-b1-09', 'grammar', 'B1', 'Wegen ___ Wetters bleiben wir zu Hause.', 'des', ['dem', 'den', 'der']),
   q('p-b1-10', 'vocab', 'B1', 'die Erfahrung', 'experience', ['experiment', 'adventure', 'empire'], 'Erfahrung'),
+  // ── B2 ──────────────────────────────────────────────────────────────
+  q('p-b2-01', 'grammar', 'B2', 'Wenn ich das gewusst ___, wäre ich gekommen.', 'hätte', ['wäre', 'würde', 'hatte']),
+  q('p-b2-02', 'vocab', 'B2', 'der Beweis', 'proof', ['belief', 'witness', 'confession'], 'Beweis'),
+  q('p-b2-03', 'grammar', 'B2', 'Das Formular muss heute noch ___ werden. (ausfüllen)', 'ausgefüllt', ['ausfüllen', 'auszufüllen', 'ausgefüllte']),
+  q('p-b2-04', 'vocab', 'B2', 'die Annahme', 'assumption', ['acceptance', 'insurance', 'demand'], 'Annahme'),
+  q('p-b2-05', 'grammar', 'B2', 'Der Kollege, ___ Auto gestohlen wurde, ist sauer.', 'dessen', ['deren', 'der', 'dem']),
+  q('p-b2-06', 'vocab', 'B2', 'der Einfluss', 'influence', ['affluence', 'inflation', 'affection'], 'Einfluss'),
+  q('p-b2-07', 'grammar', 'B2', '___ wartest du? (auf + Frage)', 'Worauf', ['Wofür', 'Woran', 'Wobei']),
+  q('p-b2-08', 'vocab', 'B2', 'die Voraussetzung', 'requirement', ['prediction', 'precaution', 'presentation'], 'Voraussetzung'),
+  q('p-b2-09', 'grammar', 'B2', 'Je mehr ich lerne, ___ einfacher wird es.', 'desto', ['je', 'so', 'mehr']),
+  q('p-b2-10', 'vocab', 'B2', 'die Konsequenz', 'consequence', ['sequence', 'frequency', 'conference'], 'Konsequenz'),
 ]

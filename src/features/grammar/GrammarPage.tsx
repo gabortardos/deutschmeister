@@ -7,7 +7,7 @@ import { masteryPercent } from '../../engine/mastery'
 import type { MasteryInfo } from '../../engine/mastery'
 import { useAppStore } from '../../state/store'
 
-const LEVELS = ['A1', 'A2', 'B1'] as const
+const LEVELS = ['A1', 'A2', 'B1', 'B2'] as const
 
 export default function GrammarPage() {
   const { hydrated, profile } = useAppStore()
