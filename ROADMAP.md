@@ -19,32 +19,16 @@
 | M3 LLM layer | ✅ done | (this commit) | 5 zod service contracts + LlmCache, 11 scenarios, conversation UI (STT/TTS/hints/feedback→drills), AI drill gen + "Explain for me" + AI examples, v0.5.0-m3 |
 | M4.1 Speak & Listen drills | ✅ done | (this commit) | `/practice` page: listening (TTS word → type it, replay + 🐢 slower) and speaking (English cue → mic → matcher verdict/similarity, best-attempt-wins retries, typed fallback when mic fails), interleaved 10-word sessions from the learned bank feeding SM-2, engine `speakListen.ts` + 9 tests, nav + vocab cross-link, v0.9.0 |
 | M4 Polish | ✅ done | (this commit) | PWA: manifest + dependency-free SW scoped to `/deutschmeister/` (network-first shell, cache-first hashed assets, SWR statics, cross-origin LLM traffic never intercepted), icons 192/512/maskable via `scripts/gen-icons.mjs`, prod-only registration `src/pwa.ts`; export/import verified (`backupRepo` + Settings→Data, shipped M0); README final (PWA install/offline); 7 PWA integrity tests, v1.0.0 |
+| M4.2 UX cleanup | ✅ done | `86c5a38` | Setup checklist → Settings (`GettingStartedSection`, auto-hides), API-key manuals per provider, Roadmap card out of dashboard, version footer, dashboard focus CTA, v1.0.1 |
+| M5 B2 content | ⬜ planned | — | M5.1 vocab → ~2,000 words incl. phrases · M5.2 grammar → ~50 topics · M5.3 +8–10 B1/B2 scenarios, v1.1 |
+| M6 Speech | ⬜ planned | — | TTS voice-quality fix + previews, optional HD cloud TTS, hands-free voice conversation, v1.2 |
+| M7 Accounts | ⬜ planned | — | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode, v2.0 |
+| M8 Platform AI teaser | ⬜ planned | — | `ai-proxy` Edge Function, $1 metered teaser, rate limits, paywall + BYO escape hatch |
+| M9 Payments (hybrid) | ⬜ planned | — | Paddle checkout (subscription + top-ups), webhooks → entitlements, Account & Billing UI |
+| M10 Graphics/UI | ⬜ planned | — | design system, dark mode, code-splitting, mobile nav, `progressStats` engine + stats zone |
+| M11 Learning depth | ⬜ planned | — | mistake bank, custom scenarios, tutor chat, sentence listening, cloze reviews, insights, placement, free writing |
 
-## Phase 2 (v2.x) — approved 2026-09-21, execution starts at M4.2 (detail: `docs/PHASE2_PLAN.md`)
-
-| Milestone | State | Scope |
-|---|---|---|
-| M4.2 UX cleanup | ✅ done | Setup checklist → Settings + guided onboarding, API-key manuals per provider, Roadmap card out of dashboard, version footer, dashboard focus |
-| M5 B2 content | ⬜ | M5.1 vocab → ~2,000 words incl. phrases · M5.2 grammar → ~50 topics · M5.3 +8–10 B1/B2 scenarios |
-| M6 Speech | ⬜ | TTS voice-quality fix + previews, optional HD cloud TTS, hands-free voice conversation |
-| M7 Accounts | ⬜ | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode |
-| M8 Platform AI teaser | ⬜ | `ai-proxy` Edge Function, $1 metered teaser, rate limits, paywall + BYO escape hatch |
-| M9 Payments (hybrid) | ⬜ | Paddle checkout (subscription + top-ups), webhooks → entitlements, Account & Billing UI |
-| M10 Graphics/UI | ⬜ | design system, dark mode, code-splitting, mobile nav, `progressStats` engine + stats zone |
-| M11 Learning depth | ⬜ | mistake bank, custom scenarios, tutor chat, sentence listening, cloze reviews, insights, placement, free writing |
-
-## M4.2 checklist (UX cleanup — v1.0.1)
-
-- [x] Setup checklist moved from dashboard to Settings (`GettingStartedSection.tsx`, auto-hides
-      when complete; dashboard shows a one-line "Finish setup" hint linking to it until done)
-- [x] Dashboard "What's next" focus: exactly one primary CTA by priority — placement → today's
-      new words → due reviews → grammar of the day
-- [x] Per-provider API-key manuals in Settings → AI Model (`PROVIDER_MANUALS`, native
-      `<details>`: GLM bigmodel.cn incl. z.ai-won't-work warning, OpenAI, DeepSeek)
-- [x] Roadmap card removed from dashboard (repo docs are the roadmap); dead `MilestoneStub`
-      removed from `src/components/ui.tsx`
-- [x] Version footer in Settings (`v1.0.1` from `src/version.ts`); `package.json` bumped
-- [x] DoD: gate green (tsc + vitest 142 + build + dev-smoke 200)
+Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHASE2_PLAN.md`.
 
 ## M1 checklist (vocab core)
 
@@ -115,6 +99,19 @@
       (transactional replace, 12 tables) + Settings→Data UI (export download, import with
       confirm, progress reset, factory reset) — shipped with M0, verified + README-documented in M4
 - [x] README final (setup, env, browsers, PWA install/offline, data/privacy); clean build
+
+## M4.2 checklist (UX cleanup — v1.0.1)
+
+- [x] Setup checklist moved from dashboard to Settings (`GettingStartedSection.tsx`, auto-hides
+      when complete; dashboard shows a one-line "Finish setup" hint linking to it until done)
+- [x] Dashboard "What's next" focus: exactly one primary CTA by priority — placement → today's
+      new words → due reviews → grammar of the day
+- [x] Per-provider API-key manuals in Settings → AI Model (`PROVIDER_MANUALS`, native
+      `<details>`: GLM bigmodel.cn incl. z.ai-won't-work warning, OpenAI, DeepSeek)
+- [x] Roadmap card removed from dashboard (repo docs are the roadmap); dead `MilestoneStub`
+      removed from `src/components/ui.tsx`
+- [x] Version footer in Settings (`v1.0.1` from `src/version.ts`); `package.json` bumped
+- [x] DoD: gate green (tsc + vitest 142 + build + dev-smoke 200)
 
 ## Verification log (append after every gate run)
 
