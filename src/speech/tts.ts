@@ -1,3 +1,5 @@
+import { rankGermanVoices } from '../engine/voiceRanking'
+
 export interface SpeakOptions {
   rate?: number
   voiceURI?: string | null
@@ -11,8 +13,12 @@ export interface SpeakOptions {
  * browser finishes loading voices (async; fires `voiceschanged` once). Speaking
  * before that leaves the utterance without a voice, and most engines then use the
  * OS default (English) voice — so German text sounds English. We therefore prime
- * a German-voice cache at module load, refresh it on `voiceschanged`, prefer
- * de-DE over other German locales, and briefly wait for voices on first speak.
+ * a German-voice cache at module load, refresh it on `voiceschanged`, and briefly
+ * wait for voices on first speak.
+ *
+ * Within German voices we rank by expected quality (see `engine/voiceRanking.ts`):
+ * network/natural voices first, legacy SAPI/eSpeak robotic voices last — "first
+ * de-DE voice" alone used to land on robotic ones on Windows/Linux.
  */
 
 const LANG = 'de-DE'
@@ -23,12 +29,7 @@ let germanVoiceCache: SpeechSynthesisVoice[] = []
 function refreshVoiceCache(): void {
   const all = window.speechSynthesis.getVoices()
   if (all.length === 0) return // voices not loaded yet — keep any previous cache
-  germanVoiceCache = all
-    .filter((v) => v.lang.toLowerCase().startsWith('de'))
-    .sort(
-      (a, b) =>
-        Number(b.lang.toLowerCase().startsWith('de-de')) - Number(a.lang.toLowerCase().startsWith('de-de')),
-    )
+  germanVoiceCache = rankGermanVoices(all)
 }
 
 if (typeof window !== 'undefined' && 'speechSynthesis' in window) {

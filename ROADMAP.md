@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2 underway: M4.2 ✅ (v1.0.1) · M5 ✅ complete: M5.1 vocab (v1.1.0) · M5.2 grammar (v1.1.1) · M5.3 scenarios (v1.1.2)** — full plan: `docs/PHASE2_PLAN.md`
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2 underway: M4.2 ✅ (v1.0.1) · M5 ✅ complete: M5.1 vocab (v1.1.0) · M5.2 grammar (v1.1.1) · M5.3 scenarios (v1.1.2) · M6.1 voice-quality fix ✅ (v1.2.0)** — full plan: `docs/PHASE2_PLAN.md`
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -22,7 +22,7 @@
 | M4.2 UX cleanup | ✅ done | `86c5a38` | Setup checklist → Settings (`GettingStartedSection`, auto-hides), API-key manuals per provider, Roadmap card out of dashboard, version footer, dashboard focus CTA, v1.0.1 |
 | M5.1 B2 vocab corpus | ✅ done | (this commit) | corpus 1,028 → **1,902** (B2 874: abstract/work/media/law/science/environment/health nouns, 130 verbs, 186 adjectives, 39 connectors, 94-phrase pack); verbForms +26 irregulars, +25 separables, +11 sein-verbs; multi-word headwords exempt from conjugation; v1.1.0 |
 | M5 B2 content | ✅ done | — | M5.1 vocab ✅ (v1.1.0) · M5.2 grammar ✅ 50 topics (v1.1.1) · M5.3 scenarios ✅ 11→20 (v1.1.2) |
-| M6 Speech | ⬜ planned | — | TTS voice-quality fix + previews, optional HD cloud TTS, hands-free voice conversation, v1.2 |
+| M6 Speech | 🔄 in progress | — | M6.1 voice-quality fix + preview picker ✅ (v1.2.0) · M6.2 optional HD cloud TTS ⬜ (owner decision) · M6.3 hands-free voice conversation ⬜ |
 | M7 Accounts | ⬜ planned | — | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode, v2.0 |
 | M8 Platform AI teaser | ⬜ planned | — | `ai-proxy` Edge Function, $1 metered teaser, rate limits, paywall + BYO escape hatch |
 | M9 Payments (hybrid) | ⬜ planned | — | Paddle checkout (subscription + top-ups), webhooks → entitlements, Account & Billing UI |
@@ -174,6 +174,24 @@ Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHAS
 - [x] Docs: scenarioRepo comment, MASTER_PROMPT seed-content line, README/PHASE2_PLAN counts
 - [x] DoD: gate green (tsc + vitest + build); v1.1.2 — closes milestone M5
 
+## M6.1 checklist (TTS voice-quality fix + preview picker)
+
+- [x] `src/engine/voiceRanking.ts` — pure, browser-free ranking (unit-testable): de-DE > de-*,
+      network voices (`localService === false`, e.g. Chrome "Google Deutsch") big bonus, premium
+      name keywords (google/natural/neural/premium/enhanced/siri) bonus, `default` small bonus;
+      robotic engines (eSpeak/festival/pico/mbrola −40, legacy SAPI Hedda/Steffi −25) sink to
+      bottom. `voiceQuality()` labels premium ≥55 / good ≥25 / basic.
+- [x] `src/speech/tts.ts` — `refreshVoiceCache` now ranks via `rankGermanVoices`; "Automatic"
+      voice = cache[0] = best-ranked (was "first de-DE", which picked robotic voices on
+      Windows/Linux). Saved per-voice preference still honoured (stale URIs fall back to best).
+- [x] Settings → Speech: select replaced with ranked radio list — per-row ▶ preview-and-select
+      button, quality badges (★ premium / robotic), locale + on-device/network meta,
+      "Automatic (best German voice)" option, async-voices empty hint.
+- [x] Tests: `voiceRanking.test.ts` — 8 tests (locale preference, network bonus, robotic sink,
+      keyword/default bonuses, non-German filter, realistic mixed list order, stable sort,
+      quality labels) → 151 total
+- [x] DoD: gate green (tsc + vitest 151 + build); v1.2.0
+
 ## Verification log (append after every gate run)
 
 | Date | Gate | Result |
@@ -195,3 +213,4 @@ Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHAS
 | 2026-09-21 | M5.1: tsc+vitest(142)+build(732.8 KB JS)+dev-smoke 200 | ✅ green — B2 vocab corpus 1,028→1,902 headwords (874 B2 rows incl. 94 phrases, zero collisions), B2 wired into seed/index + counts test, verbForms +26 irregulars/+25 separables/+11 sein-verbs, phrase headwords excluded from conjugation, v1.1.0 |
 | 2026-09-21 | M5.2: tsc+vitest(142)+build(781.8 KB JS / 242.9 KB gzip) | ✅ green — grammar bank 35→50 topics (15 B2, ~120 drills, `b2-*` append-stable ids), placement bank 30→40 + `PLACEMENT_LEVELS`+B2 (quiz assesses/places at B2), GrammarPage B2 filter, Settings→Learning placement link replaces stale M2 stub, v1.1.1 |
 | 2026-09-21 | M5.3: tsc+vitest(143)+build(776 KB JS) | ✅ green — conversation scenarios 11→20 (+9 B1/B2: Bewerbungsgespräch, Reklamation, Zugverspätung, Pläne mit Freunden, Amt/Bescheid, Konflikt im Team, Nachrichten diskutieren, Vermieter-Verhandlung, Präsentation halten), level spread A1 4/A2 3/B1 7/B2 6, idempotent seeding, v1.1.2 — closes M5 |
+| 2026-09-21 | M6.1: tsc+vitest(151)+build(780 KB JS) | ✅ green — TTS voice ranking (engine/voiceRanking.ts pure module, network/premium first, robotic last), tts.ts auto-picks best-ranked German voice, Settings→Speech ranked radio list with per-voice ▶ preview + quality badges, v1.2.0 |

@@ -5,12 +5,13 @@
 > Resume protocol for a fresh agent: read `AGENT.md` → `ROADMAP.md` → this file, run the gate
 > (it must be green), then build the next unchecked milestone below. Approved 2026-09-21.
 
-## Where we are (v1.1.2, live)
+## Where we are (v1.2.0, live)
 
 M0–M4 complete. Local-first, single-user PWA: 1,902-word vocab corpus (A1–B2) + SM-2 SRS, 50 grammar
-topics (A1–B2) + placement, word bank, Speak & Listen drills, 20 AI conversation scenarios, AI
-drills/explain/examples — all with the user's own API key (GLM bigmodel.cn / OpenAI / DeepSeek).
-Export/import backup, offline shell, CI→Pages deploy. Deterministic core needs no key, no net.
+topics (A1–B2) + placement, word bank, Speak & Listen drills (quality-ranked TTS voices + preview
+picker), 20 AI conversation scenarios, AI drills/explain/examples — all with the user's own API key
+(GLM bigmodel.cn / OpenAI / DeepSeek). Export/import backup, offline shell, CI→Pages deploy.
+Deterministic core needs no key, no net.
 
 ## Locked owner decisions (do not re-ask — build)
 
