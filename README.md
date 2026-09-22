@@ -106,12 +106,19 @@ human can take over development with zero tribal knowledge:
 - **M4** Polish: speaking/listening drills, PWA install + offline shell, data export/import
   (Settings → Data), README/browser notes, final QA. ✅
 
-**Phase 2 (v2.x, planned — full plan: `docs/PHASE2_PLAN.md`):** M4.2 UX cleanup ✅ → M5 B2
-content ✅ (B2 vocab corpus → 1,902 words · grammar 35 → 50 topics A1–B2 · conversation scenarios
-11 → 20) → M6 speech (voice-quality fix ✅ · HD TTS option,
-hands-free conversation) → M7 accounts (Supabase: Google + email with verification and password
-reset; guest mode stays) → M8 platform-AI teaser ($1 free AI for verified accounts; your own key
-stays free forever) → M9 hybrid payments (subscription and/or top-ups via Paddle/Stripe) →
-M10 graphics/UI → M11 learning depth.
+**Phase 2 (v2.x — full plan: `docs/PHASE2_PLAN.md`):** one line — one development step.
+
+- **M4.2** UX cleanup ✅ v1.0.1
+- **M5.1** B2 vocab corpus: 1,028 → 1,902 words ✅ v1.1.0
+- **M5.2** Grammar bank: 35 → 50 topics (A1–B2) ✅ v1.1.1
+- **M5.3** Conversation scenarios: 11 → 20 ✅ v1.1.2
+- **M6.1** TTS voice-quality fix + preview picker ✅ v1.2.0
+- **M6.2** Optional HD cloud TTS (provider decision with owner) ⬜
+- **M6.3** Hands-free voice conversation ⬜
+- **M7** Accounts: Supabase Google + email (verification, reset, fallback), guest stays ⬜
+- **M8** Platform-AI teaser: $1 metered for verified accounts; BYO key stays free ⬜
+- **M9** Hybrid payments: subscription and/or top-ups via Paddle/Stripe ⬜
+- **M10** Graphics/UI: design system, dark mode, code-splitting, mobile nav, stats ⬜
+- **M11** Learning depth: mistake bank, custom scenarios, tutor chat, insights ⬜
 
 A future iOS app will wrap this same UI via Capacitor with native speech and iCloud sync.
