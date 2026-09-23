@@ -21,6 +21,7 @@ import {
 import { newId } from '../../utils/id'
 import { stt } from '../../speech/stt'
 import { tts } from '../../speech/tts'
+import { useHandsFree } from './useHandsFree'
 import { useAppStore } from '../../state/store'
 
 interface UiTurn {
@@ -158,11 +159,21 @@ export default function ConversationSessionPage() {
 
   async function send(): Promise<void> {
     const text = input.trim()
-    if (!text || !deps || !scenario || busy || feedback) return
+    if (!text) return
     const wasAssisted = assistedNext
     setAssistedNext(false)
-    setHint(null)
     setInput('')
+    const reply = await sendText(text, wasAssisted)
+    if (reply === null) setInput(text) // let the learner retry the same message
+  }
+
+  /**
+   * Shared pipeline for typed and spoken turns (also drives hands-free). Resolves the tutor
+   * reply text, or null when the turn was skipped or failed (the error card shows why).
+   */
+  async function sendText(text: string, wasAssisted: boolean): Promise<string | null> {
+    if (!text.trim() || !deps || !scenario || busy || feedback) return null
+    setHint(null)
     setError(null)
     const userTurn: UiTurn = {
       id: newId(),
@@ -201,13 +212,27 @@ export default function ConversationSessionPage() {
           assisted: false,
         },
       ])
+      return res.reply
     } catch (e) {
       setError(toError(e))
-      setInput(text) // let the learner retry the same message
+      return null
     } finally {
       setBusy(false)
     }
   }
+
+  // Hands-free voice loop (M6.3): mic → silence commit → sendText → auto-speak reply → listen again.
+  const handsFree = useHandsFree({
+    sendUserText: (text) => sendText(text, false),
+    speakReply: (text, notifyDone) => {
+      const started = tts.speak(text, {
+        rate: settings?.ttsRate,
+        voiceURI: settings?.ttsVoice,
+        onEnd: notifyDone,
+      })
+      if (!started) notifyDone() // no TTS available — don't stall the loop
+    },
+  })
 
   async function mic(): Promise<void> {
     if (listening || busy) return
@@ -242,6 +267,7 @@ export default function ConversationSessionPage() {
   }
 
   async function finish(): Promise<void> {
+    handsFree.stop()
     if (!deps || !scenario || busy || feedback) return
     setBusy(true)
     setError(null)
@@ -535,6 +561,40 @@ export default function ConversationSessionPage() {
             </Card>
           )}
 
+          {stt.supported && !feedback && (
+            <Card className={handsFree.active ? 'border-indigo-300 bg-indigo-50/60' : undefined}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">🎙 Hands-free conversation</p>
+                  <p className="text-xs text-slate-500">
+                    {!handsFree.active
+                      ? 'Talk naturally: the mic listens, your turn sends when you pause, replies are spoken back.'
+                      : handsFree.state === 'listening'
+                        ? 'Speak German — it sends automatically when you pause.'
+                        : handsFree.state === 'thinking'
+                          ? 'Your tutor is thinking…'
+                          : 'Your tutor is speaking…'}
+                  </p>
+                  {handsFree.active && handsFree.state === 'listening' && handsFree.partial && (
+                    <p className="mt-1 truncate text-sm italic text-indigo-700" aria-live="polite">
+                      “{handsFree.partial}”
+                    </p>
+                  )}
+                  {handsFree.micError && (
+                    <p className="mt-1 text-xs text-red-600">{handsFree.micError}</p>
+                  )}
+                </div>
+                {handsFree.active ? (
+                  <Button onClick={() => handsFree.stop()}>■ Stop</Button>
+                ) : (
+                  <Button type="button" disabled={busy} onClick={() => handsFree.start()}>
+                    Start
+                  </Button>
+                )}
+              </div>
+            </Card>
+          )}
+
           <Card>
             <form
               onSubmit={(e) => {
@@ -554,21 +614,21 @@ export default function ConversationSessionPage() {
                   }
                 }}
                 placeholder="Schreib auf Deutsch… (Enter sends, Shift+Enter = new line)"
-                disabled={busy}
+                disabled={busy || handsFree.active}
                 autoFocus
               />
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {stt.supported ? (
-                  <Button type="button" disabled={busy || listening} onClick={() => void mic()}>
+                  <Button type="button" disabled={busy || listening || handsFree.active} onClick={() => void mic()}>
                     {listening ? '● Listening…' : '🎤 Speak'}
                   </Button>
                 ) : (
                   <span className="text-xs text-slate-400">Mic needs Chrome/Edge — typing works everywhere.</span>
                 )}
-                <Button type="button" disabled={busy} onClick={() => void requestHint()}>
+                <Button type="button" disabled={busy || handsFree.active} onClick={() => void requestHint()}>
                   💡 Hint
                 </Button>
-                <Button variant="primary" type="submit" disabled={busy || input.trim().length === 0}>
+                <Button variant="primary" type="submit" disabled={busy || handsFree.active || input.trim().length === 0}>
                   Send →
                 </Button>
                 {assistedNext && <span className="text-xs text-amber-600">next send is marked ✨ assisted</span>}

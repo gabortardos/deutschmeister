@@ -4,6 +4,8 @@ import { hdTts } from './hdTts'
 export interface SpeakOptions {
   rate?: number
   voiceURI?: string | null
+  /** Fires when playback finishes OR fails/never starts — hands-free uses it to resume listening. */
+  onEnd?: () => void
 }
 
 /**
@@ -52,6 +54,8 @@ function speakWith(text: string, opts: SpeakOptions, voice: SpeechSynthesisVoice
   utterance.lang = LANG
   utterance.rate = opts.rate ?? 0.9
   if (voice) utterance.voice = voice
+  utterance.onend = () => opts.onEnd?.()
+  utterance.onerror = () => opts.onEnd?.()
   window.speechSynthesis.speak(utterance)
 }
 
@@ -79,7 +83,7 @@ export const tts = {
     // Optional HD cloud voice (M6.2): async; browser voice is the fallback on any failure.
     if (hdTts.shouldHandle()) {
       void hdTts
-        .speak(text, { rate: opts.rate ?? 0.9 })
+        .speak(text, { rate: opts.rate ?? 0.9, onEnd: opts.onEnd })
         .then((played) => {
           if (!played) this.speakBrowser(text, opts)
         })

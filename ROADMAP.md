@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M1.1 ✅ · M1.2 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2: M4.2 ✅ (v1.0.1) · M5.1 ✅ (v1.1.0) · M5.2 ✅ (v1.1.1) · M5.3 ✅ (v1.1.2) · M6.1 ✅ (v1.2.0) · M6.2 ✅ (v1.2.1) · M6.3–M11 ⬜** — full plan: `docs/PHASE2_PLAN.md`
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M1.1 ✅ · M1.2 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2: M4.2 ✅ (v1.0.1) · M5.1 ✅ (v1.1.0) · M5.2 ✅ (v1.1.1) · M5.3 ✅ (v1.1.2) · M6.1 ✅ (v1.2.0) · M6.2 ✅ (v1.2.1) · M6.3 ✅ (v1.2.2) · M7–M11 ⬜** — full plan: `docs/PHASE2_PLAN.md`
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -24,8 +24,8 @@
 | M5.2 Grammar bank → 50 topics | ✅ done | `b65ce62` | 15 B2 topics (~120 drills, append-stable `b2-*` ids), placement bank 30→40 + B2 placement, GrammarPage B2 filter, v1.1.1 |
 | M5.3 Conversation scenarios → 20 | ✅ done | `2465551` | +9 B1/B2 life situations (6 key phrases each, Sie/du register), idempotent seeding, spread A1 4/A2 3/B1 7/B2 6, v1.1.2 |
 | M6.1 TTS voice quality | ✅ done | `8e6448d` | `engine/voiceRanking.ts` (network/premium first, robotic engines last), best-voice auto-pick in `tts.ts`, ranked preview picker in Settings→Speech, v1.2.0 |
-| M6.2 HD cloud TTS (optional) | ✅ done | (this commit) | Google Cloud TTS (owner pick; CORS preflight-verified browser-direct), `speech/hdTts.ts` adapter (localStorage key+config, LRU cache, friendly errors), `tts.speak` auto-routing with browser-voice fallback, Settings→Speech HD card (toggle+key+voice picker+preview), 7 tests (158), v1.2.1 |
-| M6.3 Hands-free voice conversation | ⬜ planned | — | `voiceSession.ts` state machine + silence detection + auto-TTS; Chrome/Edge full, Safari partial, Firefox typing fallback |
+| M6.2 HD cloud TTS (optional) | ✅ done | `c0ab93a` | Google Cloud TTS (owner pick; CORS preflight-verified browser-direct), `speech/hdTts.ts` adapter (localStorage key+config, LRU cache, friendly errors), `tts.speak` auto-routing with browser-voice fallback, Settings→Speech HD card (toggle+key+voice picker+preview), 7 tests (158), v1.2.1 |
+| M6.3 Hands-free voice conversation | ✅ done | (this commit) | `engine/voiceSession.ts` pure state machine (+7 tests), `stt.listenStream` continuous STT, `useHandsFree` driver (1.6 s silence commit, Chrome auto-stop restart), session page hands-free card (status + live partial + auto-speak via TTS `onEnd`, HD or browser voice), `sendText` refactor, v1.2.2 — closes M6 |
 | M7 Accounts | ⬜ planned | — | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode, v2.0 |
 | M8 Platform AI teaser | ⬜ planned | — | `ai-proxy` Edge Function, $1 metered teaser, rate limits, paywall + BYO escape hatch |
 | M9 Payments (hybrid) | ⬜ planned | — | Paddle checkout (subscription + top-ups), webhooks → entitlements, Account & Billing UI |
@@ -215,6 +215,27 @@ Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHAS
       request body, base64 decode, voice sort + fallback list) → 158 total
 - [x] DoD: gate green (tsc + vitest 158 + build); v1.2.1
 
+## M6.3 checklist (hands-free voice conversation)
+
+- [x] `src/engine/voiceSession.ts` — pure state machine: idle → listening → thinking → speaking
+      → listening loop; STOP/ERROR → idle from anywhere; unexpected events (late/duplicate
+      browser callbacks, mic echo while speaking) ignored; whitespace-only utterances never
+      leave listening; `silenceElapsed` threshold helper. 7 unit tests.
+- [x] `src/speech/stt.ts` — `listenStream`: continuous recognition streaming interim partials +
+      final segments; Chrome auto-stop surfaces via `onEnd` (caller decides to restart).
+- [x] `src/speech/tts.ts` + `hdTts.ts` — `SpeakOptions.onEnd` fires on finish OR failure across
+      browser speechSynthesis AND HD cloud audio (incl. autoplay-blocked path), so the loop can
+      reliably resume listening.
+- [x] `src/features/conversation/useHandsFree.ts` — driver around the machine: 1.6 s silence
+      commit, stream restart on Chrome auto-stop, mic-permission errors stop the loop with a
+      hint, unmount cleanup; all mutable state in refs (browser callbacks fire outside React
+      events — no stale closures).
+- [x] `ConversationSessionPage` — `send()` split into shared `sendText(text)` (typed + spoken
+      turns, returns tutor reply or null); hands-free card (Start/Stop, per-state status, live
+      partial transcript, mic errors); form/mic/hint disabled while active; `finish()` stops
+      the loop. Chrome/Edge full experience, Firefox typing fallback (card hidden).
+- [x] DoD: gate green (tsc + vitest 165 + build); v1.2.2 — closes milestone M6
+
 ## Verification log (append after every gate run)
 
 | Date | Gate | Result |
@@ -238,3 +259,4 @@ Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHAS
 | 2026-09-21 | M5.3: tsc+vitest(143)+build(776 KB JS) | ✅ green — conversation scenarios 11→20 (+9 B1/B2: Bewerbungsgespräch, Reklamation, Zugverspätung, Pläne mit Freunden, Amt/Bescheid, Konflikt im Team, Nachrichten diskutieren, Vermieter-Verhandlung, Präsentation halten), level spread A1 4/A2 3/B1 7/B2 6, idempotent seeding, v1.1.2 — closes M5 |
 | 2026-09-21 | M6.1: tsc+vitest(151)+build(780 KB JS) | ✅ green — TTS voice ranking (engine/voiceRanking.ts pure module, network/premium first, robotic last), tts.ts auto-picks best-ranked German voice, Settings→Speech ranked radio list with per-voice ▶ preview + quality badges, v1.2.0 |
 | 2026-09-23 | M6.2: tsc+vitest(158)+build+curl CORS preflight | ✅ green — optional HD cloud TTS via Google Cloud TTS (owner-picked, browser CORS verified): speech/hdTts.ts adapter (REST+API key, LRU cache, friendly errors, browser-voice fallback), tts.speak auto-routing + stop covers HD audio, Settings→Speech HD card (toggle+key+Neural2 picker+preview), 7 new tests, v1.2.1 |
+| 2026-09-23 | M6.3: tsc+vitest(165)+build | ✅ green — hands-free voice conversation: pure engine/voiceSession.ts state machine (idle→listening→thinking→speaking loop, late/duplicate browser events tolerated), stt.listenStream continuous recognition, useHandsFree driver (1.6 s silence commit, Chrome auto-stop restart, mic-permission errors), session page hands-free card + status + live partial + auto-spoken replies (HD or browser voice via onEnd), send() refactored to shared sendText, 7 new tests, v1.2.2 — closes M6 |

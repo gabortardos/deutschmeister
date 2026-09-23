@@ -210,7 +210,7 @@ The same hub ships unchanged in the future iOS app.
   "Wie lange trainierst du schon?", "Kannst du mir zeigen, wie die Beinpresse funktioniert?",
   "Ich mache 3 Sätze mit 12 Wiederholungen", "Wie viel Gewicht soll ich nehmen?") —
   role-play chat: text always; mic button for voice input (STT) and speaker button on tutor
-  messages (TTS); "Hint" button (LLM-suggested reply, marked assisted); end session →
+  messages (TTS); optional hands-free voice mode (engine/voiceSession.ts state machine — continuous mic, silence commit, auto-spoken replies); "Hint" button (LLM-suggested reply, marked assisted); end session →
   feedback report + "practice mistakes as drills".
 - Settings & Admin hub: as specified above.
 

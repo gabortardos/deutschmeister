@@ -183,12 +183,17 @@ function cacheKey(text: string, voice: string, rate: number): string {
   return `${voice}|${rate}|${text}`
 }
 
-function play(url: string): void {
+function play(url: string, onEnd?: () => void): void {
   hdTts.stop()
   currentAudio = new Audio(url)
+  if (onEnd) {
+    currentAudio.onended = () => onEnd()
+    currentAudio.onerror = () => onEnd()
+  }
   void currentAudio.play().catch(() => {
     // Autoplay blocked or decode failure — tts.ts falls back to the browser voice.
     currentAudio = null
+    onEnd?.()
   })
 }
 
@@ -214,14 +219,14 @@ export const hdTts = {
   },
 
   /** Synthesize + play. Resolves false when HD is not usable; throws on API errors. */
-  async speak(text: string, opts: { rate?: number } = {}): Promise<boolean> {
+  async speak(text: string, opts: { rate?: number; onEnd?: () => void } = {}): Promise<boolean> {
     if (!this.shouldHandle() || !text) return false
     const { voice } = getHdConfig()
     const rate = opts.rate ?? 1
     const key = cacheKey(text, voice, rate)
     const cached = urlCache.get(key)
     if (cached !== undefined) {
-      play(cached)
+      play(cached, opts.onEnd)
       return true
     }
     const controller = new AbortController()
@@ -239,7 +244,7 @@ export const hdTts = {
       const blob = new Blob([decodeBase64(data.audioContent) as BlobPart], { type: 'audio/mpeg' })
       const url = URL.createObjectURL(blob)
       urlCache.set(key, url)
-      play(url)
+      play(url, opts.onEnd)
       return true
     } finally {
       clearTimeout(timer)
