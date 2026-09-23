@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAppStore } from '../state/store'
-import { initAuth } from '../sync/authStore'
+import { initAuth, useAuthStore } from '../sync/authStore'
+import { configurePlatformTts } from '../speech/hdTts'
+import { currentPlatformAuth, usePlatformStore } from '../state/platformStore'
 import { APP_VERSION } from '../version'
 
 const NAV_ITEMS = [
@@ -17,12 +19,21 @@ const NAV_ITEMS = [
 
 export default function Layout() {
   const profile = useAppStore((s) => s.profile)
+  const user = useAuthStore((s) => s.user)
+  const refreshPlatform = usePlatformStore((s) => s.refresh)
 
   // Wire Supabase auth exactly once at app start, before any page renders: this is what
   // parses the OAuth / email-confirmation / password-recovery redirect on first load.
   useEffect(() => {
     void initAuth()
+    // M8: signed-in keyless users get the platform HD voice via the same proxy.
+    configurePlatformTts(() => currentPlatformAuth())
   }, [])
+
+  // Refresh the free-credit meter whenever auth state appears/changes.
+  useEffect(() => {
+    if (user) void refreshPlatform()
+  }, [user, refreshPlatform])
 
   return (
     <div className="min-h-screen">

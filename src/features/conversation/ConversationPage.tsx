@@ -5,17 +5,16 @@ import { recentSessions } from '../../db/repositories/conversationRepo'
 import { getDrillsForTopic } from '../../db/repositories/grammarRepo'
 import { ensureScenariosSeeded, getAllScenarios } from '../../db/repositories/scenarioRepo'
 import type { ConversationSession, Scenario } from '../../db/types'
-import { useAppStore } from '../../state/store'
+import { useAiRoute } from '../../state/useLlmDeps'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 
 /** The scenario library: seed + custom scenarios, recent sessions, drill replays. */
 export default function ConversationPage() {
-  const apiKey = useAppStore((s) => s.apiKey)
+  const aiReady = useAiRoute() !== 'none'
   const [scenarios, setScenarios] = useState<Scenario[] | null>(null)
   const [drillCounts, setDrillCounts] = useState<Record<string, number>>({})
   const [sessions, setSessions] = useState<ConversationSession[]>([])
-  const keyReady = apiKey.trim().length > 0
 
   useEffect(() => {
     void (async () => {
@@ -40,14 +39,15 @@ export default function ConversationPage() {
         </p>
       </div>
 
-      {!keyReady && (
+      {!aiReady && (
         <Card>
           <p className="text-sm text-slate-600">
-            🗣️ Conversations need an AI key. Add one in{' '}
+            🗣️ Conversations need AI. Add your own key in{' '}
             <Link to="/settings" className="font-medium text-indigo-700 underline underline-offset-2">
               Settings → AI Model
             </Link>{' '}
-            — vocabulary, grammar and reviews keep working fully offline without it.
+            — or sign in (Settings → Account) for the free $1 AI credit. Vocabulary, grammar and
+            reviews keep working fully offline without either.
           </p>
         </Card>
       )}
@@ -76,12 +76,12 @@ export default function ConversationPage() {
                 <p className="mt-2 text-sm text-slate-600">{s.description}</p>
                 <p className="mt-1 text-xs italic text-slate-400">Goal: {s.goal}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {keyReady ? (
+                  {aiReady ? (
                     <Link to={`/conversation/${s.id}`}>
                       <Button variant="primary">Start role-play →</Button>
                     </Link>
                   ) : (
-                    <Button disabled title="Add an AI key in Settings → AI Model">
+                    <Button disabled title="Add an AI key in Settings → AI Model — or sign in for the free credit">
                       Start role-play →
                     </Button>
                   )}

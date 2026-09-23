@@ -1,20 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, inputClass } from '../../components/ui'
 import DrillRunner from '../grammar/DrillRunner'
 import { addTurn, endSession, startSession } from '../../db/repositories/conversationRepo'
 import { getDrillsForTopic, saveDrills } from '../../db/repositories/grammarRepo'
-import { llmCachePort } from '../../db/repositories/llmCacheRepo'
 import { ensureScenariosSeeded, getScenario } from '../../db/repositories/scenarioRepo'
 import type { ConversationMistake, DrillItem, Scenario } from '../../db/types'
-import { hintForLlmError, llmConfigFromSettings } from '../../llm/adapter'
+import { hintForLlmError } from '../../llm/adapter'
+import { PlatformAiError } from '../../llm/platform'
 import {
   mistakesToDrills,
   sessionFeedback,
   suggestReply,
   conversationTurn,
   MISTAKE_CATEGORY_LABEL,
-  type LlmServiceDeps,
   type SessionFeedback,
   type SuggestedReply,
 } from '../../llm/services'
@@ -23,6 +22,7 @@ import { stt } from '../../speech/stt'
 import { tts } from '../../speech/tts'
 import { useHandsFree } from './useHandsFree'
 import { useAppStore } from '../../state/store'
+import { useLlmDeps } from '../../state/useLlmDeps'
 
 interface UiTurn {
   id: string
@@ -34,6 +34,7 @@ interface UiTurn {
 }
 
 function toError(e: unknown): { message: string; hint?: string } {
+  if (e instanceof PlatformAiError) return { message: e.message, hint: e.hint }
   const message = e instanceof Error ? e.message : String(e)
   return { message, hint: hintForLlmError(message) }
 }
@@ -46,7 +47,7 @@ function toError(e: unknown): { message: string; hint?: string } {
 export default function ConversationSessionPage() {
   const { scenarioId } = useParams<{ scenarioId: string }>()
   const [searchParams] = useSearchParams()
-  const { profile, settings, apiKey } = useAppStore()
+  const { profile, settings } = useAppStore()
 
   const [scenario, setScenario] = useState<Scenario | null>(null)
   const [missing, setMissing] = useState(false)
@@ -69,14 +70,10 @@ export default function ConversationSessionPage() {
   const sessionRef = useRef<string | null>(null)
   const openerDone = useRef(false)
 
-  const keyReady = apiKey.trim().length > 0
-  const deps: LlmServiceDeps | null = useMemo(
-    () =>
-      settings && keyReady
-        ? { config: llmConfigFromSettings(settings, apiKey), cache: llmCachePort }
-        : null,
-    [settings, apiKey, keyReady],
-  )
+  // M8: BYO key → the user's provider as before; signed-in keyless → free $1
+  // platform teaser (metered by the ai-proxy Edge Function). No AI at all → hint UI.
+  const { deps, route } = useLlmDeps('conversation')
+  const aiReady = route !== 'none'
   const level = profile?.level ?? scenario?.cefr ?? 'A1'
   const practiceMode = searchParams.get('practice') === '1'
 
@@ -526,14 +523,14 @@ export default function ConversationSessionPage() {
             </Link>
           </div>
         </Card>
-      ) : !keyReady ? (
+      ) : !aiReady ? (
         <Card>
           <p className="text-sm text-slate-600">
-            🗣️ This role-play needs an AI key. Add one in{' '}
+            🗣️ This role-play needs AI: add your own key in{' '}
             <Link to="/settings" className="font-medium text-indigo-700 underline underline-offset-2">
               Settings → AI Model
-            </Link>
-            .
+            </Link>{' '}
+            — or sign in (Settings → Account) for the free $1 AI credit.
           </p>
         </Card>
       ) : (

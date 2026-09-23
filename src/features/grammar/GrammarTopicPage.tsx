@@ -4,16 +4,16 @@ import { MiniMarkdown } from '../../components/markdown'
 import { Badge, Button, Card } from '../../components/ui'
 import type { DrillItem, GrammarTopic } from '../../db/types'
 import { getDrillsForTopic, getTopic, recentWrongAnswers } from '../../db/repositories/grammarRepo'
-import { llmCachePort } from '../../db/repositories/llmCacheRepo'
-import { hintForLlmError, llmConfigFromSettings } from '../../llm/adapter'
-import { explainGrammar, type LlmServiceDeps } from '../../llm/services'
+import { hintForLlmError } from '../../llm/adapter'
+import { explainGrammar } from '../../llm/services'
 import { useAppStore } from '../../state/store'
+import { useLlmDeps } from '../../state/useLlmDeps'
 import DrillRunner from './DrillRunner'
 import { generateAndSaveDrills } from './drillGeneration'
 
 export default function GrammarTopicPage() {
   const { topicId } = useParams<{ topicId: string }>()
-  const { profile, patchProfile, bumpDrills, refreshToday, settings, apiKey } = useAppStore()
+  const { profile, patchProfile, bumpDrills, refreshToday } = useAppStore()
   const [topic, setTopic] = useState<GrammarTopic | null>(null)
   const [drills, setDrills] = useState<DrillItem[] | null>(null)
   const [practicing, setPracticing] = useState(false)
@@ -26,9 +26,8 @@ export default function GrammarTopicPage() {
   const [aiMessage, setAiMessage] = useState('')
   const [aiError, setAiError] = useState<{ message: string; hint?: string } | null>(null)
 
-  const keyReady = apiKey.trim().length > 0
-  const deps: LlmServiceDeps | null =
-    settings && keyReady ? { config: llmConfigFromSettings(settings, apiKey), cache: llmCachePort } : null
+  // M8: BYO key → the user's provider; signed-in keyless → free $1 platform teaser.
+  const { deps } = useLlmDeps('explain')
 
   async function runExplain(): Promise<void> {
     if (!deps || !topic || explainBusy) return

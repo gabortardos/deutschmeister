@@ -10,25 +10,22 @@ import {
   type ContentCounts,
 } from '../../../db/repositories/contentRepo'
 import type { GrammarTopic } from '../../../db/types'
-import { llmConfigFromSettings } from '../../../llm/adapter'
-import type { LlmServiceDeps } from '../../../llm/services'
-import { useAppStore } from '../../../state/store'
+import { useLlmDeps } from '../../../state/useLlmDeps'
 import { generateAndSaveDrills } from '../../grammar/drillGeneration'
 import { CEFR_LEVELS, type CefrLevel } from '../../../db/types'
 
 const ARTICLE_OPTIONS = ['', 'der', 'die', 'das'] as const
 
 export default function ContentStudioSection() {
-  const { settings, apiKey } = useAppStore()
   const [counts, setCounts] = useState<ContentCounts | null>(null)
   const [topics, setTopics] = useState<GrammarTopic[]>([])
   const [topicId, setTopicId] = useState('')
   const [genBusy, setGenBusy] = useState(false)
   const [genMessage, setGenMessage] = useState('')
 
-  const keyReady = apiKey.trim().length > 0
-  const deps: LlmServiceDeps | null =
-    settings && keyReady ? { config: llmConfigFromSettings(settings, apiKey) } : null
+  // M8: BYO key → the user's provider; signed-in keyless → free $1 platform teaser.
+  // cache: false — studio generations should produce fresh variants on repeat clicks.
+  const { deps } = useLlmDeps('studio', { cache: false })
 
   // Custom word form
   const [wGerman, setWGerman] = useState('')

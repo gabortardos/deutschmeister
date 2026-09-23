@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button, Card, Field, inputClass } from '../../../components/ui'
 import { llmConfigFromSettings, testConnection, type TestResult } from '../../../llm/adapter'
 import { getProvider, PROVIDERS, type ProviderId } from '../../../llm/providers'
+import { formatUsdMicros } from '../../../llm/entitlement'
+import { useAiRoute } from '../../../state/useLlmDeps'
+import { usePlatformStore } from '../../../state/platformStore'
 import { useAppStore } from '../../../state/store'
 
 /** Step-by-step key guides per provider (M4.2). Native <details> keeps this dependency-free. */
@@ -37,6 +40,61 @@ const PROVIDER_MANUALS: Record<ProviderId, { steps: string[]; warn?: string }> =
   },
 }
 
+/**
+ * M8 free-credit meter + paywall card. Shown when the user has NO key of their
+ * own but IS signed in: platform AI is already serving them; this makes the
+ * remaining budget visible and — at zero — the paywall with the BYO escape hatch.
+ */
+function PlatformAiCard() {
+  const { loading, spendUsdMicros, capUsdMicros, exhausted, error, fetchedAt, refresh } =
+    usePlatformStore()
+  const remaining = Math.max(0, capUsdMicros - spendUsdMicros)
+  const pct = capUsdMicros > 0 ? Math.min(100, Math.round((remaining / capUsdMicros) * 100)) : 0
+
+  useEffect(() => {
+    if (fetchedAt === null) void refresh()
+  }, [fetchedAt, refresh])
+
+  return (
+    <Card
+      title="DeutschMeister AI — active"
+      description="No key needed: your AI features run on our key with a free $1 credit for this account. Setting your own key below always overrides it (free, unlimited)."
+    >
+      {exhausted ? (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+          <p className="font-medium">⚠ Your free $1 AI credit is used up.</p>
+          <p className="mt-1">
+            Two ways to keep going: add your own API key below — free and unlimited — or wait for
+            paid plans (coming soon).
+          </p>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-slate-700">Free credit remaining</span>
+            <span className="font-mono text-slate-600">
+              {formatUsdMicros(remaining)} / {formatUsdMicros(capUsdMicros)}
+            </span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="h-2 rounded-full bg-emerald-500 transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+        <Button type="button" disabled={loading} onClick={() => void refresh()}>
+          {loading ? 'Refreshing…' : 'Refresh'}
+        </Button>
+        {fetchedAt !== null && <span>updated {new Date(fetchedAt).toLocaleTimeString()}</span>}
+        {error && <span className="text-red-600">{error}</span>}
+      </div>
+    </Card>
+  )
+}
+
 export default function AiModelSection() {
   const settings = useAppStore((s) => s.settings)
   const patchSettings = useAppStore((s) => s.patchSettings)
@@ -47,6 +105,7 @@ export default function AiModelSection() {
   const [result, setResult] = useState<TestResult | null>(null)
   const [probe, setProbe] = useState<{ baseUrl: string } | null>(null)
   const [customModel, setCustomModel] = useState(false)
+  const route = useAiRoute()
 
   if (!settings) return null
   const provider = getProvider(settings.provider)
@@ -103,10 +162,16 @@ export default function AiModelSection() {
   }
 
   return (
-    <Card
-      title="AI Model"
-      description="Bring your own key. It is stored only in this browser and sent directly to the provider you choose."
-    >
+    <div className="grid gap-4">
+      {route === 'platform' && <PlatformAiCard />}
+      <Card
+        title="AI Model"
+        description={
+          route === 'platform'
+            ? 'Bring your own key (optional). It is stored only in this browser and sent directly to the provider — it always overrides the free credit above.'
+            : 'Bring your own key. It is stored only in this browser and sent directly to the provider you choose.'
+        }
+      >
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Provider">
           <select
@@ -264,6 +329,7 @@ export default function AiModelSection() {
           </p>
         </div>
       )}
-    </Card>
+      </Card>
+    </div>
   )
 }

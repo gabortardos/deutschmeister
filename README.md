@@ -36,6 +36,10 @@ All AI configuration happens inside the app — no code editing needed:
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | https://platform.openai.com/api-keys |
 | DeepSeek | `https://api.deepseek.com` | `deepseek-chat` | https://platform.deepseek.com/api_keys |
 
+No key at all? Create an account (Settings → Account) and every AI feature runs on the app's
+own key with a free $1 credit — metered in Settings → AI Model. Your own key always overrides
+it and is never shared.
+
 Notes:
 - **CORS reality (verified 2026-09-20 via OPTIONS preflight):** `api.z.ai` (both the Coding Plan
   and pay-as-you-go endpoints) sends **no CORS headers**, so z.ai keys — including GLM Coding
@@ -116,7 +120,7 @@ human can take over development with zero tribal knowledge:
 - **M6.2** Optional HD cloud TTS — Google Cloud TTS (user's key), Settings card + auto-fallback ✅ (v1.2.1)
 - **M6.3** Hands-free voice conversation — state machine + silence detection + auto-TTS ✅ (v1.2.2, closes M6)
 - **M7** Accounts: Supabase Google + email (verification, reset, fallback), guest stays — ✅ v2.0.0 (sign-in + LWW sync + claim)
-- **M8** Platform-AI teaser: $1 metered for verified accounts; BYO key stays free ⬜
+- **M8** Platform-AI teaser: $1 metered for verified accounts (gpt-5-mini + HD voice); BYO key stays free ✅ v2.1.0
 - **M9** Hybrid payments: subscription and/or top-ups via Paddle/Stripe ⬜
 - **M10** Graphics/UI: design system, dark mode, code-splitting, mobile nav, stats ⬜
 - **M11** Learning depth: mistake bank, custom scenarios, tutor chat, insights ⬜

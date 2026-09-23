@@ -5,7 +5,7 @@
 > Resume protocol for a fresh agent: read `AGENT.md` → `ROADMAP.md` → this file, run the gate
 > (it must be green), then build the next unchecked milestone below. Approved 2026-09-21.
 
-## Where we are (v2.0.0, live)
+## Where we are (v2.1.0, live)
 
 M0–M4 complete. Local-first, single-user PWA: 1,902-word vocab corpus (A1–B2) + SM-2 SRS, 50 grammar
 topics (A1–B2) + placement, word bank, Speak & Listen drills (quality-ranked TTS voices + preview
@@ -24,6 +24,15 @@ HD-TTS config are localStorage-only and never syncable), auto-sync on app start 
 `supabase/migrations/0001_init.sql` once in the SQL editor (RLS own-rows-only). Guest mode
 stays fully usable without an account. Known v1 limit: no delete propagation (no tombstones).
 Deterministic core needs no key, no net.
+
+M8 ✅ (v2.1.0): platform-AI teaser shipped — signed-in keyless users get all AI features via
+the `ai-proxy` Edge Function on the owner's key (owner pick: `gpt-5-mini` + HD TTS included;
+switch to `glm-4.5-flash` later is a constants change in the function + `llm/entitlement.ts`).
+$1 metered budget (Pro allowance/credit fields ready for M9), 10 req/min, email-verified only;
+HD TTS metered at $0/char with a 200k chars/month guard while Google's free tier covers it.
+BYO key always wins and stays unmetered. Owner actions: run `supabase/migrations/0002_metering.sql`,
+deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
+`OPENAI_PLATFORM_KEY` + `PLATFORM_TTS_KEY`.
 
 ## Locked owner decisions (do not re-ask — build)
 
@@ -110,7 +119,7 @@ Deterministic core needs no key, no net.
 - **Owner touchpoints (~25 min):** create Supabase project, Google Cloud OAuth consent,
   Resend account + SMTP creds into Supabase (click-by-click guides provided by the agent).
 
-### M8 — Platform AI teaser (v2.1)
+### M8 — Platform AI teaser (v2.1) ✅ SHIPPED (v2.1.0)
 - Edge Function **`ai-proxy`** (Deno): verify JWT → check entitlement order (below) → forward
   to provider with the **PLATFORM key (server-side secret)** → meter actual cost from response
   token usage × price table (single config file) → persist usage → return. Client never sees
@@ -130,6 +139,9 @@ Deterministic core needs no key, no net.
   Google TTS free tier = 1M Neural2 chars/month **per billing project** (shared across all
   teaser users ≈ ~3,000 spoken replies; then $16/1M ≈ ~200 replies per $1 of meter); user's own
   Google key stays free regardless (M6.2 BYO path, unchanged). Decide from real teaser usage.
+  → RESOLVED 2026-09-23: **HD TTS included**, priced $0/char (free tier covers it) with a
+  200k chars/month server-side guard. Teaser chat provider: `gpt-5-mini` (owner daily driver;
+  `glm-4.5-flash` swap later = constants change, see `entitlement.ts` + the function header).
 
 ### M9 — Payments, hybrid (v2.2)
 - Paddle (preferred, MoR → EU VAT handled) or Stripe: **hosted checkout** products for (a) Pro

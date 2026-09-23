@@ -1,6 +1,7 @@
 import type { ZodType, ZodTypeDef } from 'zod'
 import { extractJsonObject } from '../utils/json'
 import { getProvider, type ProviderId } from './providers'
+import { platformChat, type PlatformCallContext } from './platform'
 
 export interface LlmConfig {
   baseUrl: string
@@ -8,6 +9,11 @@ export interface LlmConfig {
   model: string
   /** Provider-specific extra request-body fields (e.g. GLM thinking mode off). */
   extraBody?: Record<string, unknown>
+  /**
+   * M8 platform teaser: when set, calls route through the `ai-proxy` Edge
+   * Function (owner's key server-side, metered) instead of `baseUrl`/`apiKey`.
+   */
+  platform?: PlatformCallContext
 }
 
 /** Builds the adapter config from stored settings; the key comes from localStorage. */
@@ -111,6 +117,16 @@ export function buildRequestBody(
 }
 
 async function rawChat(config: LlmConfig, messages: ChatMessage[], opts?: ChatOptions): Promise<string> {
+  // M8 platform teaser: proxy through ai-proxy instead of a direct provider call.
+  if (config.platform) {
+    const auth = await config.platform.getAuth()
+    if (!auth) throw new Error('Not signed in — sign in in Settings → Account to use the free AI credit.')
+    return platformChat(
+      { feature: config.platform.feature, messages, maxTokens: opts?.maxTokens, temperature: opts?.temperature },
+      auth,
+      { onUsage: config.platform.onUsage },
+    )
+  }
   const url = `${config.baseUrl.replace(/\/+$/, '')}/chat/completions`
   const res = await fetch(url, {
     method: 'POST',

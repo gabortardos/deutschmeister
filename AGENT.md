@@ -68,6 +68,13 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
   anon key is public-by-design (safety = RLS); the service_role key must NEVER leave the
   Supabase dashboard. Cloud tables: `supabase/migrations/0001_init.sql` (owner applies via SQL
   editor; until then the app shows a friendly "not set up yet" sync error).
+- Platform AI teaser (M8, v2.1.0): signed-in keyless users get AI via the `ai-proxy` Edge
+  Function (`supabase/functions/ai-proxy/index.ts` — owner deploys by pasting into Dashboard →
+  Edge Functions; secrets `OPENAI_PLATFORM_KEY` + `PLATFORM_TTS_KEY` set there, never in repo;
+  metering tables from `supabase/migrations/0002_metering.sql`). $1 metered cap, 10 req/min,
+  email-verified only (owner: confirm his user manually — "Confirm email" is disabled
+  project-wide). BYO key always wins and bypasses the proxy entirely. The price/model table in
+  `src/llm/entitlement.ts` MIRRORS the function's — keep both in sync when swapping providers.
 
 ## Resume protocol for a new agent
 

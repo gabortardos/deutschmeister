@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Button, Card } from '../../../components/ui'
 import { getLlmLog } from '../../../llm/adapter'
 import { useAppStore } from '../../../state/store'
+import { useAuthStore } from '../../../sync/authStore'
 
 /**
  * First-run checklist (M4.2 — moved here from the dashboard so the Today page stays
@@ -10,16 +11,18 @@ import { useAppStore } from '../../../state/store'
 export default function GettingStartedSection() {
   const apiKey = useAppStore((s) => s.apiKey)
   const stats = useAppStore((s) => s.stats)
+  const user = useAuthStore((s) => s.user)
 
   const lastCall = getLlmLog()[0] ?? null
   const checklist = [
     {
-      done: apiKey.trim().length > 0,
-      label: 'Add your AI API key — see “How to get a key” in the AI Model section below',
+      done: apiKey.trim().length > 0 || user !== null,
+      label:
+        'Set up AI: add your own key (AI Model section below) — or simply sign in above for the free $1 AI credit',
     },
     {
       done: lastCall?.ok === true,
-      label: 'Run “Test connection” once (AI Model section below)',
+      label: 'BYO-key users: run “Test connection” once (AI Model section below)',
     },
     { done: (stats?.introduced ?? 0) > 0, label: 'Learn your first words in Vocabulary' },
   ]

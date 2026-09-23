@@ -297,8 +297,10 @@ STT beyond Web Speech API, gamification.
   **hybrid payments** (monthly subscription with usage allowance AND/OR never-expiring top-ups).
 - **Auth:** Supabase — Google OAuth + email/password with verification + forgot-password
   (email login doubles as fallback). Auth emails via Resend free SMTP.
-  Status: M7 shipped (v2.0.0) — sign-in + LWW sync engine + claim flow live; run
-  supabase/migrations/0001_init.sql once (owner). Delete propagation (tombstones) deferred.
+  Status: M7 ✅ (v2.0.0) sign-in + LWW sync + claim flow live (0001_init.sql applied);
+  M8 ✅ (v2.1.0) platform teaser live — `ai-proxy` Edge Function (gpt-5-mini chat + Google HD
+  voice, $1 metered, 10 req/min, email-verified only), `0002_metering.sql`, Settings meter +
+  paywall with BYO escape hatch. Delete propagation (tombstones) still deferred.
 - **Platform-key security:** the owner's provider key lives ONLY as a Supabase Edge Function
   secret; keyless users' AI calls go through `ai-proxy` with server-side metering, caps, and
   rate limits. Never in the client bundle, repo, or docs.

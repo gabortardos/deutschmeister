@@ -1,11 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
 import { Badge, Button, Card, inputClass } from '../../components/ui'
-import { llmCachePort } from '../../db/repositories/llmCacheRepo'
 import type { VocabWord } from '../../db/types'
 import { gradeAnswer } from '../../engine/grader'
-import { llmConfigFromSettings } from '../../llm/adapter'
-import { exampleSentences, type ExampleSentence, type LlmServiceDeps } from '../../llm/services'
+import { exampleSentences, type ExampleSentence } from '../../llm/services'
 import { useAppStore } from '../../state/store'
+import { useLlmDeps } from '../../state/useLlmDeps'
 import { tts } from '../../speech/tts'
 import { ARTICLE_CLASS, WordFormsPanel } from './WordForms'
 
@@ -52,19 +51,12 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const speechSettings = useAppStore((s) => s.settings)
-  const apiKey = useAppStore((s) => s.apiKey)
 
   // AI example sentences (M3) — only available with a configured key
   const [aiExamples, setAiExamples] = useState<ExampleSentence[] | null>(null)
   const [aiBusy, setAiBusy] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
-  const aiDeps: LlmServiceDeps | null = useMemo(
-    () =>
-      speechSettings && apiKey.trim().length > 0
-        ? { config: llmConfigFromSettings(speechSettings, apiKey), cache: llmCachePort }
-        : null,
-    [speechSettings, apiKey],
-  )
+  const aiDeps = useLlmDeps('examples').deps
 
   const word = words[index]
   const options = useMemo(() => (word ? choiceOptions(word, bank) : []), [word, bank])

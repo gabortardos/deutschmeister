@@ -34,3 +34,9 @@ export function getSupabase(): SupabaseClient | null {
   })
   return client
 }
+
+/** Edge Function base URL (…/functions/v1); null when the build has no env (M8 ai-proxy). */
+export function supabaseFunctionsUrl(): string | null {
+  const env = readSupabaseEnv(import.meta.env as unknown as Record<string, string | undefined>)
+  return env ? `${env.url}/functions/v1` : null
+}

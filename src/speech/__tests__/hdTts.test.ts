@@ -3,7 +3,10 @@ import {
   FALLBACK_HD_VOICES,
   LruCache,
   buildSynthesizeRequest,
+  configurePlatformTts,
   decodeBase64,
+  hdTts,
+  platformTtsBody,
   sortVoiceInfos,
 } from '../hdTts'
 
@@ -72,5 +75,30 @@ describe('sortVoiceInfos', () => {
     expect(sortVoiceInfos(FALLBACK_HD_VOICES).map((v) => v.id)).toEqual(
       FALLBACK_HD_VOICES.map((v) => v.id),
     )
+  })
+})
+
+describe('platform HD voice (M8)', () => {
+  it('platformTtsBody builds the ai-proxy tts request', () => {
+    expect(platformTtsBody('Hallo', 'de-DE-Neural2-A', 0.9)).toEqual({
+      type: 'tts',
+      text: 'Hallo',
+      voice: 'de-DE-Neural2-A',
+      rate: 0.9,
+    })
+  })
+
+  it('listVoices uses the curated fallback when only the platform voice is available', async () => {
+    configurePlatformTts(() => Promise.resolve(null))
+    try {
+      const voices = await hdTts.listVoices()
+      expect(voices.map((v) => v.id)).toEqual(FALLBACK_HD_VOICES.map((v) => v.id))
+    } finally {
+      configurePlatformTts(null)
+    }
+  })
+
+  it('listVoices still throws with no key and no platform resolver', async () => {
+    await expect(hdTts.listVoices()).rejects.toThrow(/No Google TTS API key/)
   })
 })

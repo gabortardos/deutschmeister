@@ -11,11 +11,35 @@
  * consults `shouldHandle()` and falls back to browser voices on any failure.
  */
 
+import { classifyPlatformFailure } from '../llm/entitlement'
+
 const API_BASE = 'https://texttospeech.googleapis.com/v1'
 const CFG_KEY = 'dm.ttsHd'
 const KEY_STORAGE = 'dm.googleTtsKey'
 const FETCH_TIMEOUT_MS = 10_000
 const CACHE_MAX = 40
+
+/**
+ * M8 platform HD voice: when the user has no Google key of their own but is
+ * signed in, synthesis can run through the `ai-proxy` Edge Function on the
+ * owner's key (metered in characters server-side). The app root injects the
+ * resolver (src/app/Layout.tsx) — this module stays free of sync imports.
+ */
+export interface PlatformTtsAuth {
+  endpoint: string
+  token: string
+}
+
+let platformResolver: (() => Promise<PlatformTtsAuth | null>) | null = null
+
+export function configurePlatformTts(resolver: (() => Promise<PlatformTtsAuth | null>) | null): void {
+  platformResolver = resolver
+}
+
+/** Pure request body for the ai-proxy tts route (unit-tested). */
+export function platformTtsBody(text: string, voice: string, rate: number): Record<string, unknown> {
+  return { type: 'tts', text, voice, rate }
+}
 
 export interface HdTtsConfig {
   enabled: boolean
@@ -197,16 +221,62 @@ function play(url: string, onEnd?: () => void): void {
   })
 }
 
+/** Platform route via ai-proxy (M8). Resolves false when unavailable → browser voice. */
+async function speakPlatform(
+  text: string,
+  voice: string,
+  rate: number,
+  onEnd?: () => void,
+): Promise<boolean> {
+  const resolver = platformResolver
+  if (!resolver) return false
+  const auth = await resolver()
+  if (!auth) return false
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+  try {
+    const res = await fetch(auth.endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${auth.token}` },
+      body: JSON.stringify(platformTtsBody(text, voice, rate)),
+      signal: controller.signal,
+    })
+    if (!res.ok) {
+      let code: string | null = null
+      try {
+        code = ((await res.json()) as { error?: string }).error ?? null
+      } catch {
+        // non-JSON body
+      }
+      throw new Error(classifyPlatformFailure(res.status, code).message)
+    }
+    const data = (await res.json()) as { audioContent?: string }
+    if (!data.audioContent) throw new Error('The HD voice service returned no audio.')
+    const blob = new Blob([decodeBase64(data.audioContent) as BlobPart], { type: 'audio/mpeg' })
+    const url = URL.createObjectURL(blob)
+    urlCache.set(cacheKey(text, voice, rate), url)
+    play(url, onEnd)
+    return true
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export const hdTts = {
   /** True when `tts.speak` should route here (browser voice becomes the fallback). */
   shouldHandle(): boolean {
-    return getHdConfig().enabled && getGoogleTtsKey().trim().length > 0
+    return getHdConfig().enabled && (getGoogleTtsKey().trim().length > 0 || platformResolver !== null)
   },
 
   /** Fetch German (de-DE) voices for the picker. Throws with a friendly message on failure. */
   async listVoices(): Promise<HdVoiceInfo[]> {
     const key = getGoogleTtsKey()
-    if (!key.trim()) throw new Error('No Google TTS API key set.')
+    if (!key.trim()) {
+      // Platform HD voice (M8): the proxy exposes only synthesize, not Google's
+      // voices endpoint — the curated free-tier Neural2 list covers the picker.
+      if (platformResolver) return sortVoiceInfos([...FALLBACK_HD_VOICES])
+      throw new Error('No Google TTS API key set.')
+    }
     const res = await fetch(`${API_BASE}/voices?languageCode=de-DE`, {
       headers: { 'x-goog-api-key': key },
     })
@@ -228,6 +298,10 @@ export const hdTts = {
     if (cached !== undefined) {
       play(cached, opts.onEnd)
       return true
+    }
+    // M8: no key of one's own → the platform proxy (owner's key, char-metered).
+    if (getGoogleTtsKey().trim().length === 0) {
+      return speakPlatform(text, voice, rate, opts.onEnd)
     }
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
