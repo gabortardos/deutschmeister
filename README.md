@@ -115,7 +115,7 @@ human can take over development with zero tribal knowledge:
 - **M6.1** TTS voice-quality fix + preview picker ✅ v1.2.0
 - **M6.2** Optional HD cloud TTS — Google Cloud TTS (user's key), Settings card + auto-fallback ✅ (v1.2.1)
 - **M6.3** Hands-free voice conversation — state machine + silence detection + auto-TTS ✅ (v1.2.2, closes M6)
-- **M7** Accounts: Supabase Google + email (verification, reset, fallback), guest stays — sign-in ✅ M7.1 (v1.3.0), sync/claim ⬜
+- **M7** Accounts: Supabase Google + email (verification, reset, fallback), guest stays — ✅ v2.0.0 (sign-in + LWW sync + claim)
 - **M8** Platform-AI teaser: $1 metered for verified accounts; BYO key stays free ⬜
 - **M9** Hybrid payments: subscription and/or top-ups via Paddle/Stripe ⬜
 - **M10** Graphics/UI: design system, dark mode, code-splitting, mobile nav, stats ⬜

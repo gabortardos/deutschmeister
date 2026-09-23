@@ -63,6 +63,12 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
   The user's key is NOT stored in this repo — the user pastes it into Settings in the browser
   (or opens `#/settings?key=…`, which stores + strips it). Never echo real keys into files/logs/commits.
 
+- Supabase (M7): project `deutschmeister` (eu-central-1). Client env ships via GitHub repo
+  VARIABLES `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (+ local `.env`, gitignored) — the
+  anon key is public-by-design (safety = RLS); the service_role key must NEVER leave the
+  Supabase dashboard. Cloud tables: `supabase/migrations/0001_init.sql` (owner applies via SQL
+  editor; until then the app shows a friendly "not set up yet" sync error).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

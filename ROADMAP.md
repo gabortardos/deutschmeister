@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M1.1 ✅ · M1.2 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2: M4.2 ✅ (v1.0.1) · M5.1 ✅ (v1.1.0) · M5.2 ✅ (v1.1.1) · M5.3 ✅ (v1.1.2) · M6.1 ✅ (v1.2.0) · M6.2 ✅ (v1.2.1) · M6.3 ✅ (v1.2.2) · M7.1 ✅ (v1.3.0) · M7.2–M11 ⬜** — full plan: `docs/PHASE2_PLAN.md`
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M1.1 ✅ · M1.2 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2: M4.2 ✅ (v1.0.1) · M5.1 ✅ (v1.1.0) · M5.2 ✅ (v1.1.1) · M5.3 ✅ (v1.1.2) · M6.1 ✅ (v1.2.0) · M6.2 ✅ (v1.2.1) · M6.3 ✅ (v1.2.2) · M7.1 ✅ (v1.3.0) · M7.2 ✅ (v2.0.0) · M8–M11 ⬜** — full plan: `docs/PHASE2_PLAN.md`
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -27,7 +27,8 @@
 | M6.2 HD cloud TTS (optional) | ✅ done | `c0ab93a` | Google Cloud TTS (owner pick; CORS preflight-verified browser-direct), `speech/hdTts.ts` adapter (localStorage key+config, LRU cache, friendly errors), `tts.speak` auto-routing with browser-voice fallback, Settings→Speech HD card (toggle+key+voice picker+preview), 7 tests (158), v1.2.1 |
 | M6.3 Hands-free voice conversation | ✅ done | (this commit) | `engine/voiceSession.ts` pure state machine (+7 tests), `stt.listenStream` continuous STT, `useHandsFree` driver (1.6 s silence commit, Chrome auto-stop restart), session page hands-free card (status + live partial + auto-speak via TTS `onEnd`, HD or browser voice), `sendText` refactor, v1.2.2 — closes M6 |
 | M7.1 Accounts: auth foundation | ✅ done | (this commit) | Supabase client (env-gated; anon key ships via GitHub repo variables, never in repo), zustand auth store + root `initAuth` (parses OAuth/confirm/recovery redirects), Settings→Account (Google PKCE + email/password + verification + forgot/reset + recovery form), dismissible dashboard account prompt, guest mode untouched, +9 tests (174), v1.3.0 |
-| M7 Accounts | 🔧 in progress | — | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode, v2.0 — auth ✅ M7.1; M7.2 sync engine + RLS tables next |
+| M7.2 Cloud sync (LWW) | ✅ done | (this commit) | `syncRepo` adapters (10 user-data tables; grammarTopics/llmCache excluded; API keys never syncable — localStorage only), `syncEngine` planMerge last-write-wins + chunked pull/push + claim mode ("this browser's data wins", confirm-guarded), auto-sync on app start/sign-in + store hydrate after pulls, migration `supabase/migrations/0001_init.sql` (jsonb payload, PK (user_id,id), RLS own-rows-only), Account sync-status UI (Sync now / claim / last-run line), +11 tests (185), v2.0.0 — owner action: run migration SQL once |
+| M7 Accounts | ✅ done | (this commit) | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode, v2.0 |
 | M8 Platform AI teaser | ⬜ planned | — | `ai-proxy` Edge Function, $1 metered teaser, rate limits, paywall + BYO escape hatch |
 | M9 Payments (hybrid) | ⬜ planned | — | Paddle checkout (subscription + top-ups), webhooks → entitlements, Account & Billing UI |
 | M10 Graphics/UI | ⬜ planned | — | design system, dark mode, code-splitting, mobile nav, `progressStats` engine + stats zone |

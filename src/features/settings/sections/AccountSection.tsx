@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Badge, Button, Card, Field, inputClass } from '../../../components/ui'
 import { mapAuthError, validateEmail, validatePassword } from '../../../sync/auth'
 import { useAuthStore } from '../../../sync/authStore'
+import { syncNow } from '../../../sync/syncEngine'
+import { useSyncStore } from '../../../sync/syncStore'
 import {
   requestPasswordReset,
   setNewPassword,
@@ -21,6 +23,7 @@ type Mode = 'signin' | 'signup' | 'forgot'
 
 export default function AccountSection() {
   const { ready, configured, user, recovery } = useAuthStore()
+  const sync = useSyncStore()
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -102,6 +105,24 @@ export default function AccountSection() {
     }
   }
 
+  async function doSync(mode: 'merge' | 'claim') {
+    setBusy(true)
+    setError('')
+    const result = await syncNow(mode)
+    if (!result.ok) setError(result.error ?? 'Sync failed.')
+    setBusy(false)
+  }
+
+  function claim() {
+    if (
+      window.confirm(
+        'Push this browser’s data to your account, overwriting matching rows from other devices? Rows that exist only in your account are kept.',
+      )
+    ) {
+      void doSync('claim')
+    }
+  }
+
   // Recovery link landed (PASSWORD_RECOVERY): show the set-new-password form first.
   if (recovery) {
     return (
@@ -139,23 +160,53 @@ export default function AccountSection() {
 
   if (user) {
     return (
-      <Card title="Account" description="Optional — cross-device sync is being activated step by step.">
+      <Card
+        title="Account"
+        description="Optional — learning progress syncs to your account; guest data always stays local."
+      >
         <div className="flex flex-wrap items-center gap-3">
-          <Badge tone="ok">Signed in</Badge>
+          <Badge tone={sync.status === 'error' ? 'bad' : 'ok'}>
+            {sync.status === 'error' ? 'Sync issue' : sync.status === 'syncing' ? 'Syncing…' : 'Signed in'}
+          </Badge>
           <span className="text-sm text-slate-700">
             {user.email}{' '}
             <span className="text-slate-400">· {user.provider === 'google' ? 'Google' : 'email'}</span>
           </span>
         </div>
-        <p className="mt-3 text-xs text-slate-400">
-          Your API keys and speech settings always stay in this browser — only learning data is
-          ever synced.
-        </p>
-        <div className="mt-4">
-          <Button variant="secondary" disabled={busy} onClick={() => void run(() => signOut())}>
+        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+          <span className="font-semibold text-slate-700">Cloud sync:</span>{' '}
+          {sync.status === 'syncing' || sync.status === 'error'
+            ? sync.message
+            : sync.lastSyncAt
+              ? `${new Date(sync.lastSyncAt).toLocaleString()} — ${sync.message}`
+              : 'runs automatically when you open the app and after each sign-in.'}
+        </div>
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            disabled={busy || sync.status === 'syncing'}
+            onClick={() => void doSync('merge')}
+          >
+            Sync now
+          </Button>
+          <Button
+            variant="danger"
+            disabled={busy || sync.status === 'syncing'}
+            onClick={claim}
+            title="Overwrite matching account rows with this browser’s data"
+          >
+            Use this browser’s data
+          </Button>
+          <Button variant="ghost" disabled={busy} onClick={() => void run(() => signOut())}>
             Sign out
           </Button>
         </div>
+        <p className="mt-3 text-xs text-slate-400">
+          Your API keys and speech settings always stay in this browser — only learning data is
+          ever synced. “Use this browser’s data” overwrites matching account rows with this
+          device’s version; rows that exist only in your account are kept.
+        </p>
       </Card>
     )
   }

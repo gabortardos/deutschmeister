@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
 import { getSupabase } from './supabaseClient'
+import { syncNow } from './syncEngine'
 
 export interface AuthUser {
   id: string
@@ -46,8 +47,10 @@ export async function initAuth(): Promise<void> {
   sb.auth.onAuthStateChange((event, session) => {
     useAuthStore.setState({ recovery: event === 'PASSWORD_RECOVERY' })
     applySession(session)
+    if (event === 'SIGNED_IN') void syncNow('merge')
   })
   useAuthStore.setState({ ready: true })
+  if (data.session) void syncNow('merge')
 }
 
 function applySession(session: Session | null): void {
