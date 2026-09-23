@@ -115,6 +115,11 @@ Deterministic core needs no key, no net.
   `byoKey → grants all, free`. This is the door for Dormant option #1.
 - **Owner touchpoints (~10 min):** pick teaser provider, create its key, set as Edge Function
   secret (never in repo).
+- **Open decision at M8 (deferred 2026-09-23, owner):** does the $1 teaser also cover **HD cloud
+  TTS** (owner's Google key via the same proxy, metered in characters)? Facts for that call:
+  Google TTS free tier = 1M Neural2 chars/month **per billing project** (shared across all
+  teaser users ≈ ~3,000 spoken replies; then $16/1M ≈ ~200 replies per $1 of meter); user's own
+  Google key stays free regardless (M6.2 BYO path, unchanged). Decide from real teaser usage.
 
 ### M9 — Payments, hybrid (v2.2)
 - Paddle (preferred, MoR → EU VAT handled) or Stripe: **hosted checkout** products for (a) Pro
