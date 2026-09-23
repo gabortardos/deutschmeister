@@ -13,6 +13,9 @@ picker + optional HD cloud voice via Google Cloud TTS with the user's key), 20 A
 scenarios (incl. hands-free voice mode: continuous mic, silence commit, auto-spoken replies), AI
 drills/explain/examples — all with the user's own API key
 (GLM bigmodel.cn / OpenAI / DeepSeek). Export/import backup, offline shell, CI→Pages deploy.
+Owner's daily driver (noted 2026-09-21): OpenAI **gpt-5-mini** BYO key — the GLM Coding Plan
+(Lite) key is unusable in-browser (z.ai sends no CORS headers; bigmodel.cn rejects z.ai keys;
+see `src/llm/providers.ts`).
 Deterministic core needs no key, no net.
 
 ## Locked owner decisions (do not re-ask — build)
@@ -32,7 +35,7 @@ Deterministic core needs no key, no net.
 6. **Auth email via Resend free SMTP** (100 mails/day) — Supabase's built-in SMTP is dev-only
    (~2–4 mails/hour).
 7. Teaser-pool provider chosen by owner at M8 (candidates: `glm-4.5-flash` free tier ≈ $0 cost,
-   `gpt-4o-mini`, `deepseek-chat`).
+   `gpt-4o-mini`/`gpt-5-mini`, `deepseek-chat`; owner's own daily model today is `gpt-5-mini`).
 8. **No gamification now** — progress visuals only; but nothing may preclude it later
    (Dormant options #2).
 9. **Sequencing** — the commercial arc (M7→M8→M9) lands BEFORE the graphics pass (M10),
@@ -142,6 +145,28 @@ Deterministic core needs no key, no net.
 Mistake bank (from `drillAttempts`/matcher failures) · custom scenario builder · tutor chat ·
 sentence listening · cloze reviews · insights page · vocab placement re-take · free writing
 with correction.
+
+Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
+
+- **Mistake explanations — on demand, hybrid.** The conversation mistake pills
+  (`said → corrected (type)`) become tappable → popover (click/tap, NOT hover — mobile-first
+  PWA has no hover, and hover needs a separate a11y path). Popover shows: (a) an instant
+  **static micro-lesson** per `MistakeCategory` (gender/case/word-order/vocab/verb-form/
+  other) — free, offline, deterministic, testable; plus (b) an **Explain** button →
+  `explainMistake()` LLM call (2–3 sentences specific to that sentence, link the matching
+  grammar topic if one exists) routed through the existing LlmCache (~$0.0002/call on paid
+  tiers, ≈free on GLM flash; repeat explanations = cache hits = free). Deliberately NOT
+  baked into the conversation-turn schema — always-on explanations would add ~30–60% output
+  tokens to every turn and slow/price up the base UX.
+- **Two-phase streaming turns.** Today nothing renders until the whole turn JSON passes
+  validation → that's the perceived latency. Fix: stream the tutor reply text first
+  ("tutor is typing…" within ~1 s), then a second cheap background call grades
+  mistakes/translation and patches the turn. Cost ~1.5× tokens per turn. Pair with TTS
+  speaking sentence-by-sentence once streamed.
+- **Cheap speed levers (when wanted, no spend):** cap tutor reply length in the prompt
+  (≤2 short sentences) + trim conversation history to the last ~10–12 turns. Owner decision
+  2026-09-21: do NOT buy a faster paid tier now — current latency is acceptable; revisit
+  with real usage data.
 
 ## Payments reality check (recorded so nobody re-litigates it)
 Card processing cannot be self-developed or free — card networks require a certified PSP
