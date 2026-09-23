@@ -1,5 +1,6 @@
 import AiModelSection from './sections/AiModelSection'
 import GettingStartedSection from './sections/GettingStartedSection'
+import AccountSection from './sections/AccountSection'
 import LearningSection from './sections/LearningSection'
 import SpeechSection from './sections/SpeechSection'
 import ContentStudioSection from './sections/ContentStudioSection'
@@ -17,6 +18,7 @@ export default function SettingsPage() {
         </p>
       </div>
       <GettingStartedSection />
+      <AccountSection />
       <AiModelSection />
       <LearningSection />
       <SpeechSection />
@@ -24,8 +26,8 @@ export default function SettingsPage() {
       <DataSection />
       <DiagnosticsSection />
       <p className="pt-2 text-center text-xs text-slate-400">
-        DeutschMeister v{APP_VERSION} · local-first PWA · your data never leaves this browser
-        (except your own AI requests)
+        DeutschMeister v{APP_VERSION} · local-first PWA · your data stays in this browser
+        unless you sign in (Settings → Account)
       </p>
     </div>
   )

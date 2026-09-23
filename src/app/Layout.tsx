@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAppStore } from '../state/store'
+import { initAuth } from '../sync/authStore'
 import { APP_VERSION } from '../version'
 
 const NAV_ITEMS = [
@@ -15,6 +17,12 @@ const NAV_ITEMS = [
 
 export default function Layout() {
   const profile = useAppStore((s) => s.profile)
+
+  // Wire Supabase auth exactly once at app start, before any page renders: this is what
+  // parses the OAuth / email-confirmation / password-recovery redirect on first load.
+  useEffect(() => {
+    void initAuth()
+  }, [])
 
   return (
     <div className="min-h-screen">
@@ -55,7 +63,8 @@ export default function Layout() {
       </main>
 
       <footer className="mx-auto max-w-4xl px-4 pb-8 pt-2 text-center text-xs text-slate-400">
-        Local-first: all progress and keys stay in this browser · v{APP_VERSION}
+        Local-first: your data and API keys stay in this browser (account sync is optional) ·
+        v{APP_VERSION}
       </footer>
     </div>
   )

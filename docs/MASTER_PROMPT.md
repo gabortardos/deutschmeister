@@ -297,6 +297,7 @@ STT beyond Web Speech API, gamification.
   **hybrid payments** (monthly subscription with usage allowance AND/OR never-expiring top-ups).
 - **Auth:** Supabase — Google OAuth + email/password with verification + forgot-password
   (email login doubles as fallback). Auth emails via Resend free SMTP.
+  Status: M7.1 shipped (v1.3.0) — sign-in/session/recovery live; sync engine + RLS in M7.2.
 - **Platform-key security:** the owner's provider key lives ONLY as a Supabase Edge Function
   secret; keyless users' AI calls go through `ai-proxy` with server-side metering, caps, and
   rate limits. Never in the client bundle, repo, or docs.

@@ -5,7 +5,7 @@
 > Resume protocol for a fresh agent: read `AGENT.md` → `ROADMAP.md` → this file, run the gate
 > (it must be green), then build the next unchecked milestone below. Approved 2026-09-21.
 
-## Where we are (v1.2.2, live)
+## Where we are (v1.3.0, live)
 
 M0–M4 complete. Local-first, single-user PWA: 1,902-word vocab corpus (A1–B2) + SM-2 SRS, 50 grammar
 topics (A1–B2) + placement, word bank, Speak & Listen drills (quality-ranked TTS voices + preview
@@ -15,7 +15,10 @@ drills/explain/examples — all with the user's own API key
 (GLM bigmodel.cn / OpenAI / DeepSeek). Export/import backup, offline shell, CI→Pages deploy.
 Owner's daily driver (noted 2026-09-21): OpenAI **gpt-5-mini** BYO key — the GLM Coding Plan
 (Lite) key is unusable in-browser (z.ai sends no CORS headers; bigmodel.cn rejects z.ai keys;
-see `src/llm/providers.ts`).
+see `src/llm/providers.ts`). Accounts (M7.1, v1.3.0): sign-in is live — Google OAuth (PKCE) +
+email/password with verification, forgot-password and recovery; the anon key ships via GitHub
+repo variables (public-by-design, never in the repo). M7.2 (sync engine + RLS tables +
+"claim this browser's data") is next; guest mode stays fully usable without an account.
 Deterministic core needs no key, no net.
 
 ## Locked owner decisions (do not re-ask — build)
