@@ -113,7 +113,7 @@ human can take over development with zero tribal knowledge:
 - **M5.2** Grammar bank: 35 → 50 topics (A1–B2) ✅ v1.1.1
 - **M5.3** Conversation scenarios: 11 → 20 ✅ v1.1.2
 - **M6.1** TTS voice-quality fix + preview picker ✅ v1.2.0
-- **M6.2** Optional HD cloud TTS (provider decision with owner) ⬜
+- **M6.2** Optional HD cloud TTS — Google Cloud TTS (user's key), Settings card + auto-fallback ✅ (v1.2.1)
 - **M6.3** Hands-free voice conversation ⬜
 - **M7** Accounts: Supabase Google + email (verification, reset, fallback), guest stays ⬜
 - **M8** Platform-AI teaser: $1 metered for verified accounts; BYO key stays free ⬜

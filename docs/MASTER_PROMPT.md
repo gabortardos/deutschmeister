@@ -85,11 +85,14 @@ and ALL configuration is done in-app via a Settings & Admin hub — the user nev
    https://open.bigmodel.cn/api/paas/v4.** The provider BASE URL and MODEL ID are always
    editable free-text in Settings, so endpoint/name changes never require a code change.
    No backend server, ever.
-4. Speech (oral exercises, input AND output): Web Speech API only. TTS via speechSynthesis
-   (prefer de-DE voice, default rate 0.9, configurable). STT via SpeechRecognition/
-   webkitSpeechRecognition (lang de-DE). ALWAYS feature-detect and degrade gracefully to text
-   input; recommend Chrome/Edge in the UI when STT is unavailable. ALL speech code lives in
-   src/speech/ behind interfaces so the future iOS (Capacitor) build can swap native speech in.
+4. Speech (oral exercises, input AND output): Web Speech API by default. TTS via speechSynthesis
+   (quality-ranked German voice selection — see `engine/voiceRanking.ts`; default rate 0.9,
+   configurable) plus an OPTIONAL HD cloud voice via Google Cloud TTS with the user's own API
+   key (browser-direct REST, CORS-verified; `speech/hdTts.ts`; falls back to the browser voice
+   on any error). STT via SpeechRecognition/webkitSpeechRecognition (lang de-DE). ALWAYS
+   feature-detect and degrade gracefully to text input; recommend Chrome/Edge in the UI when
+   STT is unavailable. ALL speech code lives in src/speech/ behind interfaces so the future
+   iOS (Capacitor) build can swap native speech in.
 5. Daily goal: N new words (default 5, configurable 1–10) + 1 active grammar topic. Grammar
    topic advances when its drills reach mastery, otherwise stays in rotation.
 6. Curriculum data model covers CEFR A1–C2; seeded content covers A1–B1 (≥400 vocab items,
@@ -177,8 +180,9 @@ Sections (persisted instantly, effective without reload or rebuild):
   rename/endpoint change themselves).
 - Learning: daily word goal (1–10), CEFR level override, re-run placement, regenerate today's
   lesson plan, grammar topic manual advance/reset.
-- Speech: TTS voice picker (de-DE voices) + rate slider + preview button, STT availability
-  indicator with browser guidance, voice features enable/disable.
+- Speech: ranked TTS voice picker with per-voice ▶ previews + quality badges, rate slider,
+  optional HD cloud voice (Google Cloud TTS, user's own key, browser-voice fallback), STT
+  availability indicator with browser guidance, voice features enable/disable.
 - Content Studio: add custom words (all fields) and custom scenarios; per-grammar-topic
   "Generate 5 more drills with AI"; LLM cache stats + clear cache.
 - Data: export full backup JSON (all tables), import/restore (with confirm), reset progress

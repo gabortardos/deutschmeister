@@ -1,7 +1,7 @@
 {
   "name": "deutschmeister",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "description": "DeutschMeister — local-first German learning app: vocabulary SRS, grammar drills, and AI conversation practice.",
   "scripts": {

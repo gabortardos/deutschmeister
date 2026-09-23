@@ -3,7 +3,7 @@
 > Update this file in the same commit as the work it describes. It is the shared memory
 > between AI agents (and humans) working on this repo. Full spec: `docs/MASTER_PROMPT.md`.
 
-## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M1.1 ✅ · M1.2 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2: M4.2 ✅ (v1.0.1) · M5.1 ✅ (v1.1.0) · M5.2 ✅ (v1.1.1) · M5.3 ✅ (v1.1.2) · M6.1 ✅ (v1.2.0) · M6.2–M11 ⬜** — full plan: `docs/PHASE2_PLAN.md`
+## Status: M0 ✅ · M0.1 ✅ · M1 ✅ · M1.1 ✅ · M1.2 ✅ · M2 ✅ · M2.1 ✅ · M2.2 ✅ · M2.3 ✅ · M3 ✅ · M4.1 ✅ · M4 ✅ — **v1.0.0 complete** 🎉 · **Phase 2: M4.2 ✅ (v1.0.1) · M5.1 ✅ (v1.1.0) · M5.2 ✅ (v1.1.1) · M5.3 ✅ (v1.1.2) · M6.1 ✅ (v1.2.0) · M6.2 ✅ (v1.2.1) · M6.3–M11 ⬜** — full plan: `docs/PHASE2_PLAN.md`
 
 | Milestone | State | Commit | Notes |
 |---|---|---|---|
@@ -24,7 +24,7 @@
 | M5.2 Grammar bank → 50 topics | ✅ done | `b65ce62` | 15 B2 topics (~120 drills, append-stable `b2-*` ids), placement bank 30→40 + B2 placement, GrammarPage B2 filter, v1.1.1 |
 | M5.3 Conversation scenarios → 20 | ✅ done | `2465551` | +9 B1/B2 life situations (6 key phrases each, Sie/du register), idempotent seeding, spread A1 4/A2 3/B1 7/B2 6, v1.1.2 |
 | M6.1 TTS voice quality | ✅ done | `8e6448d` | `engine/voiceRanking.ts` (network/premium first, robotic engines last), best-voice auto-pick in `tts.ts`, ranked preview picker in Settings→Speech, v1.2.0 |
-| M6.2 HD cloud TTS (optional) | ⬜ planned | — | provider + pricing owner decision, adapter + Settings toggle |
+| M6.2 HD cloud TTS (optional) | ✅ done | (this commit) | Google Cloud TTS (owner pick; CORS preflight-verified browser-direct), `speech/hdTts.ts` adapter (localStorage key+config, LRU cache, friendly errors), `tts.speak` auto-routing with browser-voice fallback, Settings→Speech HD card (toggle+key+voice picker+preview), 7 tests (158), v1.2.1 |
 | M6.3 Hands-free voice conversation | ⬜ planned | — | `voiceSession.ts` state machine + silence detection + auto-TTS; Chrome/Edge full, Safari partial, Firefox typing fallback |
 | M7 Accounts | ⬜ planned | — | Supabase: Google + email/password (verification, forgot-password, fallback), RLS, sync, data-claim, guest mode, v2.0 |
 | M8 Platform AI teaser | ⬜ planned | — | `ai-proxy` Edge Function, $1 metered teaser, rate limits, paywall + BYO escape hatch |
@@ -195,6 +195,26 @@ Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHAS
       quality labels) → 151 total
 - [x] DoD: gate green (tsc + vitest 151 + build); v1.2.0
 
+## M6.2 checklist (optional HD cloud TTS — Google Cloud TTS)
+
+- [x] Provider owner decision: **Google Cloud TTS** (of Google/Azure) — plain REST + API key
+      from the browser, no SDK; CORS preflight verified 2026-09-23 (`x-goog-api-key` allowed,
+      Pages origin reflected); Neural2 free tier ≈ 1M chars/month. Provider isolated to one
+      file (`speech/hdTts.ts`) so a future swap touches nothing else.
+- [x] `src/speech/hdTts.ts` — adapter: `text:synthesize` → MP3 → `Audio` (10 s abort, friendly
+      401/403/429 errors), `voices` list for the picker (Neural2-first sort, hardcoded
+      fallback), LRU object-URL cache (40 entries, dispose revokes), pure helpers unit-tested.
+- [x] Key + config in localStorage ONLY (`dm.googleTtsKey`, `dm.ttsHd`) — same policy as the
+      LLM key: never in IndexedDB, never in exports. No settings-schema/DB change needed.
+- [x] `src/speech/tts.ts` — `speak()` routes through HD when enabled + key set
+      (`shouldHandle()`), falls back to the browser voice on any error/timeout; `stop()` also
+      stops HD audio. Every TTS surface upgrades automatically (they all call `tts.speak`).
+- [x] Settings → Speech: "HD cloud voice (optional)" card — enable toggle, masked key input,
+      German neural-voice dropdown (live list when key set), ▶ preview with error surfacing.
+- [x] Tests: `speech/__tests__/hdTts.test.ts` — 7 (LRU evict/recency/overwrite-dispose,
+      request body, base64 decode, voice sort + fallback list) → 158 total
+- [x] DoD: gate green (tsc + vitest 158 + build); v1.2.1
+
 ## Verification log (append after every gate run)
 
 | Date | Gate | Result |
@@ -217,3 +237,4 @@ Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHAS
 | 2026-09-21 | M5.2: tsc+vitest(142)+build(781.8 KB JS / 242.9 KB gzip) | ✅ green — grammar bank 35→50 topics (15 B2, ~120 drills, `b2-*` append-stable ids), placement bank 30→40 + `PLACEMENT_LEVELS`+B2 (quiz assesses/places at B2), GrammarPage B2 filter, Settings→Learning placement link replaces stale M2 stub, v1.1.1 |
 | 2026-09-21 | M5.3: tsc+vitest(143)+build(776 KB JS) | ✅ green — conversation scenarios 11→20 (+9 B1/B2: Bewerbungsgespräch, Reklamation, Zugverspätung, Pläne mit Freunden, Amt/Bescheid, Konflikt im Team, Nachrichten diskutieren, Vermieter-Verhandlung, Präsentation halten), level spread A1 4/A2 3/B1 7/B2 6, idempotent seeding, v1.1.2 — closes M5 |
 | 2026-09-21 | M6.1: tsc+vitest(151)+build(780 KB JS) | ✅ green — TTS voice ranking (engine/voiceRanking.ts pure module, network/premium first, robotic last), tts.ts auto-picks best-ranked German voice, Settings→Speech ranked radio list with per-voice ▶ preview + quality badges, v1.2.0 |
+| 2026-09-23 | M6.2: tsc+vitest(158)+build+curl CORS preflight | ✅ green — optional HD cloud TTS via Google Cloud TTS (owner-picked, browser CORS verified): speech/hdTts.ts adapter (REST+API key, LRU cache, friendly errors, browser-voice fallback), tts.speak auto-routing + stop covers HD audio, Settings→Speech HD card (toggle+key+Neural2 picker+preview), 7 new tests, v1.2.1 |

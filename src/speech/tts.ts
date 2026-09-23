@@ -1,4 +1,5 @@
 import { rankGermanVoices } from '../engine/voiceRanking'
+import { hdTts } from './hdTts'
 
 export interface SpeakOptions {
   rate?: number
@@ -74,6 +75,26 @@ export const tts = {
   speak(text: string, opts: SpeakOptions = {}): boolean {
     if (!this.supported || !text) return false
     window.speechSynthesis.cancel()
+    hdTts.stop()
+    // Optional HD cloud voice (M6.2): async; browser voice is the fallback on any failure.
+    if (hdTts.shouldHandle()) {
+      void hdTts
+        .speak(text, { rate: opts.rate ?? 0.9 })
+        .then((played) => {
+          if (!played) this.speakBrowser(text, opts)
+        })
+        .catch((e) => {
+          console.warn('HD TTS failed — falling back to browser voice:', e instanceof Error ? e.message : e)
+          this.speakBrowser(text, opts)
+        })
+      return true
+    }
+    return this.speakBrowser(text, opts)
+  },
+
+  /** Browser speechSynthesis path (also the fallback when HD cloud TTS fails). */
+  speakBrowser(text: string, opts: SpeakOptions): boolean {
+    window.speechSynthesis.cancel()
     if (germanVoiceCache.length === 0) refreshVoiceCache()
     const voice = resolveVoice(opts.voiceURI)
     if (voice) {
@@ -96,6 +117,7 @@ export const tts = {
   },
 
   stop(): void {
+    hdTts.stop()
     if (this.supported) window.speechSynthesis.cancel()
   },
 }
