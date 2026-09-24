@@ -28,20 +28,37 @@ export function resolveAiRoute(input: RouteInput): AiRoute {
 // --- teaser model + prices -----------------------------------------------------------------
 
 /**
- * Server-fixed model of the platform teaser (owner pick 2026-09-21: gpt-5-mini;
- * the later switch to glm-4.5-flash is this constant + the Edge Function's twin).
+ * FALLBACK copy of the server-fixed teaser model (owner pick 2026-09-21: gpt-5-mini).
+ * Since M8.1 the LIVE value arrives in every ai-proxy usage response and the client
+ * store adopts it automatically; these bundled constants only serve offline sessions
+ * and clients talking to a not-yet-redeployed function.
  */
 export const TEASER_MODEL = 'gpt-5-mini'
 
 /** Teaser budget in micro-USD ($1 = 1_000_000 µ$). */
 export const TEASER_CAP_USD_MICROS = 1_000_000
 
+/** Price row: USD per 1M tokens, input and output. */
+export interface PlatformPriceRow {
+  in: number
+  out: number
+}
+
+/** model → price row. */
+export type PlatformPrices = Readonly<Record<string, PlatformPriceRow>>
+
+/** Price row used when a model is missing from the table (gpt-5-mini launch price). */
+export const DEFAULT_PLATFORM_PRICE: PlatformPriceRow = { in: 0.25, out: 2 }
+
 /**
- * USD per 1M tokens for platform models — mirror of the Edge Function's PRICES
- * table (the function is authoritative for billing; this copy drives UI display).
+ * USD per 1M tokens for platform models — the FALLBACK copy of the Edge Function's
+ * PRICES table. Since M8.1 the function PUBLISHES its live model+prices in every
+ * usage response and the platform store adopts them, so a provider/price change in
+ * the function updates the client meter automatically; this copy only serves
+ * offline sessions and older function deployments.
  * gpt-5-mini launch pricing $0.25 in / $2.00 out — revisit at M9 (prices drift).
  */
-export const PLATFORM_PRICES_USD_PER_M: Readonly<Record<string, { in: number; out: number }>> = {
+export const PLATFORM_PRICES_USD_PER_M: PlatformPrices = {
   'gpt-5-mini': { in: 0.25, out: 2 },
 }
 
@@ -55,10 +72,20 @@ export const PLATFORM_TTS_PRICE_USD_PER_M_CHARS = 0
 /** Server-side monthly char guard for platform TTS (abuse limit at the $0 price). */
 export const PLATFORM_TTS_MONTHLY_CHAR_CAP = 200_000
 
-/** Cost of one metered chat call in micro-USD. Pure — mirrored in the Edge Function. */
-export function chatCostUsdMicros(model: string, tokensIn: number, tokensOut: number): number {
-  const price = PLATFORM_PRICES_USD_PER_M[model] ?? { in: 0.25, out: 2 }
+/** Cost of one metered chat call in micro-USD against any price table. Pure. */
+export function chatCostUsdMicrosWith(
+  prices: PlatformPrices,
+  model: string,
+  tokensIn: number,
+  tokensOut: number,
+): number {
+  const price = prices[model] ?? DEFAULT_PLATFORM_PRICE
   return Math.round(tokensIn * price.in + tokensOut * price.out)
+}
+
+/** Cost against the bundled fallback table (offline/tests). */
+export function chatCostUsdMicros(model: string, tokensIn: number, tokensOut: number): number {
+  return chatCostUsdMicrosWith(PLATFORM_PRICES_USD_PER_M, model, tokensIn, tokensOut)
 }
 
 /** Remaining budget in micro-USD, never below zero. */

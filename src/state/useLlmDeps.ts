@@ -11,7 +11,7 @@ import { useMemo } from 'react'
 import { useAppStore } from './store'
 import { useAuthStore } from '../sync/authStore'
 import { llmConfigFromSettings, type LlmConfig } from '../llm/adapter'
-import { resolveAiRoute, TEASER_MODEL, type AiRoute } from '../llm/entitlement'
+import { resolveAiRoute, type AiRoute } from '../llm/entitlement'
 import type { LlmServiceDeps } from '../llm/services'
 import { llmCachePort } from '../db/repositories/llmCacheRepo'
 import { currentPlatformAuth, usePlatformStore } from './platformStore'
@@ -33,6 +33,7 @@ export function useLlmDeps(feature: string, opts: { cache?: boolean } = {}): AiD
   const apiKey = useAppStore((s) => s.apiKey)
   const user = useAuthStore((s) => s.user)
   const applyUsage = usePlatformStore((s) => s.applyUsage)
+  const platformModel = usePlatformStore((s) => s.model)
   const useCache = opts.cache !== false
   const route = resolveAiRoute({ hasByoKey: apiKey.trim().length > 0, signedIn: user !== null })
 
@@ -46,9 +47,10 @@ export function useLlmDeps(feature: string, opts: { cache?: boolean } = {}): AiD
       // baseUrl/apiKey are unused on the platform path (kept schema-valid + log-friendly)
       baseUrl: 'platform://ai-proxy',
       apiKey: 'platform',
-      model: TEASER_MODEL,
+      // Server-published model (store), bundled fallback until first usage refresh.
+      model: platformModel,
       platform: { feature, getAuth: currentPlatformAuth, onUsage: applyUsage },
     }
     return { deps: { config, ...(useCache ? { cache: llmCachePort } : {}) }, route }
-  }, [settings, apiKey, route, feature, applyUsage, useCache])
+  }, [settings, apiKey, route, feature, applyUsage, platformModel, useCache])
 }

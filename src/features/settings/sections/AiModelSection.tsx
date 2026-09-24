@@ -46,7 +46,7 @@ const PROVIDER_MANUALS: Record<ProviderId, { steps: string[]; warn?: string }> =
  * remaining budget visible and — at zero — the paywall with the BYO escape hatch.
  */
 function PlatformAiCard() {
-  const { loading, spendUsdMicros, capUsdMicros, exhausted, error, fetchedAt, refresh } =
+  const { loading, spendUsdMicros, capUsdMicros, model, exhausted, error, fetchedAt, refresh } =
     usePlatformStore()
   const remaining = Math.max(0, capUsdMicros - spendUsdMicros)
   const pct = capUsdMicros > 0 ? Math.min(100, Math.round((remaining / capUsdMicros) * 100)) : 0
@@ -88,6 +88,9 @@ function PlatformAiCard() {
         <Button type="button" disabled={loading} onClick={() => void refresh()}>
           {loading ? 'Refreshing…' : 'Refresh'}
         </Button>
+        <span>
+          model <span className="font-mono">{model}</span>
+        </span>
         {fetchedAt !== null && <span>updated {new Date(fetchedAt).toLocaleTimeString()}</span>}
         {error && <span className="text-red-600">{error}</span>}
       </div>

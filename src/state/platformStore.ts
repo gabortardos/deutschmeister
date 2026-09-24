@@ -5,7 +5,12 @@
  */
 import { create } from 'zustand'
 import { platformUsageSummary, type PlatformAuth, type UsageMeter } from '../llm/platform'
-import { TEASER_CAP_USD_MICROS } from '../llm/entitlement'
+import {
+  PLATFORM_PRICES_USD_PER_M,
+  TEASER_CAP_USD_MICROS,
+  TEASER_MODEL,
+  type PlatformPrices,
+} from '../llm/entitlement'
 import { getSupabase, supabaseFunctionsUrl } from '../sync/supabaseClient'
 
 /** Session-token auth for ai-proxy; null when signed out or the build lacks env. */
@@ -23,6 +28,10 @@ interface PlatformState {
   spendUsdMicros: number
   capUsdMicros: number
   plan: string
+  /** Live pricing config adopted from the usage response (M8.1); bundled fallbacks
+   *  in src/llm/entitlement.ts serve offline sessions / older function deploys. */
+  model: string
+  prices: PlatformPrices
   fetchedAt: number | null
   exhausted: boolean
   error: string | null
@@ -36,6 +45,8 @@ export const usePlatformStore = create<PlatformState>((set, get) => ({
   spendUsdMicros: 0,
   capUsdMicros: TEASER_CAP_USD_MICROS,
   plan: 'free',
+  model: TEASER_MODEL,
+  prices: PLATFORM_PRICES_USD_PER_M,
   fetchedAt: null,
   exhausted: false,
   error: null,
@@ -55,6 +66,10 @@ export const usePlatformStore = create<PlatformState>((set, get) => ({
         spendUsdMicros: s.spendUsdMicros,
         capUsdMicros: s.capUsdMicros,
         plan: s.plan,
+        // Adopt the server-published pricing config when present (M8.1); a legacy
+        // response simply keeps the previous/fallback values.
+        ...(s.model ? { model: s.model } : {}),
+        ...(s.prices ? { prices: s.prices } : {}),
         exhausted: s.remainingUsdMicros <= 0,
         fetchedAt: Date.now(),
         error: null,

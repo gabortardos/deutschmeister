@@ -11,7 +11,7 @@
 //     PLATFORM_TTS_KEY, optional); meters characters (price $0 while Google's
 //     Neural2 free tier covers it — see src/llm/entitlement.ts) with a monthly
 //     char cap as the abuse guard.
-//   • type=usage → budget snapshot for the Settings meter.
+//   • type=usage → budget snapshot + live model/prices for the Settings meter.
 //   • Returns provider JSON verbatim + metering headers x-dm-credit-usd / x-dm-cap-usd.
 //
 // Deploy (owner): Dashboard → Edge Functions → New function → name "ai-proxy" → paste
@@ -20,8 +20,10 @@
 // "Verify JWT with Supabase" ENABLED (the signature check happens platform-side;
 // this code re-checks sub/role because the anon key is also a valid JWT).
 //
-// Prices/model are mirrored in src/llm/entitlement.ts — keep both in sync.
-// (Later switch to glm-4.5-flash: change TEASER_MODEL + PRICES + the forwarder.)
+// Prices/model are PUBLISHED in every usage response (M8.1); src/llm/entitlement.ts
+// keeps only a bundled FALLBACK for offline clients / older deployments.
+// (Later switch to glm-4.5-flash: change TEASER_MODEL + PRICES + the forwarder —
+//  every client meter follows automatically on its next usage refresh.)
 
 const TEASER_MODEL = 'gpt-5-mini'
 const PRICES_USD_PER_M: Record<string, { input: number; output: number }> = {
@@ -118,6 +120,9 @@ async function budgetOf(userId: string): Promise<Budget> {
     capUsdMicros: cap,
     remainingUsdMicros: Math.max(0, cap - spend),
     plan: ent.plan,
+    // M8.1: publish the live pricing config so client meters follow automatically.
+    model: TEASER_MODEL,
+    prices: PRICES_USD_PER_M,
   }
 }
 

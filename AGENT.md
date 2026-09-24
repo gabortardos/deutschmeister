@@ -73,8 +73,10 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
   Edge Functions; secrets `OPENAI_PLATFORM_KEY` + `PLATFORM_TTS_KEY` set there, never in repo;
   metering tables from `supabase/migrations/0002_metering.sql`). $1 metered cap, 10 req/min,
   email-verified only (owner: confirm his user manually — "Confirm email" is disabled
-  project-wide). BYO key always wins and bypasses the proxy entirely. The price/model table in
-  `src/llm/entitlement.ts` MIRRORS the function's — keep both in sync when swapping providers.
+  project-wide). BYO key always wins and bypasses the proxy entirely. Since M8.1 the function
+  PUBLISHES its live model+prices in every usage response and the client adopts them
+  automatically on refresh; `src/llm/entitlement.ts` keeps only a bundled FALLBACK (offline /
+  pre-redeploy sessions).
 
 ## Resume protocol for a new agent
 

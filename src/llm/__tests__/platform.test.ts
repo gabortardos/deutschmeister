@@ -92,4 +92,32 @@ describe('platformUsageSummary', () => {
     expect(s.remainingUsdMicros).toBe(950000)
     expect(s.plan).toBe('free')
   })
+
+  it('adopts the server-published model+prices when present (M8.1)', async () => {
+    const s = await platformUsageSummary(auth, {
+      fetchImpl: async () =>
+        res(
+          200,
+          {
+            spendUsdMicros: 1,
+            capUsdMicros: 2,
+            remainingUsdMicros: 1,
+            plan: 'free',
+            model: 'glm-4.5-flash',
+            prices: { 'glm-4.5-flash': { in: 0.11, out: 0.6 } },
+          },
+        ),
+    })
+    expect(s.model).toBe('glm-4.5-flash')
+    expect(s.prices?.['glm-4.5-flash']).toEqual({ in: 0.11, out: 0.6 })
+  })
+
+  it('leaves model/prices undefined for legacy responses (client keeps fallbacks)', async () => {
+    const s = await platformUsageSummary(auth, {
+      fetchImpl: async () =>
+        res(200, { spendUsdMicros: 0, capUsdMicros: 1, remainingUsdMicros: 1, plan: 'free' }),
+    })
+    expect(s.model).toBeUndefined()
+    expect(s.prices).toBeUndefined()
+  })
 })

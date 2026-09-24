@@ -126,6 +126,9 @@ export async function platformTts(
 export interface UsageSummary extends UsageMeter {
   spendUsdMicros: number
   plan: string
+  /** Live pricing config (M8.1) — present once the deployed function publishes it. */
+  model?: string
+  prices?: Record<string, { in: number; out: number }>
 }
 
 /** Budget snapshot for the Settings meter. */

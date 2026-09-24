@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   chatCostUsdMicros,
+  chatCostUsdMicrosWith,
   classifyPlatformFailure,
   formatUsdMicros,
   remainingUsdMicros,
@@ -31,6 +32,18 @@ describe('platform pricing', () => {
 
   it('unknown models fall back to the gpt-5-mini price row', () => {
     expect(chatCostUsdMicros('glm-4.5-flash', 4000, 500)).toBe(2000)
+  })
+
+  it('prices a call against a server-published price table', () => {
+    const serverPrices = { 'glm-4.5-flash': { in: 0.11, out: 0.6 } }
+    // 1M in × $0.11 + 1M out × $0.60 = 710_000 µ$
+    expect(chatCostUsdMicrosWith(serverPrices, 'glm-4.5-flash', 1_000_000, 1_000_000)).toBe(
+      710_000,
+    )
+  })
+
+  it('unknown models fall back to the default row in server tables too', () => {
+    expect(chatCostUsdMicrosWith({}, 'whatever', 4000, 500)).toBe(2000)
   })
 })
 
