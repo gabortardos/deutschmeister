@@ -6,7 +6,9 @@ import { getApiKey, setApiKey } from '../../llm/keyStore'
 const SETTINGS_ID = 'app' as const
 
 function defaultSettings(): AppSettings {
-  const provider = getProvider('glm')
+  // M8.2: z.ai (GLM Coding Plan, works for non-Chinese accounts via the relay) is
+  // the default GLM provider; bigmodel.cn stays available for mainland keys.
+  const provider = getProvider('glm-zai')
   return {
     id: SETTINGS_ID,
     updatedAt: Date.now(),
@@ -54,13 +56,13 @@ export async function getSettings(): Promise<AppSettings> {
       needsWrite = true
     }
     if (row.baseUrl.startsWith('https://api.z.ai/')) {
-      // M2.2: api.z.ai endpoints send no CORS headers, so they can never work from
-      // a browser (verified 2026-09-20 via OPTIONS preflight from two origins).
-      // Heal rows still pointing there (written by our own pre-M2.2 defaults) to the
-      // browser-usable bigmodel.cn endpoint; glm-4.6 was the old default pair, so it
-      // moves to the free-tier default too.
-      if (row.model === 'glm-4.6') row.model = defaults.defaultModel
-      row.baseUrl = defaults.baseUrl
+      // M8.2: api.z.ai still sends no CORS headers (re-verified 2026-09-24), but the
+      // z.ai relay now exists. Heal rows still pointing browser-direct at api.z.ai
+      // (written by our own pre-M2.2 defaults) onto the 'glm-zai' relay provider —
+      // those rows hold z.ai keys, and the relay is their only working path.
+      row.provider = 'glm-zai'
+      row.baseUrl = 'relay:zai-coding'
+      if (row.model === 'glm-4-flash' || row.model === 'glm-4.5-flash') row.model = 'glm-4.6'
       needsWrite = true
     }
   }

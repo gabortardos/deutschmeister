@@ -9,6 +9,16 @@ import { useAppStore } from '../../../state/store'
 
 /** Step-by-step key guides per provider (M4.2). Native <details> keeps this dependency-free. */
 const PROVIDER_MANUALS: Record<ProviderId, { steps: string[]; warn?: string }> = {
+  'glm-zai': {
+    steps: [
+      'Sign up / log in at https://z.ai — a normal email account works, no Chinese platform needed.',
+      'Either subscribe to the GLM Coding Plan (Lite is enough, includes glm-4.6) or add pay-as-you-go credit.',
+      'Open API keys: https://z.ai/manage/apikey and create a key.',
+      'Paste it into the API key field above and press “Test connection”.',
+    ],
+    warn:
+      'api.z.ai blocks browser apps, so your key is relayed through the DeutschMeister server function to reach z.ai — forwarded for this request only, never stored or logged. Coding Plan keys use the default coding endpoint; pay-as-you-go keys can switch the base URL to relay:zai-api.',
+  },
   glm: {
     steps: [
       'Sign up at https://open.bigmodel.cn (phone or email).',
@@ -17,7 +27,7 @@ const PROVIDER_MANUALS: Record<ProviderId, { steps: string[]; warn?: string }> =
       'Paste it into the API key field above and press “Test connection”.',
     ],
     warn:
-      'z.ai keys (including GLM Coding Plan keys) do NOT work in this browser app — api.z.ai sends no CORS headers. You need a key from open.bigmodel.cn; the default model glm-4.5-flash is free-tier.',
+      'This provider needs a key from open.bigmodel.cn (Zhipu’s mainland platform) — z.ai keys are rejected there. If you have a z.ai / GLM Coding Plan key, choose “Zhipu GLM (z.ai / Coding Plan)” above instead.',
   },
   openai: {
     steps: [
@@ -170,9 +180,11 @@ export default function AiModelSection() {
       <Card
         title="AI Model"
         description={
-          route === 'platform'
-            ? 'Bring your own key (optional). It is stored only in this browser and sent directly to the provider — it always overrides the free credit above.'
-            : 'Bring your own key. It is stored only in this browser and sent directly to the provider you choose.'
+          provider.relay
+            ? 'Bring your own key. It is stored only in this browser and sent — per request — through the DeutschMeister relay to z.ai (api.z.ai blocks browser apps); it is never stored or logged server-side.'
+            : route === 'platform'
+              ? 'Bring your own key (optional). It is stored only in this browser and sent directly to the provider — it always overrides the free credit above.'
+              : 'Bring your own key. It is stored only in this browser and sent directly to the provider you choose.'
         }
       >
       <div className="grid gap-4 sm:grid-cols-2">
@@ -263,7 +275,7 @@ export default function AiModelSection() {
               className={inputClass}
               type={showKey ? 'text' : 'password'}
               value={apiKey}
-              placeholder="Paste your key — never leaves this browser"
+              placeholder={provider.relay ? 'Paste your key — relayed to z.ai, never stored' : 'Paste your key — never leaves this browser'}
               autoComplete="off"
               onChange={(e) => patchApiKey(e.target.value)}
             />

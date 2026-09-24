@@ -1,4 +1,4 @@
-export type ProviderId = 'glm' | 'openai' | 'deepseek'
+export type ProviderId = 'glm-zai' | 'glm' | 'openai' | 'deepseek'
 
 export interface ProviderInfo {
   id: ProviderId
@@ -12,25 +12,43 @@ export interface ProviderInfo {
   extraBody?: Record<string, unknown>
   /** Other endpoints the same platform offers; Settings probes them on test failure. */
   altBaseUrls?: string[]
+  /**
+   * M8.2: baseUrl is a `relay:<route>` sentinel — calls go through the ai-proxy
+   * Edge Function BYO relay (for providers that block browser apps, i.e. api.z.ai).
+   * The adapter resolves the sentinel to the live function URL at call time.
+   */
+  relay?: boolean
 }
 
 /**
- * Browser-CORS reality, verified 2026-09-20 with curl OPTIONS preflights from BOTH
- * https://gabortardos.github.io and http://localhost:5173 origins:
+ * Browser-CORS reality, verified 2026-09-20, re-checked 2026-09-24 with curl OPTIONS
+ * preflights from BOTH https://gabortardos.github.io and http://localhost:5173 origins:
  *   - api.z.ai (coding AND pay-as-you-go endpoints) answers the preflight with 200 but
- *     sends NO access-control-allow-origin → every browser fetch fails ("Failed to fetch").
- *     z.ai keys — including GLM Coding Plan (Lite) keys — therefore CANNOT be used from
- *     this browser app at all. (The coding endpoint does work server-side: curl POST with
- *     model "glm-4.6" → 200 in ~1.3 s, served as the current flash model.)
- *   - open.bigmodel.cn (Zhipu's mainland platform) sends full CORS headers → the ONLY
- *     GLM endpoint usable from the browser. It needs a bigmodel.cn API key: z.ai keys
- *     are platform-specific and are rejected here (401).
+ *     sends NO access-control-allow-origin → every browser fetch fails ("Failed to
+ *     fetch"). z.ai keys — including GLM Coding Plan (Lite) keys — therefore CANNOT
+ *     be used browser-direct. Since M8.2 the 'glm-zai' provider routes them through
+ *     the ai-proxy Edge Function relay (server-side fetch has no CORS); the user's
+ *     key is forwarded per request and never stored.
+ *   - open.bigmodel.cn (Zhipu's mainland platform) sends full CORS headers → usable
+ *     browser-direct with a bigmodel.cn API key (z.ai keys are rejected there, 401).
  *   - api.openai.com and api.deepseek.com also send full CORS headers.
  * Model notes: "glm-4-flash" is retired (1211); "glm-5.3-flash" needs a paid balance
- * (1113); "glm-4.5-flash" is free-tier. The adapter sends thinking:{type:'disabled'}
- * for GLM (fast, cheap replies).
+ * (1113); "glm-4.5-flash" is free-tier on bigmodel.cn. The adapter sends
+ * thinking:{type:'disabled'} for GLM (fast, cheap replies).
  */
 export const PROVIDERS: readonly ProviderInfo[] = [
+  {
+    id: 'glm-zai',
+    label: 'Zhipu GLM (z.ai / Coding Plan)',
+    baseUrl: 'relay:zai-coding',
+    defaultModel: 'glm-4.6',
+    modelSuggestions: ['glm-4.6', 'glm-4.5-air'],
+    keyUrl: 'https://z.ai/manage/apikey',
+    note: 'For z.ai keys — GLM Coding Plan (Lite) included, no Chinese account needed. api.z.ai blocks browser apps (no CORS), so calls are relayed through the DeutschMeister server function: your key is forwarded for this request only and never stored. Coding Plan keys use the default coding endpoint; pay-as-you-go z.ai keys can probe the /api/paas/v4 route.',
+    extraBody: { thinking: { type: 'disabled' } },
+    relay: true,
+    altBaseUrls: ['relay:zai-api'],
+  },
   {
     id: 'glm',
     label: 'Zhipu GLM (bigmodel.cn)',
@@ -38,9 +56,8 @@ export const PROVIDERS: readonly ProviderInfo[] = [
     defaultModel: 'glm-4.5-flash',
     modelSuggestions: ['glm-4.5-flash', 'glm-4.6', 'glm-4.7', 'glm-5.3', 'glm-5.3-flash'],
     keyUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
-    note: 'Only browser-usable GLM endpoint (bigmodel.cn sends CORS headers; api.z.ai blocks browser apps entirely — GLM Coding Plan keys cannot be used here). Needs a bigmodel.cn API key. glm-4.5-flash is free-tier; glm-5.3-flash needs balance.',
+    note: 'Browser-direct via bigmodel.cn (full CORS). Needs a bigmodel.cn API key — z.ai keys are rejected here; z.ai / GLM Coding Plan keys belong to the “z.ai / Coding Plan” provider above. glm-4.5-flash is free-tier; glm-5.3-flash needs balance.',
     extraBody: { thinking: { type: 'disabled' } },
-    altBaseUrls: ['https://api.z.ai/api/paas/v4', 'https://api.z.ai/api/coding/paas/v4'],
   },
   {
     id: 'openai',

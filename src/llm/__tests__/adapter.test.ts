@@ -1,5 +1,14 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
-import { buildRequestBody, chatJSON, hintForLlmError, isOpenAiReasoningModel } from '../adapter'
+import {
+  buildRequestBody,
+  chatJSON,
+  hintForLlmError,
+  isOpenAiReasoningModel,
+  llmConfigFromSettings,
+  RELAY_BASE_PREFIX,
+  resolveRelayBaseUrl,
+} from '../adapter'
+import { getProvider, PROVIDERS } from '../providers'
 
 describe('isOpenAiReasoningModel', () => {
   it('matches the gpt-5 family and o-series', () => {
@@ -110,5 +119,46 @@ describe('hintForLlmError', () => {
 
   it('returns undefined for unrecognized errors', () => {
     expect(hintForLlmError('HTTP 500: internal error')).toBeUndefined()
+  })
+})
+
+describe('resolveRelayBaseUrl (M8.2 BYO relay)', () => {
+  it('passes plain base URLs through unchanged', () => {
+    expect(resolveRelayBaseUrl('https://api.deepseek.com', 'https://x.supabase.co/functions/v1')).toBe(
+      'https://api.deepseek.com',
+    )
+  })
+
+  it('expands relay sentinels under the Edge Function URL', () => {
+    expect(resolveRelayBaseUrl('relay:zai-coding', 'https://x.supabase.co/functions/v1')).toBe(
+      'https://x.supabase.co/functions/v1/ai-proxy/byo/zai-coding',
+    )
+  })
+
+  it('keeps the sentinel when the build has no functions URL', () => {
+    expect(resolveRelayBaseUrl('relay:zai-coding', null)).toBe('relay:zai-coding')
+  })
+})
+
+describe('glm-zai provider (M8.2)', () => {
+  it('is the first provider, relay-flagged, with sentinel base + alt route', () => {
+    expect(PROVIDERS[0]?.id).toBe('glm-zai')
+    const p = getProvider('glm-zai')
+    expect(p.relay).toBe(true)
+    expect(p.baseUrl.startsWith(RELAY_BASE_PREFIX)).toBe(true)
+    expect(p.altBaseUrls).toEqual(['relay:zai-api'])
+    expect(p.extraBody).toEqual({ thinking: { type: 'disabled' } })
+    expect(p.defaultModel).toBe('glm-4.6')
+  })
+
+  it('llmConfigFromSettings marks relay configs and builds a classic GLM body', () => {
+    const cfg = llmConfigFromSettings(
+      { provider: 'glm-zai', baseUrl: 'relay:zai-coding', model: 'glm-4.6' },
+      'a-zai-user-key',
+    )
+    expect(cfg.relay).toBe(true)
+    const body = buildRequestBody(cfg, [{ role: 'user', content: 'hi' }], { maxTokens: 8, temperature: 0 })
+    expect(body.max_tokens).toBe(8) // GLM wants max_tokens, never max_completion_tokens
+    expect(body.thinking).toEqual({ type: 'disabled' })
   })
 })

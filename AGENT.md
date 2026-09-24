@@ -53,9 +53,11 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
 
 - macOS, zsh. The workspace path contains spaces — ALWAYS quote it in shell commands.
 - `gh` CLI is not on PATH: use the full path `/opt/homebrew/bin/gh` (authed as `gabortardos`).
-- Provider facts, live-verified 2026-09-20 (curl OPTIONS preflights from github.io + localhost origins):
-  api.z.ai (coding AND paas endpoints) answers preflight 200 but sends NO access-control-allow-origin
-  → z.ai keys (incl. GLM Coding Plan Lite) CANNOT be used from the browser app ("Failed to fetch").
+- Provider facts, live-verified 2026-09-20, re-checked 2026-09-24 (curl OPTIONS preflights from
+  github.io + localhost origins): api.z.ai (coding AND paas endpoints) answers preflight 200 but
+  sends NO access-control-allow-origin → z.ai keys (incl. GLM Coding Plan Lite) cannot be used
+  browser-direct. Since M8.2 the `glm-zai` provider relays them through the ai-proxy Edge
+  Function (server-side, no CORS; user's key in `x-dm-byo-key`, forwarded once, never stored).
   Server-side the coding endpoint works with `glm-4.6` (~1.3 s, thinking disabled by the adapter).
   Browser-usable GLM: `https://open.bigmodel.cn/api/paas/v4` (full CORS) with a bigmodel.cn key
   (default model `glm-4.5-flash`, free tier). `glm-4-flash` retired (1211); `glm-5.3-flash` needs
@@ -70,13 +72,17 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
   editor; until then the app shows a friendly "not set up yet" sync error).
 - Platform AI teaser (M8, v2.1.0): signed-in keyless users get AI via the `ai-proxy` Edge
   Function (`supabase/functions/ai-proxy/index.ts` — owner deploys by pasting into Dashboard →
-  Edge Functions; secrets `OPENAI_PLATFORM_KEY` + `PLATFORM_TTS_KEY` set there, never in repo;
+  Edge Functions; secrets `OPENAI_PLATFORM_KEY` or `ZAI_PLATFORM_KEY` (chat; z.ai wins when both
+  exist) + `PLATFORM_TTS_KEY` set there, never in repo;
   metering tables from `supabase/migrations/0002_metering.sql`). $1 metered cap, 10 req/min,
   email-verified only (owner: confirm his user manually — "Confirm email" is disabled
   project-wide). BYO key always wins and bypasses the proxy entirely. Since M8.1 the function
   PUBLISHES its live model+prices in every usage response and the client adopts them
   automatically on refresh; `src/llm/entitlement.ts` keeps only a bundled FALLBACK (offline /
-  pre-redeploy sessions).
+  pre-redeploy sessions). M8.2 adds the BYO relay (`POST /byo/zai-coding|zai-api/chat/completions`,
+  no account needed, caller's key in `x-dm-byo-key`, host-locked routes, 64 KB cap, 30 req/min/IP)
+  and the default provider `glm-zai` ("Zhipu GLM (z.ai / Coding Plan)", glm-4.6, `relay:` sentinel
+  baseUrls resolved by the adapter).
 
 ## Resume protocol for a new agent
 

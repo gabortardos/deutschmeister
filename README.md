@@ -32,6 +32,7 @@ All AI configuration happens inside the app — no code editing needed:
 
 | Provider | Default base URL | Default model | Where to get a key |
 |---|---|---|---|
+| Zhipu GLM (z.ai / Coding Plan) | `relay:zai-coding` (via DeutschMeister Edge Function) | `glm-4.6` | https://z.ai/manage/apikey |
 | Zhipu GLM (bigmodel.cn) | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.5-flash` | https://open.bigmodel.cn/usercenter/apikeys |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | https://platform.openai.com/api-keys |
 | DeepSeek | `https://api.deepseek.com` | `deepseek-chat` | https://platform.deepseek.com/api_keys |
@@ -41,15 +42,18 @@ own key with a free $1 credit — metered in Settings → AI Model. Your own key
 it and is never shared.
 
 Notes:
-- **CORS reality (verified 2026-09-20 via OPTIONS preflight):** `api.z.ai` (both the Coding Plan
-  and pay-as-you-go endpoints) sends **no CORS headers**, so z.ai keys — including GLM Coding
-  Plan (Lite) keys — **cannot be used from this browser app at all** (the browser blocks every
-  request: "Failed to fetch"). The coding endpoint does work server-side (`glm-4.6` via curl,
-  ~1.3 s replies, thinking mode auto-disabled by the app).
-- GLM in the browser works only via `https://open.bigmodel.cn/api/paas/v4` (Zhipu's BigModel
+- **z.ai keys (GLM Coding Plan incl.) work via the relay (M8.2):** `api.z.ai` sends **no CORS
+  headers** (verified 2026-09-20, re-checked 2026-09-24), so the browser can never call it
+  directly. The default **“Zhipu GLM (z.ai / Coding Plan)”** provider therefore routes calls
+  through the app's `ai-proxy` Supabase Edge Function (server-side fetch has no CORS): your
+  key travels in the `x-dm-byo-key` header, is forwarded to `api.z.ai` for that one request,
+  and is never stored or logged. Unmetered — your own z.ai quota applies. Coding Plan keys
+  use the `/api/coding/` endpoint; pay-as-you-go z.ai keys can switch the base URL to
+  `relay:zai-api`.
+- GLM browser-direct also works via `https://open.bigmodel.cn/api/paas/v4` (Zhipu's BigModel
   platform, full CORS support) with a **bigmodel.cn API key** — z.ai keys are platform-specific
   and rejected there. `glm-4.5-flash` is free-tier; `glm-4-flash` is retired; `glm-5.3-flash`
-  needs a paid balance. No bigmodel.cn key? Use OpenAI or DeepSeek — both are browser-compatible.
+  needs a paid balance.
 - The model lineup changes over time. Pick a model from the dropdown (or *Custom…* to paste any
   ID) — the app never needs a code change for that. OpenAI reasoning models (gpt-5+, o-series)
   are auto-handled: the adapter sends `max_completion_tokens` and omits `temperature` for them.

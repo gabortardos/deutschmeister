@@ -2,6 +2,7 @@ import type { ZodType, ZodTypeDef } from 'zod'
 import { extractJsonObject } from '../utils/json'
 import { getProvider, type ProviderId } from './providers'
 import { platformChat, type PlatformCallContext } from './platform'
+import { readSupabaseEnv, supabaseFunctionsUrl } from '../sync/supabaseClient'
 
 export interface LlmConfig {
   baseUrl: string
@@ -14,6 +15,28 @@ export interface LlmConfig {
    * Function (owner's key server-side, metered) instead of `baseUrl`/`apiKey`.
    */
   platform?: PlatformCallContext
+  /**
+   * M8.2 BYO relay: when set, calls route through the `ai-proxy` function's
+   * /byo/<route> endpoint (for providers that block browser apps, i.e. api.z.ai).
+   * Authorization then carries the PUBLIC anon JWT (platform-side verify) while
+   * the user's real provider key travels in the x-dm-byo-key header.
+   */
+  relay?: boolean
+  /** Public anon JWT used as Authorization on relay calls (see relay). */
+  anonJwt?: string
+}
+
+export const RELAY_BASE_PREFIX = 'relay:'
+
+/**
+ * Resolves `relay:<route>` provider base URLs to the live Edge Function relay URL
+ * (…/functions/v1/ai-proxy/byo/<route>). Plain base URLs pass through unchanged;
+ * a missing functionsUrl (tests / env-less builds) keeps the sentinel — rawChat
+ * then fails fast with a clear message instead of fetching a bogus URL.
+ */
+export function resolveRelayBaseUrl(baseUrl: string, functionsUrl: string | null): string {
+  if (!baseUrl.startsWith(RELAY_BASE_PREFIX)) return baseUrl
+  return functionsUrl ? `${functionsUrl}/ai-proxy/byo/${baseUrl.slice(RELAY_BASE_PREFIX.length)}` : baseUrl
 }
 
 /** Builds the adapter config from stored settings; the key comes from localStorage. */
@@ -22,11 +45,13 @@ export function llmConfigFromSettings(
   apiKey: string,
 ): LlmConfig {
   const info = getProvider(settings.provider)
+  const env = readSupabaseEnv(import.meta.env as unknown as Record<string, string | undefined>)
   return {
-    baseUrl: settings.baseUrl,
+    baseUrl: resolveRelayBaseUrl(settings.baseUrl, supabaseFunctionsUrl()),
     apiKey,
     model: settings.model,
     ...(info.extraBody ? { extraBody: info.extraBody } : {}),
+    ...(info.relay ? { relay: true, ...(env ? { anonJwt: env.anonKey } : {}) } : {}),
   }
 }
 
@@ -128,12 +153,24 @@ async function rawChat(config: LlmConfig, messages: ChatMessage[], opts?: ChatOp
     )
   }
   const url = `${config.baseUrl.replace(/\/+$/, '')}/chat/completions`
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (config.relay) {
+    // M8.2 BYO relay: Authorization carries the PUBLIC anon JWT (only to pass the
+    // platform-side signature check); the user's real provider key travels in
+    // x-dm-byo-key and is forwarded once to the allowlisted upstream, never stored.
+    if (!config.anonJwt || config.baseUrl.startsWith(RELAY_BASE_PREFIX)) {
+      throw new Error(
+        "The z.ai relay needs this app's Supabase environment (update the app and try again).",
+      )
+    }
+    headers.Authorization = `Bearer ${config.anonJwt}`
+    headers['x-dm-byo-key'] = config.apiKey
+  } else {
+    headers.Authorization = `Bearer ${config.apiKey}`
+  }
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
-    },
+    headers,
     body: JSON.stringify(buildRequestBody(config, messages, opts)),
   })
   if (!res.ok) {
@@ -286,7 +323,7 @@ export function hintForLlmError(error: string): string | undefined {
     return 'This model ID is not available on the endpoint (e.g. "glm-4-flash" is retired). Use a current model such as "glm-4.6".'
   }
   if (/failed to fetch|networkerror|load failed|cors/i.test(error)) {
-    return 'The browser could not reach the endpoint. If this is api.z.ai (GLM Coding Plan or pay-as-you-go), it blocks browser apps entirely — no CORS headers (verified 2026-09-20) — so z.ai keys cannot be used from this app. GLM works here only via https://open.bigmodel.cn/api/paas/v4 with a bigmodel.cn API key; OpenAI and DeepSeek are browser-compatible too.'
+    return 'The browser could not reach the endpoint. If this is api.z.ai (GLM Coding Plan or pay-as-you-go), it blocks browser apps — no CORS headers (verified 2026-09-24). Choose the “Zhipu GLM (z.ai / Coding Plan)” provider in Settings, which relays through the DeutschMeister server. Browser-direct GLM also works via https://open.bigmodel.cn/api/paas/v4 (bigmodel.cn key); OpenAI and DeepSeek are browser-compatible.'
   }
   return undefined
 }

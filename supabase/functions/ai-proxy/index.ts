@@ -1,35 +1,61 @@
-// Supabase Edge Function: ai-proxy (M8) — the platform-AI teaser backend.
+// Supabase Edge Function: ai-proxy (M8/M8.2) — platform-AI teaser backend + BYO relay.
 //
 // What it does (Deno runtime, ZERO external imports — dashboard-paste friendly):
-//   • Verifies the caller is a signed-in (JWT role=authenticated), email-verified user.
-//   • Rate-limits per user (≤10 metered requests/minute, checked via ai_usage).
-//   • Budget check: Pro allowance + credit (ai_entitlements, 0 until M9) + $1 teaser,
-//     spend = SUM(ai_usage.cost_usd_micros).
-//   • type=chat → forwards to OpenAI on the OWNER's key (secret OPENAI_PLATFORM_KEY),
-//     model fixed SERVER-side; meters tokens × price table.
-//   • type=tts → forwards to Google Cloud TTS on the OWNER's key (secret
-//     PLATFORM_TTS_KEY, optional); meters characters (price $0 while Google's
-//     Neural2 free tier covers it — see src/llm/entitlement.ts) with a monthly
-//     char cap as the abuse guard.
-//   • type=usage → budget snapshot + live model/prices for the Settings meter.
-//   • Returns provider JSON verbatim + metering headers x-dm-credit-usd / x-dm-cap-usd.
+//   • PLATFORM paths (caller must be a signed-in, email-verified user):
+//     - Rate-limits per user (≤10 metered requests/minute, checked via ai_usage).
+//     - Budget check: Pro allowance + credit (ai_entitlements, 0 until M9) + $1 teaser,
+//       spend = SUM(ai_usage.cost_usd_micros).
+//     - type=chat → forwards on the OWNER's key, model fixed SERVER-side, meters
+//       tokens × price table. Target: ZAI_PLATFORM_KEY (z.ai coding endpoint,
+//       glm-4.6 — owner's GLM Coding Plan) when that secret is set, else
+//       OPENAI_PLATFORM_KEY (gpt-5-mini).
+//     - type=tts → Google Cloud TTS on PLATFORM_TTS_KEY (optional); meters chars
+//       ($0 while Google's Neural2 free tier covers it) with a monthly char cap.
+//     - type=usage → budget snapshot + live model/prices for the Settings meter.
+//     - Returns provider JSON verbatim + metering headers x-dm-credit-usd / x-dm-cap-usd.
+//   • BYO relay (M8.2, NO account needed): POST /byo/<route>/chat/completions
+//     forwards to a HARD-CODED allowlisted host with the caller's OWN key from the
+//     x-dm-byo-key header. Exists because api.z.ai sends no CORS headers (verified
+//     2026-09-20, re-checked 2026-09-24), so z.ai keys — GLM Coding Plan included —
+//     cannot be used browser-direct; server-side they work fine. The user's key is
+//     used for this one request only, never stored or logged; unmetered (their own
+//     provider quota applies). Guards: POST-only, JSON body ≤ 64 KB, ≤ 30 req/min
+//     per IP (best-effort, per isolate), 60 s upstream timeout, routes host-locked.
 //
 // Deploy (owner): Dashboard → Edge Functions → New function → name "ai-proxy" → paste
-// this file → Secrets: OPENAI_PLATFORM_KEY (+ PLATFORM_TTS_KEY if HD voice included).
+// this file → Secrets: OPENAI_PLATFORM_KEY or ZAI_PLATFORM_KEY (chat; the z.ai one
+// wins when both exist) (+ PLATFORM_TTS_KEY if HD voice included).
 // SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically. Keep
 // "Verify JWT with Supabase" ENABLED (the signature check happens platform-side;
-// this code re-checks sub/role because the anon key is also a valid JWT).
+// this code re-checks sub/role because the anon key is also a valid JWT — BYO relay
+// callers legitimately send the PUBLIC anon key as their Authorization JWT and their
+// real provider key in x-dm-byo-key).
 //
 // Prices/model are PUBLISHED in every usage response (M8.1); src/llm/entitlement.ts
-// keeps only a bundled FALLBACK for offline clients / older deployments.
-// (Later switch to glm-4.5-flash: change TEASER_MODEL + PRICES + the forwarder —
-//  every client meter follows automatically on its next usage refresh.)
+// keeps only a bundled FALLBACK for offline clients / older deployments. Any swap
+// here (secrets/model/prices) updates every client meter on its next usage refresh.
 
-const TEASER_MODEL = 'gpt-5-mini'
-const PRICES_USD_PER_M: Record<string, { input: number; output: number }> = {
-  // gpt-5-mini launch pricing ($0.25/$2 per 1M tokens) — verify at M9.
-  'gpt-5-mini': { input: 0.25, output: 2 },
-}
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const OPENAI_KEY = Deno.env.get('OPENAI_PLATFORM_KEY') ?? ''
+const ZAI_KEY = Deno.env.get('ZAI_PLATFORM_KEY') ?? ''
+const TTS_KEY = Deno.env.get('PLATFORM_TTS_KEY') ?? ''
+
+// Active platform chat target: z.ai (owner's GLM Coding Plan key) when configured,
+// else OpenAI. TEASER_MODEL/PRICES always match the active target — they are
+// published to clients (M8.1), so switching = set/delete the secret + redeploy.
+const CHAT_TARGET: 'zai' | 'openai' = ZAI_KEY ? 'zai' : 'openai'
+const TEASER_MODEL = CHAT_TARGET === 'zai' ? 'glm-4.6' : 'gpt-5-mini'
+const PRICES_USD_PER_M: Record<string, { input: number; output: number }> = CHAT_TARGET === 'zai'
+  ? {
+    // Nominal z.ai list prices for bookkeeping — the real cost is the owner's Coding
+    // Plan subscription, so the $1 teaser cap remains an abuse guard, not recovery.
+    'glm-4.6': { input: 0.6, output: 2.2 },
+  }
+  : {
+    // gpt-5-mini launch pricing ($0.25/$2 per 1M tokens) — verify at M9.
+    'gpt-5-mini': { input: 0.25, output: 2 },
+  }
 const TEASER_CAP_USD_MICROS = 1_000_000 // $1
 const RATE_LIMIT_PER_MIN = 10
 const TTS_MONTHLY_CHAR_CAP = 200_000
@@ -38,10 +64,80 @@ const MAX_MSG_CHARS = 8_000
 const MAX_TTS_CHARS = 500
 const DEFAULT_TTS_VOICE = 'de-DE-Neural2-A'
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-const OPENAI_KEY = Deno.env.get('OPENAI_PLATFORM_KEY') ?? ''
-const TTS_KEY = Deno.env.get('PLATFORM_TTS_KEY') ?? ''
+// --- BYO relay (M8.2) -------------------------------------------------------------------------
+
+// Host-locked forwarding table. Adding an upstream here is the ONLY way to reach a
+// new host from the relay; arbitrary URLs are never accepted.
+const BYO_ROUTES: Record<string, string> = {
+  'zai-coding': 'https://api.z.ai/api/coding/paas/v4', // GLM Coding Plan (Lite) keys
+  'zai-api': 'https://api.z.ai/api/paas/v4', // z.ai pay-as-you-go keys
+}
+const BYO_BODY_LIMIT = 64_000
+const BYO_RATE_LIMIT_PER_MIN = 30
+const BYO_TIMEOUT_MS = 60_000
+
+/** Best-effort per-IP window (per isolate — an abuse guard, not a quota). */
+const byoHits = new Map<string, { n: number; resetAt: number }>()
+function byoAllowed(ip: string): boolean {
+  const now = Date.now()
+  if (byoHits.size > 10_000) byoHits.clear()
+  const hit = byoHits.get(ip)
+  if (!hit || hit.resetAt <= now) {
+    byoHits.set(ip, { n: 1, resetAt: now + 60_000 })
+    return true
+  }
+  hit.n += 1
+  return hit.n <= BYO_RATE_LIMIT_PER_MIN
+}
+
+/** Relay handler: forwards the caller's own chat request to the allowlisted upstream. */
+async function handleByo(req: Request, route: string): Promise<Response> {
+  const cors: Record<string, string> = {
+    'access-control-allow-origin': req.headers.get('origin') ?? '*',
+    'access-control-allow-headers': 'authorization, content-type, apikey, x-dm-byo-key',
+    'access-control-allow-methods': 'POST, OPTIONS',
+  }
+  const reply = (status: number, body: unknown): Response =>
+    new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...cors } })
+
+  const upstream = BYO_ROUTES[route]
+  if (!upstream) return reply(404, { error: 'unknown-relay-route' })
+  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown'
+  if (!byoAllowed(ip)) {
+    return reply(429, { error: 'rate-limited', message: 'Too many relay requests — wait a minute.' })
+  }
+  // The caller's provider key (z.ai). Authorization holds the public anon JWT only to
+  // pass Supabase's platform-side verify; it is never forwarded upstream.
+  const key = req.headers.get('x-dm-byo-key')?.trim() ?? ''
+  if (key.length < 16) {
+    return reply(401, { error: 'byo-auth', message: 'Missing x-dm-byo-key (your provider API key).' })
+  }
+  if (req.method !== 'POST') return reply(405, { error: 'method', message: 'POST only.' })
+  const raw = await req.text()
+  if (raw.length === 0 || raw.length > BYO_BODY_LIMIT) {
+    return reply(413, { error: 'bad-request', message: `Body must be 1–${BYO_BODY_LIMIT} bytes.` })
+  }
+  try {
+    JSON.parse(raw)
+  } catch {
+    return reply(400, { error: 'bad-request', message: 'Body must be JSON.' })
+  }
+  try {
+    const res = await fetch(`${upstream}/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: raw,
+      signal: AbortSignal.timeout(BYO_TIMEOUT_MS),
+    })
+    // Verbatim passthrough — status, errors and usage stay the provider's own.
+    return new Response(res.body, {
+      status: res.status,
+      headers: { 'content-type': 'application/json', ...cors },
+    })
+  } catch {
+    return reply(504, { error: 'upstream-timeout', message: 'The provider did not answer in time.' })
+  }
+}
 
 // --- small helpers ---------------------------------------------------------------------------
 
@@ -214,7 +310,7 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get('origin') ?? '*'
   const cors: Record<string, string> = {
     'access-control-allow-origin': origin,
-    'access-control-allow-headers': 'authorization, content-type, apikey',
+    'access-control-allow-headers': 'authorization, content-type, apikey, x-dm-byo-key',
     'access-control-allow-methods': 'POST, GET, OPTIONS',
   }
   const respond = (status: number, body: unknown, extra: Record<string, string> = {}): Response =>
@@ -224,6 +320,12 @@ Deno.serve(async (req: Request) => {
     })
 
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+
+  // 0) BYO relay (M8.2): no Supabase account required — the caller authenticates
+  //    with their own provider key in x-dm-byo-key; Authorization carries the
+  //    public anon JWT merely to satisfy the platform-side signature check.
+  const byoMatch = new URL(req.url).pathname.match(/\/byo\/([a-z0-9-]+)\/chat\/completions$/)
+  if (byoMatch) return await handleByo(req, byoMatch[1])
 
   // 1) authenticate (signature verified platform-side; the anon key is also a
   //    valid JWT, so re-check sub + role here).
@@ -260,7 +362,7 @@ Deno.serve(async (req: Request) => {
 
     if (body.type === 'chat') {
       const messages = sanitizeMessages(body.messages)
-      if (!messages || !SUPABASE_URL || !OPENAI_KEY) {
+      if (!messages || !SUPABASE_URL || (!OPENAI_KEY && !ZAI_KEY)) {
         return respond(503, { error: 'not-configured', message: 'Platform AI is not configured yet.' })
       }
       const budget = await budgetOf(userId)
@@ -268,18 +370,31 @@ Deno.serve(async (req: Request) => {
         return respond(402, { error: 'exhausted', message: 'Your free $1 AI credit is used up.', ...budget })
       }
       const maxTokens = Math.min(4000, Math.max(64, body.maxTokens ?? 1024))
-      const providerRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${OPENAI_KEY}` },
-        body: JSON.stringify({
-          model: TEASER_MODEL,
-          messages,
-          // gpt-5-mini is a reasoning model: max_completion_tokens (never max_tokens),
-          // no temperature; low effort keeps tutor/drill latency close to classic chat.
-          max_completion_tokens: Math.max(maxTokens, 2048),
-          reasoning_effort: 'low',
-        }),
-      })
+      const providerRes = CHAT_TARGET === 'zai'
+        ? await fetch('https://api.z.ai/api/coding/paas/v4/chat/completions', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${ZAI_KEY}` },
+          body: JSON.stringify({
+            model: TEASER_MODEL,
+            messages,
+            // GLM classic chat body: max_tokens (never max_completion_tokens), no
+            // reasoning params; thinking off keeps tutor/drill replies fast.
+            max_tokens: maxTokens,
+            thinking: { type: 'disabled' },
+          }),
+        })
+        : await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${OPENAI_KEY}` },
+          body: JSON.stringify({
+            model: TEASER_MODEL,
+            messages,
+            // gpt-5-mini is a reasoning model: max_completion_tokens (never max_tokens),
+            // no temperature; low effort keeps tutor/drill latency close to classic chat.
+            max_completion_tokens: Math.max(maxTokens, 2048),
+            reasoning_effort: 'low',
+          }),
+        })
       const raw = await providerRes.text()
       if (!providerRes.ok) {
         return respond(502, {
