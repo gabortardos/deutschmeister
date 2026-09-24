@@ -74,8 +74,24 @@ export default function Layout() {
       </main>
 
       <footer className="mx-auto max-w-4xl px-4 pb-8 pt-2 text-center text-xs text-slate-400">
-        Local-first: your data and API keys stay in this browser (account sync is optional) ·
-        v{APP_VERSION}
+        <p>
+          Local-first: your data and API keys stay in this browser (account sync is optional) ·
+          v{APP_VERSION}
+        </p>
+        {/* M8.3: public links required for the Paddle (Merchant of Record) website review. */}
+        <p className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          {[
+            { to: '/about', label: 'About' },
+            { to: '/contact', label: 'Contact' },
+            { to: '/terms', label: 'Terms' },
+            { to: '/privacy', label: 'Privacy' },
+            { to: '/refund', label: 'Refund policy' },
+          ].map((l) => (
+            <NavLink key={l.to} to={l.to} className="underline underline-offset-2 hover:text-slate-600">
+              {l.label}
+            </NavLink>
+          ))}
+        </p>
       </footer>
     </div>
   )

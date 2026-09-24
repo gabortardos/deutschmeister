@@ -81,8 +81,11 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
   automatically on refresh; `src/llm/entitlement.ts` keeps only a bundled FALLBACK (offline /
   pre-redeploy sessions). M8.2 adds the BYO relay (`POST /byo/zai-coding|zai-api/chat/completions`,
   no account needed, caller's key in `x-dm-byo-key`, host-locked routes, 64 KB cap, 30 req/min/IP)
-  and the default provider `glm-zai` ("Zhipu GLM (z.ai / Coding Plan)", glm-4.6, `relay:` sentinel
-  baseUrls resolved by the adapter).
+  and the default provider `glm-zai` ("GLM via z.ai — Coding Plan", glm-4.6, `relay:` sentinel
+  baseUrls resolved by the adapter). M8.3: provider labels/model annotations de-confused in
+  Settings (bigmodel.cn: only glm-4.5-flash is free, others need balance), relay endpoints show
+  a managed static field, and the 5 public Paddle-compliance pages live at `/#/about|contact|`
+  `terms|privacy|refund` (`src/features/legal/LegalPages.tsx`, footer-linked everywhere).
 
 ## Resume protocol for a new agent
 

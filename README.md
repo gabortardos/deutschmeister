@@ -32,8 +32,8 @@ All AI configuration happens inside the app — no code editing needed:
 
 | Provider | Default base URL | Default model | Where to get a key |
 |---|---|---|---|
-| Zhipu GLM (z.ai / Coding Plan) | `relay:zai-coding` (via DeutschMeister Edge Function) | `glm-4.6` | https://z.ai/manage/apikey |
-| Zhipu GLM (bigmodel.cn) | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.5-flash` | https://open.bigmodel.cn/usercenter/apikeys |
+| GLM via z.ai — Coding Plan (recommended) | managed automatically (relay via DeutschMeister Edge Function) | `glm-4.6` | https://z.ai/manage/apikey |
+| GLM via bigmodel.cn (mainland) | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.5-flash` (free tier) | https://open.bigmodel.cn/usercenter/apikeys |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | https://platform.openai.com/api-keys |
 | DeepSeek | `https://api.deepseek.com` | `deepseek-chat` | https://platform.deepseek.com/api_keys |
 
@@ -41,19 +41,23 @@ No key at all? Create an account (Settings → Account) and every AI feature run
 own key with a free $1 credit — metered in Settings → AI Model. Your own key always overrides
 it and is never shared.
 
+Public site pages (Paddle compliance, M8.3): `/#/about` · `/#/contact` · `/#/terms` ·
+`/#/privacy` · `/#/refund` — linked from the footer on every page.
+
 Notes:
 - **z.ai keys (GLM Coding Plan incl.) work via the relay (M8.2):** `api.z.ai` sends **no CORS
   headers** (verified 2026-09-20, re-checked 2026-09-24), so the browser can never call it
-  directly. The default **“Zhipu GLM (z.ai / Coding Plan)”** provider therefore routes calls
+  directly. The default **“GLM via z.ai — Coding Plan”** provider therefore routes calls
   through the app's `ai-proxy` Supabase Edge Function (server-side fetch has no CORS): your
   key travels in the `x-dm-byo-key` header, is forwarded to `api.z.ai` for that one request,
-  and is never stored or logged. Unmetered — your own z.ai quota applies. Coding Plan keys
-  use the `/api/coding/` endpoint; pay-as-you-go z.ai keys can switch the base URL to
-  `relay:zai-api`.
+  and is never stored or logged. Unmetered — your own z.ai quota applies. No base-URL setup:
+  Coding Plan keys use the coding endpoint by default; if a pay-as-you-go key fails the test,
+  the app probes the `/api/paas/v4` route automatically and offers a one-click switch.
 - GLM browser-direct also works via `https://open.bigmodel.cn/api/paas/v4` (Zhipu's BigModel
   platform, full CORS support) with a **bigmodel.cn API key** — z.ai keys are platform-specific
-  and rejected there. `glm-4.5-flash` is free-tier; `glm-4-flash` is retired; `glm-5.3-flash`
-  needs a paid balance.
+  and rejected there. On bigmodel.cn only `glm-4.5-flash` is free; `glm-4.6`, `glm-4.7`,
+  `glm-5.3` and `glm-5.3-flash` need account balance / real-name verification (the model
+  picker annotates this); `glm-4-flash` is retired.
 - The model lineup changes over time. Pick a model from the dropdown (or *Custom…* to paste any
   ID) — the app never needs a code change for that. OpenAI reasoning models (gpt-5+, o-series)
   are auto-handled: the adapter sends `max_completion_tokens` and omits `temperature` for them.

@@ -8,8 +8,9 @@ import { usePlatformStore } from '../../../state/platformStore'
 import { useAppStore } from '../../../state/store'
 
 /** Step-by-step key guides per provider (M4.2). Native <details> keeps this dependency-free. */
-const PROVIDER_MANUALS: Record<ProviderId, { steps: string[]; warn?: string }> = {
+const PROVIDER_MANUALS: Record<ProviderId, { title: string; steps: string[]; warn?: string }> = {
   'glm-zai': {
+    title: 'How to get a z.ai API key',
     steps: [
       'Sign up / log in at https://z.ai — a normal email account works, no Chinese platform needed.',
       'Either subscribe to the GLM Coding Plan (Lite is enough, includes glm-4.6) or add pay-as-you-go credit.',
@@ -17,9 +18,10 @@ const PROVIDER_MANUALS: Record<ProviderId, { steps: string[]; warn?: string }> =
       'Paste it into the API key field above and press “Test connection”.',
     ],
     warn:
-      'api.z.ai blocks browser apps, so your key is relayed through the DeutschMeister server function to reach z.ai — forwarded for this request only, never stored or logged. Coding Plan keys use the default coding endpoint; pay-as-you-go keys can switch the base URL to relay:zai-api.',
+      'api.z.ai blocks browser apps, so your key is relayed through the DeutschMeister server function to reach z.ai — forwarded for this request only, never stored or logged. No base URL setup is needed. If your key is pay-as-you-go (not a Coding Plan), the default coding route will fail the test — the app then probes the pay-as-you-go route automatically and offers a one-click switch.',
   },
   glm: {
+    title: 'How to get a bigmodel.cn API key',
     steps: [
       'Sign up at https://open.bigmodel.cn (phone or email).',
       'Open User Center → API Keys: https://open.bigmodel.cn/usercenter/apikeys',
@@ -27,9 +29,10 @@ const PROVIDER_MANUALS: Record<ProviderId, { steps: string[]; warn?: string }> =
       'Paste it into the API key field above and press “Test connection”.',
     ],
     warn:
-      'This provider needs a key from open.bigmodel.cn (Zhipu’s mainland platform) — z.ai keys are rejected there. If you have a z.ai / GLM Coding Plan key, choose “Zhipu GLM (z.ai / Coding Plan)” above instead.',
+      'This provider needs a key from open.bigmodel.cn (Zhipu’s mainland platform) — z.ai keys are rejected here. If you have a z.ai / GLM Coding Plan key, choose “GLM via z.ai” above instead. On a fresh account only the free model glm-4.5-flash answers; the other models need balance / real-name verification on bigmodel.cn.',
   },
   openai: {
+    title: 'How to get an OpenAI API key',
     steps: [
       'Sign in at https://platform.openai.com (create an account if needed).',
       'Open API keys: https://platform.openai.com/api-keys → “Create new secret key”.',
@@ -41,6 +44,7 @@ const PROVIDER_MANUALS: Record<ProviderId, { steps: string[]; warn?: string }> =
       'API usage is pay-as-you-go. The default model gpt-4o-mini costs a small fraction of a cent per conversation turn.',
   },
   deepseek: {
+    title: 'How to get a DeepSeek API key',
     steps: [
       'Sign up at https://platform.deepseek.com.',
       'Open API keys: https://platform.deepseek.com/api_keys → create and copy the key.',
@@ -245,6 +249,7 @@ export default function AiModelSection() {
                 <option key={m} value={m}>
                   {m}
                   {m === provider.defaultModel ? ' (default)' : ''}
+                  {provider.modelNotes?.[m] ? ` · ${provider.modelNotes[m]}` : ''}
                 </option>
               ))}
               <option value="__custom__">Custom…</option>
@@ -252,19 +257,33 @@ export default function AiModelSection() {
           )}
         </Field>
 
-        <Field
-          label="API base URL"
-          hint={provider.note ?? 'API endpoint, OpenAI-compatible.'}
-        >
-          <input
-            className={inputClass}
-            value={settings.baseUrl}
-            placeholder={provider.baseUrl}
-            autoComplete="off"
-            spellCheck={false}
-            onChange={(e) => void patchSettings({ baseUrl: e.target.value })}
-          />
-        </Field>
+        {provider.relay ? (
+          <Field
+            label="API endpoint"
+            hint="Managed automatically by the DeutschMeister relay — there is nothing to paste here."
+          >
+            <p className={`${inputClass} cursor-default bg-slate-50 text-slate-500`}>
+              DeutschMeister relay → z.ai (automatic)
+            </p>
+          </Field>
+        ) : (
+          <Field
+            label="API base URL"
+            hint="Auto-filled when you pick a provider — edit only if your provider documents a different endpoint."
+          >
+            <input
+              className={inputClass}
+              value={settings.baseUrl}
+              placeholder={provider.baseUrl}
+              name="dm-base-url"
+              autoComplete="off"
+              spellCheck={false}
+              data-1p-ignore
+              data-lpignore="true"
+              onChange={(e) => void patchSettings({ baseUrl: e.target.value })}
+            />
+          </Field>
+        )}
 
         <Field
           label="API key"
@@ -275,8 +294,12 @@ export default function AiModelSection() {
               className={inputClass}
               type={showKey ? 'text' : 'password'}
               value={apiKey}
+              name="dm-api-key"
               placeholder={provider.relay ? 'Paste your key — relayed to z.ai, never stored' : 'Paste your key — never leaves this browser'}
               autoComplete="off"
+              spellCheck={false}
+              data-1p-ignore
+              data-lpignore="true"
               onChange={(e) => patchApiKey(e.target.value)}
             />
             <Button type="button" onClick={() => setShowKey((v) => !v)}>
@@ -297,7 +320,7 @@ export default function AiModelSection() {
         return (
           <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
             <summary className="cursor-pointer text-sm font-medium text-slate-700">
-              📖 How to get a {provider.label} API key
+              📖 {manual.title}
             </summary>
             <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-600">
               {manual.steps.map((step) => (

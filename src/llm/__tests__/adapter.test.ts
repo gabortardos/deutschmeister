@@ -162,3 +162,25 @@ describe('glm-zai provider (M8.2)', () => {
     expect(body.thinking).toEqual({ type: 'disabled' })
   })
 })
+
+describe('provider model annotations (M8.3)', () => {
+  it('bigmodel.cn marks the free-tier model and the balance-needed ones', () => {
+    const p = getProvider('glm')
+    expect(p.modelNotes?.['glm-4.5-flash']).toMatch(/free/i)
+    for (const m of ['glm-4.6', 'glm-4.7', 'glm-5.3', 'glm-5.3-flash']) {
+      expect(p.modelNotes?.[m]).toMatch(/balance/i)
+    }
+    // every suggested model that has a note must be in the suggestions list (no stale notes)
+    for (const noted of Object.keys(p.modelNotes ?? {})) expect(p.modelSuggestions).toContain(noted)
+  })
+
+  it('z.ai provider notes its Coding-Plan models and the app has the 5 public legal pages', async () => {
+    const p = getProvider('glm-zai')
+    expect(p.modelNotes?.['glm-4.6']).toMatch(/Coding Plan/i)
+    const legal = await import('../../features/legal/LegalPages')
+    for (const fn of ['AboutPage', 'ContactPage', 'TermsPage', 'PrivacyPage', 'RefundPage']) {
+      expect(typeof (legal as Record<string, unknown>)[fn]).toBe('function')
+    }
+    expect(legal.CONTACT_EMAIL).toBe('gabor@deutschmeister.gaborscreation.space')
+  })
+})

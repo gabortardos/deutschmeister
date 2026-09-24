@@ -11,6 +11,7 @@ import ConversationPage from './features/conversation/ConversationPage'
 import ConversationSessionPage from './features/conversation/ConversationSessionPage'
 import SpeakListenPage from './features/practice/SpeakListenPage'
 import SettingsPage from './features/settings/SettingsPage'
+import { AboutPage, ContactPage, PrivacyPage, RefundPage, TermsPage } from './features/legal/LegalPages'
 
 export default function App() {
   return (
@@ -27,6 +28,12 @@ export default function App() {
         <Route path="conversation/:scenarioId" element={<ConversationSessionPage />} />
         <Route path="practice" element={<SpeakListenPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        {/* M8.3: public pages for Paddle's website review (About / Contact / Terms / Privacy / Refund). */}
+        <Route path="about" element={<AboutPage />} />
+        <Route path="contact" element={<ContactPage />} />
+        <Route path="terms" element={<TermsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="refund" element={<RefundPage />} />
       </Route>
     </Routes>
   )

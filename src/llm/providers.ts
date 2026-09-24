@@ -18,6 +18,12 @@ export interface ProviderInfo {
    * The adapter resolves the sentinel to the live function URL at call time.
    */
   relay?: boolean
+  /**
+   * M8.3: short per-model annotations shown in the Settings model picker, e.g.
+   * "free tier" vs "needs account balance" — explains why a model 401/429s on a
+   * fresh bigmodel.cn account before the user ever hits Test connection.
+   */
+  modelNotes?: Record<string, string>
 }
 
 /**
@@ -39,24 +45,35 @@ export interface ProviderInfo {
 export const PROVIDERS: readonly ProviderInfo[] = [
   {
     id: 'glm-zai',
-    label: 'Zhipu GLM (z.ai / Coding Plan)',
+    label: 'GLM via z.ai — Coding Plan (recommended)',
     baseUrl: 'relay:zai-coding',
     defaultModel: 'glm-4.6',
     modelSuggestions: ['glm-4.6', 'glm-4.5-air'],
+    modelNotes: {
+      'glm-4.6': 'included in the Coding Plan',
+      'glm-4.5-air': 'included in the Coding Plan',
+    },
     keyUrl: 'https://z.ai/manage/apikey',
-    note: 'For z.ai keys — GLM Coding Plan (Lite) included, no Chinese account needed. api.z.ai blocks browser apps (no CORS), so calls are relayed through the DeutschMeister server function: your key is forwarded for this request only and never stored. Coding Plan keys use the default coding endpoint; pay-as-you-go z.ai keys can probe the /api/paas/v4 route.',
+    note: 'For z.ai keys — GLM Coding Plan (Lite) included, no Chinese account needed. api.z.ai blocks browser apps (no CORS), so calls are relayed through the DeutschMeister server function: your key is forwarded for this request only and never stored. The endpoint is managed automatically — there is no base URL to paste.',
     extraBody: { thinking: { type: 'disabled' } },
     relay: true,
     altBaseUrls: ['relay:zai-api'],
   },
   {
     id: 'glm',
-    label: 'Zhipu GLM (bigmodel.cn)',
+    label: 'GLM via bigmodel.cn (mainland)',
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
     defaultModel: 'glm-4.5-flash',
     modelSuggestions: ['glm-4.5-flash', 'glm-4.6', 'glm-4.7', 'glm-5.3', 'glm-5.3-flash'],
+    modelNotes: {
+      'glm-4.5-flash': 'free tier — works without balance',
+      'glm-4.6': 'needs account balance',
+      'glm-4.7': 'needs account balance',
+      'glm-5.3': 'flagship — needs account balance',
+      'glm-5.3-flash': 'needs account balance',
+    },
     keyUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
-    note: 'Browser-direct via bigmodel.cn (full CORS). Needs a bigmodel.cn API key — z.ai keys are rejected here; z.ai / GLM Coding Plan keys belong to the “z.ai / Coding Plan” provider above. glm-4.5-flash is free-tier; glm-5.3-flash needs balance.',
+    note: 'Browser-direct via bigmodel.cn (full CORS). Needs a bigmodel.cn API key — z.ai keys are rejected here; z.ai / GLM Coding Plan keys belong to the “GLM via z.ai” provider above. Only glm-4.5-flash is free; other models require balance (and real-name verification) on your bigmodel.cn account.',
     extraBody: { thinking: { type: 'disabled' } },
   },
   {
