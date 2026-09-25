@@ -158,31 +158,40 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
   sandbox → live credentials and recreate products at go-live. Guard: sandbox webhook writes
   must never grant real entitlements to real users (env-flag / entitlement `source` column;
   owner's own account only for testing).
-- **Membership structure (final proposal 2026-09-21 — merged owner/GPT analysis, pending owner
-  sign-off):**
+- **Membership structure v3 (2026-09-21 — owner instinct + GPT analysis + cost math, merged):**
   - **Free** — unchanged: full core app + $1 metered AI teaser + BYO key free forever. At M9 the
     platform HD voice shrinks to a small taste (~20k chars/mo ≈ 65 spoken replies — shows what
     Plus sounds like); browser voices + own Google key stay free & unlimited.
-  - **Plus — "Most popular" badge — €5.99/mo · €49.99/yr (~30% off).** Full managed AI tutor:
-    $5/mo fair-use AI budget + 200k HD-voice chars/mo (~650 spoken replies) + future M11
-    premium content packs included.
-  - **Pro — aspirational anchor (rightmost pricing card) — €9.99/mo · €89.99/yr (~25% off).**
-    Everything Plus: $12/mo AI budget + 400k HD chars/mo (~1,300 replies) + first access to
-    future premium tutoring features + priority support.
-  - **From GPT's plan (adopted):** two paid tiers (cost-aligned: our most expensive members are
-    heavy VOICE users — Pro lets them self-select to 2× price for what costs us most; anchor
-    effect makes €5.99 read as "standard"; ARPU lift) + "Most popular" badge + anchor card
-    layout. Tiers are cheap for us: one entitlements row + two Paddle price IDs each.
-  - **From GPT's plan (rejected/corrected):** 17% annual discounts (€59.99/€99.99) — too weak vs
-    industry 30–45%, hurts launch cash flow & churn-kill (we use 30%/25%); "heavy AI
-    conversation allowance" as the Pro differentiator — misallocated, conversation is our
-    CHEAPEST resource (≈€0 on the GLM Coding Plan); HD voice chars are the real cost, so tiers
-    split on voice. NOTE: $12 Pro AI budget assumes coding-plan backend; if platform chat ever
-    moves to a paid API, revisit budgets (config-only change).
-  - **Margins (net after Paddle ≈5% + $0.50/txn):** Plus net €5.19/mo (€49.99 yr → €4.02/mo);
-    Pro net €9.03/mo (€89.99 yr → €6.91/mo). Worst-case member (maxes voice cap): Plus ~43%,
-    Pro ~34% margin — never negative. Median member ~90%. Blended ARPU ~€6.3 net vs €4.16 for
-    the old single-tier €4.90 plan (+~50%).
+  - **Basic — €3.99/mo · €29.99/yr (~37% off):** the managed AI tutor WITHOUT platform HD voice
+    (browser voices + own Google key free, unlimited). AI budget: $2/mo on the gpt-5-mini
+    backend (≈1,400 tutor turns) or $3 on the coding-plan backend. Owner idea — the paywall
+    boundary sits exactly on the app's only real marginal cost (voice), so Basic costs ≈ €0–2
+    → ~44–95% margin, near-pure ARPU.
+  - **Plus — "Most popular" badge — €5.99/mo · €49.99/yr (~30% off):** everything Basic +
+    platform HD voice (~150–200k chars/mo ≈ 500–650 spoken replies) + bigger AI budget
+    ($3.5/mo mini-backend / $5 coding-plan backend).
+  - **Pro — dormant until M11 fills it — €9.99/mo · €89.99/yr (~25% off):** larger voice
+    allowance + premium tutoring features (M11) + priority support. Only displayed once it has
+    real content (selling promises = refunds); until then Basic/Plus pricing cards anchor
+    each other.
+  - **Lineage:** two-tier + anchoring + badge from the GPT analysis; tier split on the voice
+    boundary from the owner (cost-aligned — HD TTS at $16/1M chars is the only real marginal
+    cost, chat ≈€0 on the coding plan); annual discounts 30–37% (industry norm; GPT's 17%
+    rejected — cash flow + churn-kill). Budgets are FAIR-USE ceilings: median member costs
+    ~€0.3–0.7 (~85–90% net margin), a pathological max-out member ≈ break-even by design
+    (bounded, never runaway, never deeply negative).
+  - **Backend note (2026-09-21):** platform chat currently runs **gpt-5-mini on
+    OPENAI_PLATFORM_KEY** (ZAI_PLATFORM_KEY not set). Swap to the GLM Coding Plan = set the
+    secret + redeploy ai-proxy; all client meters auto-adopt (M8.1). Per-turn on gpt-5-mini ≈
+    $0.0014 (≈700 turns per $1). If a cheaper "-mini" refresh ships, it's the same
+    secrets/config swap.
+  - **Kept from earlier drafts:** AI Credit Pack top-ups (€2.90 = $3 / €5.90 = $7, 6-month
+    validity) = M9 phase 2 · BYO stays 100% free forever · `byo-supporter` SKU dormant · no
+    free trial (14-day refund + $1 teaser instead) · EUR pricing, Paddle-as-MoR handles VAT.
+  - **No LLM-API affiliate program exists** (checked 2026-09-21: OpenAI/Anthropic/Google/z.ai
+    all have none for API keys) — monetizing key-needing users = the managed tiers above;
+    OpenRouter BYO-with-markup is the only real middleman mechanism (extra signup friction —
+    dormant idea).
   - **AI Credit Pack (top-up, one-time) — €2.90 = $3 credit / €5.90 = $7 (bonus), 6-month
     validity.** For "no subscription" learners post-teaser. Phase 2 of M9 (optional at launch).
   - **BYO stays 100% free** — never paywall what users power themselves; dormant

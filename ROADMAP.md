@@ -36,7 +36,7 @@
 | M9 Payments (hybrid) | ⬜ planned | — | Paddle checkout (subscription + top-ups), webhooks → entitlements, Account & Billing UI — **sandbox-first** (owner decision 2026-09-21): build against Paddle sandbox (no approval needed) while live-account approval runs in parallel; go-live = swap keys + recreate products in live; membership pricing draft recorded in `docs/PHASE2_PLAN.md` |
 | M9.5 Welcome & onboarding flow | ⬜ planned | — | owner vision: first-visit welcome page (brief app intro), register / log in with Google (or continue as guest), guided basics (name, level, goals), then an explicit AI choice — own API key (+ optional Google voice) vs DeutschMeister teaser — with the teaser properly introduced: what it offers, its limits, the live meter, and what happens when it runs out (BYO key or future membership); satisfies "user needs to be informed" about automatic teaser usage |
 | M10 Graphics/UI | ⬜ planned | — | design system, dark mode, code-splitting, mobile nav, `progressStats` engine + stats zone |
-| M11 Learning depth | ⬜ planned | — | mistake bank, custom scenarios, tutor chat, sentence listening, cloze reviews, insights, placement, free writing |
+| M11 Learning depth | ⬜ planned | — | mistake bank, custom scenarios, tutor chat, sentence listening, cloze reviews, insights, placement, free writing + **owner expansion (2026-09-21): vocab bank → ~5,000 words through C2 (C1/C2 banks), complete grammar coverage, heavily broadened AI scenario library with a filtering system (level/topic/register), enhanced free-form conversation builder** — content via AI-assisted generation + validation + dedup pipeline; more owner ideas to be logged |
 
 Phase 2 detail (tiers, meter order, dormant options, security rules): `docs/PHASE2_PLAN.md`.
 
