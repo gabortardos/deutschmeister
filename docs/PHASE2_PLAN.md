@@ -158,32 +158,44 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
   sandbox → live credentials and recreate products at go-live. Guard: sandbox webhook writes
   must never grant real entitlements to real users (env-flag / entitlement `source` column;
   owner's own account only for testing).
-- **Membership pricing draft (2026-09-21, owner to veto/tweak — everything lives in the config
-  file + Paddle dashboard, nothing locked):**
-  - **Free (teaser)** — unchanged: $1 metered AI credit after sign-up, then BYO key (free
-    forever) or upgrade. The acquisition funnel.
-  - **DeutschMeister Plus — single tier at launch: €4.90/month or €39/year (~33% off).**
-    Buys: all AI features unmetered-day-to-day with a generous fair-use monthly AI allowance
-    (~$5 list price ≈ 5× the whole teaser = effectively unlimited for a real learner),
-    HD voice included, future M11 premium content packs included. "No API key, no setup,
-    every device." Implementation: `ai_entitlements.plan='plus'` + bigger monthly
-    `allowanceUsdMicros` — the M8.1 metering engine already does everything else.
+- **Membership structure (final proposal 2026-09-21 — merged owner/GPT analysis, pending owner
+  sign-off):**
+  - **Free** — unchanged: full core app + $1 metered AI teaser + BYO key free forever. At M9 the
+    platform HD voice shrinks to a small taste (~20k chars/mo ≈ 65 spoken replies — shows what
+    Plus sounds like); browser voices + own Google key stay free & unlimited.
+  - **Plus — "Most popular" badge — €5.99/mo · €49.99/yr (~30% off).** Full managed AI tutor:
+    $5/mo fair-use AI budget + 200k HD-voice chars/mo (~650 spoken replies) + future M11
+    premium content packs included.
+  - **Pro — aspirational anchor (rightmost pricing card) — €9.99/mo · €89.99/yr (~25% off).**
+    Everything Plus: $12/mo AI budget + 400k HD chars/mo (~1,300 replies) + first access to
+    future premium tutoring features + priority support.
+  - **From GPT's plan (adopted):** two paid tiers (cost-aligned: our most expensive members are
+    heavy VOICE users — Pro lets them self-select to 2× price for what costs us most; anchor
+    effect makes €5.99 read as "standard"; ARPU lift) + "Most popular" badge + anchor card
+    layout. Tiers are cheap for us: one entitlements row + two Paddle price IDs each.
+  - **From GPT's plan (rejected/corrected):** 17% annual discounts (€59.99/€99.99) — too weak vs
+    industry 30–45%, hurts launch cash flow & churn-kill (we use 30%/25%); "heavy AI
+    conversation allowance" as the Pro differentiator — misallocated, conversation is our
+    CHEAPEST resource (≈€0 on the GLM Coding Plan); HD voice chars are the real cost, so tiers
+    split on voice. NOTE: $12 Pro AI budget assumes coding-plan backend; if platform chat ever
+    moves to a paid API, revisit budgets (config-only change).
+  - **Margins (net after Paddle ≈5% + $0.50/txn):** Plus net €5.19/mo (€49.99 yr → €4.02/mo);
+    Pro net €9.03/mo (€89.99 yr → €6.91/mo). Worst-case member (maxes voice cap): Plus ~43%,
+    Pro ~34% margin — never negative. Median member ~90%. Blended ARPU ~€6.3 net vs €4.16 for
+    the old single-tier €4.90 plan (+~50%).
   - **AI Credit Pack (top-up, one-time) — €2.90 = $3 credit / €5.90 = $7 (bonus), 6-month
     validity.** For "no subscription" learners post-teaser. Phase 2 of M9 (optional at launch).
   - **BYO stays 100% free** — never paywall what users power themselves; dormant
     `byo-supporter` SKU (e.g. €1.90/mo tip jar) stays dormant.
   - **No free trial at launch** — the $1 teaser + published 14-day refund policy (/#/refund)
     already serve as the risk-free try. Rationale: fewer moving parts, honest funnel.
-  - **EUR pricing** — EU-first audience, Paddle-as-MoR handles VAT; Paddle fee ≈ 5% + $0.50/txn
-    → ~€4.16 net on a €4.90 month; AI cost/member realistically €0.5–2 (≈0 on GLM coding plan).
-  - **Allowance mechanics + worst-case math (2026-09-21):** Plus = **$5/mo list AI budget**
-    (existing meter) + **200k HD-voice chars/mo** (existing TTS cap ≈ 650 spoken replies/mo,
-    browser voice unlimited & free). Cost drivers: chat ≈ $0.0014–0.002/turn (gpt-5-mini /
-    glm-4.6 nominal — ≈€0 real on the GLM Coding Plan); **HD TTS = the real cost** at
-    $16/1M Neural2 chars ≈ 200–390 spoken replies per $1 beyond Google's shared 1M-char/mo
-    free tier; per-turn grading is already inside the turn JSON; on-demand explanations
-    ~$0.0002–0.0004 (LLM-cached, repeats free). Worst-case member fully using the voice cap:
-    ≈ $3.20 → net ≈ €2.0+ (never negative); median member ≈ €0.3–0.7 → net margin ~85%.
+  - **EUR pricing** — EU-first audience, Paddle-as-MoR handles VAT.
+  - **Allowance mechanics + worst-case math (2026-09-21):** chat ≈ $0.0014–0.002/turn
+    (gpt-5-mini / glm-4.6 nominal — ≈€0 real on the GLM Coding Plan); **HD TTS = the real
+    cost** at $16/1M Neural2 chars ≈ 200–390 spoken replies per $1 beyond Google's shared
+    1M-char/mo free tier; per-turn grading is already inside the turn JSON; on-demand
+    explanations ~$0.0002–0.0004 (LLM-cached, repeats free). Allowances are enforced by the
+    existing M8.1 metering engine — tiers are config, not code.
 
 ### M10 — Graphics/UI (v2.3)
 - Tailwind design system (tokens/typography/spacing), dark mode, route-based code-splitting
