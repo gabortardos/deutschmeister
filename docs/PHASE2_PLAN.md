@@ -143,7 +143,18 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
   200k chars/month server-side guard. Teaser chat provider: `gpt-5-mini` (owner daily driver;
   `glm-4.5-flash` swap later = constants change, see `entitlement.ts` + the function header).
 
-### M9 — Payments, hybrid (v2.2)
+### M9 — Payments, hybrid (v2.2) — **✅ CODE COMPLETE 2026-09-21 (v2.4.0), awaiting owner sandbox deployment**
+
+> Built: `paddle-checkout` + `paddle-webhook` Edge Functions, migration `0003_billing.sql`,
+> ai-proxy monthly-allowance + per-plan-voice-cap upgrade, `src/llm/plans.ts` catalog,
+> `src/billing/paddle.ts` signature twin, Settings → Account & Billing UI. Owner deploy
+> checklist (≈30 min): run 0003 in the SQL editor · create the 4 sandbox prices (Basic/Plus ×
+> monthly/annual) · set secrets PADDLE_API_KEY, PADDLE_ENV=sandbox, PADDLE_WEBHOOK_SECRET,
+> PADDLE_PRICE_MAP, PADDLE_SANDBOX_TEST_USER (own uuid) · deploy `paddle-checkout` (JWT ON) and
+> `paddle-webhook` (JWT **OFF**) + register its URL as a Paddle notification destination ·
+> re-paste ai-proxy. Then E2E test: subscribe → webhook grants → meter shows plan → cancel in
+> portal → downgrade. Go-live = live secrets + PADDLE_ENV=live + live price IDs, nothing else.
+
 - Paddle (preferred, MoR → EU VAT handled) or Stripe: **hosted checkout** products for (a) Pro
   monthly subscription (includes monthly allowance) and (b) top-ups. Redirect flow only.
 - Webhook Edge Function: verify PSP signature → subscriptions set `plan/validUntil`; one-time

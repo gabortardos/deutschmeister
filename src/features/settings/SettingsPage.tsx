@@ -1,6 +1,7 @@
 import AiModelSection from './sections/AiModelSection'
 import GettingStartedSection from './sections/GettingStartedSection'
 import AccountSection from './sections/AccountSection'
+import BillingSection from './sections/BillingSection'
 import LearningSection from './sections/LearningSection'
 import SpeechSection from './sections/SpeechSection'
 import ContentStudioSection from './sections/ContentStudioSection'
@@ -19,6 +20,7 @@ export default function SettingsPage() {
       </div>
       <GettingStartedSection />
       <AccountSection />
+      <BillingSection />
       <AiModelSection />
       <LearningSection />
       <SpeechSection />

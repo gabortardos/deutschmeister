@@ -4,6 +4,7 @@ import {
   chatCostUsdMicrosWith,
   classifyPlatformFailure,
   formatUsdMicros,
+  remainingBudgetWithMonthly,
   remainingUsdMicros,
   resolveAiRoute,
   TEASER_CAP_USD_MICROS,
@@ -80,3 +81,82 @@ describe('classifyPlatformFailure', () => {
     expect(classifyPlatformFailure(500, null).kind).toBe('server')
   })
 })
+
+describe('remainingBudgetWithMonthly (M9 lifetime + monthly pools)', () => {
+  const base = {
+    teaserCapUsdMicros: 1_000_000, // $1 teaser
+    creditUsdMicros: 0,
+    monthlyAllowanceUsdMicros: 0,
+    allowanceActive: true,
+  }
+
+  it('reduces to the M8 teaser math when there is no allowance (free tier)', () => {
+    expect(
+      remainingBudgetWithMonthly({ ...base, lifetimeSpendUsdMicros: 400_000, monthSpendUsdMicros: 400_000 }),
+    ).toEqual({ capUsdMicros: 1_000_000, remainingUsdMicros: 600_000 })
+    expect(
+      remainingBudgetWithMonthly({ ...base, lifetimeSpendUsdMicros: 1_500_000, monthSpendUsdMicros: 0 }),
+    ).toEqual({ capUsdMicros: 1_000_000, remainingUsdMicros: 0 })
+  })
+
+  it('gives a fresh Plus subscriber their full allowance even with the teaser long gone', () => {
+    // Lifetime spend $1 (the whole teaser), nothing this month, $3.5 allowance.
+    expect(
+      remainingBudgetWithMonthly({
+        ...base,
+        monthlyAllowanceUsdMicros: 3_500_000,
+        lifetimeSpendUsdMicros: 1_000_000,
+        monthSpendUsdMicros: 0,
+      }),
+    ).toEqual({ capUsdMicros: 4_500_000, remainingUsdMicros: 3_500_000 })
+  })
+
+  it('spends this month against the allowance without double-counting the teaser', () => {
+    // Teaser burned earlier ($1 lifetime before this month); $2 spent THIS month.
+    expect(
+      remainingBudgetWithMonthly({
+        ...base,
+        monthlyAllowanceUsdMicros: 3_500_000,
+        lifetimeSpendUsdMicros: 3_000_000, // 1M old teaser + 2M this month
+        monthSpendUsdMicros: 2_000_000,
+      }),
+    ).toEqual({ capUsdMicros: 4_500_000, remainingUsdMicros: 1_500_000 })
+  })
+
+  it('never lets a past month\u2019s allowance spend eat this month\u2019s allowance', () => {
+    // $4 lifetime spend all in PREVIOUS paid months; this month: nothing yet.
+    expect(
+      remainingBudgetWithMonthly({
+        ...base,
+        monthlyAllowanceUsdMicros: 3_500_000,
+        lifetimeSpendUsdMicros: 4_000_000,
+        monthSpendUsdMicros: 0,
+      }),
+    ).toEqual({ capUsdMicros: 4_500_000, remainingUsdMicros: 3_500_000 })
+  })
+
+  it('drops the allowance when the subscription lapsed (valid_until in the past)', () => {
+    expect(
+      remainingBudgetWithMonthly({
+        ...base,
+        monthlyAllowanceUsdMicros: 3_500_000,
+        lifetimeSpendUsdMicros: 4_000_000,
+        monthSpendUsdMicros: 1_000_000,
+        allowanceActive: false,
+      }),
+    ).toEqual({ capUsdMicros: 1_000_000, remainingUsdMicros: 0 })
+  })
+
+  it('stacks credit packs on top and clamps at zero', () => {
+    expect(
+      remainingBudgetWithMonthly({
+        ...base,
+        creditUsdMicros: 3_000_000,
+        monthlyAllowanceUsdMicros: 2_000_000,
+        lifetimeSpendUsdMicros: 2_500_000,
+        monthSpendUsdMicros: 2_500_000,
+      }),
+    ).toEqual({ capUsdMicros: 6_000_000, remainingUsdMicros: 3_500_000 })
+  })
+})
+

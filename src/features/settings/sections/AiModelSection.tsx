@@ -76,10 +76,10 @@ function PlatformAiCard() {
     >
       {exhausted ? (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-          <p className="font-medium">⚠ Your free $1 AI credit is used up.</p>
+          <p className="font-medium">⚠ Your managed AI budget is used up.</p>
           <p className="mt-1">
-            Two ways to keep going: add your own API key below — free and unlimited — or wait for
-            paid plans (coming soon).
+            Two ways to keep going: add your own API key below — free and unlimited — or upgrade in{' '}
+            <span className="font-medium">Account &amp; Billing</span> above.
           </p>
         </div>
       ) : (

@@ -11,6 +11,7 @@ import {
   TEASER_MODEL,
   type PlatformPrices,
 } from '../llm/entitlement'
+import { FREE_TTS_CHAR_CAP } from '../llm/plans'
 import { getSupabase, supabaseFunctionsUrl } from '../sync/supabaseClient'
 
 /** Session-token auth for ai-proxy; null when signed out or the build lacks env. */
@@ -32,6 +33,11 @@ interface PlatformState {
    *  in src/llm/entitlement.ts serve offline sessions / older function deploys. */
   model: string
   prices: PlatformPrices
+  /** M9 plan envelope (adopted from the usage response; fallback = free tier). */
+  ttsCharsUsed: number
+  ttsCharCap: number
+  validUntil: string | null
+  cancelAtPeriodEnd: boolean
   fetchedAt: number | null
   exhausted: boolean
   error: string | null
@@ -47,6 +53,10 @@ export const usePlatformStore = create<PlatformState>((set, get) => ({
   plan: 'free',
   model: TEASER_MODEL,
   prices: PLATFORM_PRICES_USD_PER_M,
+  ttsCharsUsed: 0,
+  ttsCharCap: FREE_TTS_CHAR_CAP,
+  validUntil: null,
+  cancelAtPeriodEnd: false,
   fetchedAt: null,
   exhausted: false,
   error: null,
@@ -70,6 +80,11 @@ export const usePlatformStore = create<PlatformState>((set, get) => ({
         // response simply keeps the previous/fallback values.
         ...(s.model ? { model: s.model } : {}),
         ...(s.prices ? { prices: s.prices } : {}),
+        // M9 plan envelope — same adopt-if-present pattern.
+        ...(s.ttsCharsUsed !== undefined ? { ttsCharsUsed: s.ttsCharsUsed } : {}),
+        ...(s.ttsCharCap !== undefined ? { ttsCharCap: s.ttsCharCap } : {}),
+        ...(s.validUntil !== undefined ? { validUntil: s.validUntil } : {}),
+        ...(s.cancelAtPeriodEnd !== undefined ? { cancelAtPeriodEnd: s.cancelAtPeriodEnd } : {}),
         exhausted: s.remainingUsdMicros <= 0,
         fetchedAt: Date.now(),
         error: null,

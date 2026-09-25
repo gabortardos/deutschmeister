@@ -129,6 +129,11 @@ export interface UsageSummary extends UsageMeter {
   /** Live pricing config (M8.1) — present once the deployed function publishes it. */
   model?: string
   prices?: Record<string, { in: number; out: number }>
+  /** M9 plan envelope — optional until the redeployed ai-proxy publishes them. */
+  ttsCharsUsed?: number
+  ttsCharCap?: number
+  validUntil?: string | null
+  cancelAtPeriodEnd?: boolean
 }
 
 /** Budget snapshot for the Settings meter. */

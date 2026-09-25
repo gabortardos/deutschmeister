@@ -70,6 +70,31 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
   anon key is public-by-design (safety = RLS); the service_role key must NEVER leave the
   Supabase dashboard. Cloud tables: `supabase/migrations/0001_init.sql` (owner applies via SQL
   editor; until then the app shows a friendly "not set up yet" sync error).
+- Paddle payments (M9, v2.4.0 — code complete, owner deployment pending): two new Edge
+  Functions + migration `supabase/migrations/0003_billing.sql` (ai_entitlements gains
+  valid_until/source/tts_char_cap/cancel_at_period_end/paddle_customer_id; `billing_events`
+  table = webhook idempotency + audit, RLS deny-all → service-role only).
+  - `supabase/functions/paddle-checkout/index.ts` (deploy with JWT verify ON): type=plans
+    (catalog from PADDLE_PRICE_MAP — price IDs live server-side so sandbox→live needs no
+    client rebuild), type=checkout (POST {api}/transactions → hosted-checkout URL, redirect
+    flow only, custom_data.user_id), type=portal (customer-portal session for manage/cancel).
+  - `supabase/functions/paddle-webhook/index.ts` (deploy with JWT verify **OFF** — Paddle
+    sends no Supabase JWT; the Paddle-Signature HMAC is the auth): verifies ts/h1 over
+    `ts:rawBody` (±300 s), idempotent via billing_events, subscription events →
+    grant/extend/downgrade ai_entitlements (unknown price ids never grant; credit packs add
+    credit_usd_micros), **sandbox guard**: while PADDLE_ENV≠live, events only touch
+    PADDLE_SANDBOX_TEST_USER. Signature twin unit-tested in `src/billing/paddle.ts`.
+  - ai-proxy upgraded: budget = LIFETIME pools ($1 teaser + credit) consumed FIRST, then the
+    monthly allowance (only while now < valid_until) — mirror of
+    `remainingBudgetWithMonthly` in `src/llm/entitlement.ts`; per-plan HD-voice caps
+    (free 20k taste / Basic 0 → 403 `hd-voice-not-in-plan` / Plus 150k); usage response
+    publishes plan envelope (plan/ttsCharsUsed/ttsCharCap/validUntil/cancelAtPeriodEnd).
+  - Secrets (owner, dashboard): PADDLE_API_KEY, PADDLE_ENV (sandbox|live), PADDLE_WEBHOOK_SECRET,
+    PADDLE_PRICE_MAP (JSON priceId→{plan,kind,interval,creditUsdMicros}), PADDLE_SANDBOX_TEST_USER.
+    Plan allowances (gpt-5-mini backend: Basic $2 / Plus $3.5) live in paddle-webhook's PLANS.
+  - Client: plan catalog `src/llm/plans.ts` (v3: Basic €3.99·€29.99, Plus €5.99·€49.99 ⭐,
+    Pro dormant/hidden), Settings → Account & Billing (`BillingSection.tsx`: usage bars,
+    pricing cards, checkout/manage redirects, ?billing=success return handling).
 - Platform AI teaser (M8, v2.1.0): signed-in keyless users get AI via the `ai-proxy` Edge
   Function (`supabase/functions/ai-proxy/index.ts` — owner deploys by pasting into Dashboard →
   Edge Functions; secrets `OPENAI_PLATFORM_KEY` or `ZAI_PLATFORM_KEY` (chat; z.ai wins when both

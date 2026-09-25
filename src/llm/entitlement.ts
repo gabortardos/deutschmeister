@@ -69,7 +69,12 @@ export const PLATFORM_PRICES_USD_PER_M: PlatformPrices = {
  */
 export const PLATFORM_TTS_PRICE_USD_PER_M_CHARS = 0
 
-/** Server-side monthly char guard for platform TTS (abuse limit at the $0 price). */
+/**
+ * Server-side monthly char guard for platform TTS (abuse limit at the $0 price).
+ * M9: superseded by PER-PLAN caps (free taste 20k, plus 150k — see
+ * src/llm/plans.ts and the ai_entitlements.tts_char_cap column); this constant
+ * remains only as the pre-M9 fallback for old deployments.
+ */
 export const PLATFORM_TTS_MONTHLY_CHAR_CAP = 200_000
 
 /** Cost of one metered chat call in micro-USD against any price table. Pure. */
@@ -98,6 +103,52 @@ export function formatUsdMicros(micros: number): string {
   return `$${(micros / 1_000_000).toFixed(2)}`
 }
 
+// --- M9 monthly budgets -----------------------------------------------------------------------
+
+/**
+ * Monthly-aware budget math (M9). The $1 teaser and credit packs are LIFETIME
+ * pools; a subscription's monthly allowance is a CALENDAR-MONTH pool that only
+ * counts while the subscription is active (`allowanceActive`: valid_until in
+ * the future, or null). Consumption order: lifetime pools first, then this
+ * month's allowance — so an earlier teaser spend never eats a paid allowance.
+ *
+ * Pure mirror of the same computation in `ai-proxy`'s budgetOf (kept in sync;
+ * unit-tested here because the Edge Function itself has no test harness).
+ */
+export interface MonthlyBudgetInput {
+  teaserCapUsdMicros: number
+  creditUsdMicros: number
+  monthlyAllowanceUsdMicros: number
+  /** All-time metered platform spend (SUM of ai_usage.cost_usd_micros). */
+  lifetimeSpendUsdMicros: number
+  /** Metered platform spend since the 1st of the current UTC month. */
+  monthSpendUsdMicros: number
+  /** False when the subscription has lapsed (valid_until in the past). */
+  allowanceActive: boolean
+}
+
+export interface BudgetResult {
+  capUsdMicros: number
+  remainingUsdMicros: number
+}
+
+export function remainingBudgetWithMonthly(input: MonthlyBudgetInput): BudgetResult {
+  const nonMonthly = Math.max(0, input.teaserCapUsdMicros) + Math.max(0, input.creditUsdMicros)
+  const lifetimeSpend = Math.max(0, input.lifetimeSpendUsdMicros)
+  const coveredByNonMonthly = Math.min(lifetimeSpend, nonMonthly)
+  const lifetimeRemaining = nonMonthly - coveredByNonMonthly
+  // Spend beyond the lifetime pools can only have come from an allowance — but
+  // only THIS month's slice of it may consume this month's allowance window.
+  const beyond = lifetimeSpend - coveredByNonMonthly
+  const allowance = input.allowanceActive ? Math.max(0, input.monthlyAllowanceUsdMicros) : 0
+  const allowanceUsed = Math.min(Math.max(0, input.monthSpendUsdMicros), beyond)
+  const allowanceRemaining = Math.max(0, allowance - allowanceUsed)
+  return {
+    capUsdMicros: nonMonthly + allowance,
+    remainingUsdMicros: lifetimeRemaining + allowanceRemaining,
+  }
+}
+
 // --- failure classification -----------------------------------------------------------------
 
 export type PlatformErrorKind =
@@ -107,6 +158,7 @@ export type PlatformErrorKind =
   | 'auth'
   | 'network'
   | 'server'
+  | 'hd-voice'
 
 export interface PlatformFailure {
   kind: PlatformErrorKind
@@ -119,8 +171,15 @@ export function classifyPlatformFailure(status: number, code: string | null): Pl
   if (status === 402 || code === 'exhausted') {
     return {
       kind: 'exhausted',
-      message: 'Your free $1 AI credit is used up.',
-      hint: 'Add your own API key in Settings → AI Model (free, unlimited) — paid plans arrive soon.',
+      message: 'Your AI budget is used up for now.',
+      hint: 'Add your own API key in Settings → AI Model (free, unlimited), or upgrade in Settings → Account & Billing.',
+    }
+  }
+  if (code === 'hd-voice-not-in-plan') {
+    return {
+      kind: 'hd-voice',
+      message: 'HD cloud voice is a Plus feature — browser voices keep working free.',
+      hint: 'Upgrade in Settings → Account & Billing, or use your own Google voice key.',
     }
   }
   if (status === 429 || code === 'rate-limited') {

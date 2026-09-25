@@ -3,15 +3,17 @@
 // What it does (Deno runtime, ZERO external imports — dashboard-paste friendly):
 //   • PLATFORM paths (caller must be a signed-in, email-verified user):
 //     - Rate-limits per user (≤10 metered requests/minute, checked via ai_usage).
-//     - Budget check: Pro allowance + credit (ai_entitlements, 0 until M9) + $1 teaser,
-//       spend = SUM(ai_usage.cost_usd_micros).
-//     - type=chat → forwards on the OWNER's key, model fixed SERVER-side, meters
-//       tokens × price table. Target: ZAI_PLATFORM_KEY (z.ai coding endpoint,
-//       glm-4.6 — owner's GLM Coding Plan) when that secret is set, else
-//       OPENAI_PLATFORM_KEY (gpt-5-mini).
+//     - Budget check (M9): LIFETIME pools ($1 teaser + credit_usd_micros) plus the
+//       MONTHLY subscription allowance — which only counts while now < valid_until.
+//       Spend = SUM(ai_usage.cost_usd_micros): lifetime total + this calendar
+//       month's slice (mirror of remainingBudgetWithMonthly in src/llm/entitlement.ts).
 //     - type=tts → Google Cloud TTS on PLATFORM_TTS_KEY (optional); meters chars
-//       ($0 while Google's Neural2 free tier covers it) with a monthly char cap.
-//     - type=usage → budget snapshot + live model/prices for the Settings meter.
+//       ($0 while Google's Neural2 free tier covers it) against the PER-PLAN
+//       monthly cap (ai_entitlements.tts_char_cap; default free taste 20k, Basic 0
+//       → 403 hd-voice-not-in-plan, Plus 150k).
+//     - type=usage → budget snapshot + live model/prices + plan envelope
+//       (plan, ttsCharsUsed/ttsCharCap, validUntil, cancelAtPeriodEnd) for the
+//       Settings meter and the Account & Billing section.
 //     - Returns provider JSON verbatim + metering headers x-dm-credit-usd / x-dm-cap-usd.
 //   • BYO relay (M8.2, NO account needed): POST /byo/<route>/chat/completions
 //     forwards to a HARD-CODED allowlisted host with the caller's OWN key from the
@@ -58,7 +60,8 @@ const PRICES_USD_PER_M: Record<string, { input: number; output: number }> = CHAT
   }
 const TEASER_CAP_USD_MICROS = 1_000_000 // $1
 const RATE_LIMIT_PER_MIN = 10
-const TTS_MONTHLY_CHAR_CAP = 200_000
+/** M9 free-tier HD-voice taste (~65 spoken replies); Basic = 0, Plus = 150k. */
+const FREE_TTS_CHAR_CAP = 20_000
 const MAX_MESSAGES = 40
 const MAX_MSG_CHARS = 8_000
 const MAX_TTS_CHARS = 500
@@ -183,6 +186,9 @@ interface Entitlement {
   plan: string
   monthly_allowance_usd_micros: number
   credit_usd_micros: number
+  valid_until?: string | null
+  tts_char_cap?: number | null
+  cancel_at_period_end?: boolean | null
 }
 
 interface Budget {
@@ -190,35 +196,72 @@ interface Budget {
   capUsdMicros: number
   remainingUsdMicros: number
   plan: string
+  // M8.1: publish the live pricing config so client meters follow automatically.
+  model: string
+  prices: Record<string, { input: number; output: number }>
+  // M9 plan envelope (Account & Billing UI + voice meter).
+  ttsCharCap: number
+  ttsCharsUsed: number
+  validUntil: string | null
+  cancelAtPeriodEnd: boolean
 }
 
 async function budgetOf(userId: string): Promise<Budget> {
-  const [spendRes, entRes] = await Promise.all([
+  const now = new Date()
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
+  const [spendRes, monthRes, entRes, charsUsed] = await Promise.all([
     rest(`/ai_usage?select=cost_usd_micros&user_id=eq.${userId}`),
+    rest(`/ai_usage?select=cost_usd_micros&user_id=eq.${userId}&created_at=gte.${monthStart}`),
     rest(
-      `/ai_entitlements?select=plan,monthly_allowance_usd_micros,credit_usd_micros&user_id=eq.${userId}`,
+      `/ai_entitlements?select=plan,monthly_allowance_usd_micros,credit_usd_micros,valid_until,tts_char_cap,cancel_at_period_end&user_id=eq.${userId}`,
     ),
+    monthCharTotal(userId),
   ])
-  let spend = 0
-  if (spendRes.ok) {
-    const rows = (await spendRes.json()) as { cost_usd_micros: number }[]
-    for (const r of rows) spend += Number(r.cost_usd_micros ?? 0)
+  const sumCosts = async (res: Response): Promise<number> => {
+    if (!res.ok) return 0
+    const rows = (await res.json()) as { cost_usd_micros: number }[]
+    let sum = 0
+    for (const r of rows) sum += Number(r.cost_usd_micros ?? 0)
+    return sum
   }
-  let ent: Entitlement = { plan: 'free', monthly_allowance_usd_micros: 0, credit_usd_micros: 0 }
+  const lifetimeSpend = await sumCosts(spendRes)
+  const monthSpend = await sumCosts(monthRes)
+  let ent: Entitlement = {
+    plan: 'free',
+    monthly_allowance_usd_micros: 0,
+    credit_usd_micros: 0,
+  }
   if (entRes.ok) {
     const rows = (await entRes.json()) as Entitlement[]
     if (rows.length > 0) ent = rows[0]
   }
-  const cap = TEASER_CAP_USD_MICROS +
-    Number(ent.monthly_allowance_usd_micros) + Number(ent.credit_usd_micros)
+  // Monthly-aware budget — mirror of remainingBudgetWithMonthly (src/llm/entitlement.ts):
+  // lifetime pools ($1 teaser + credit) are consumed first; only this month's
+  // spend beyond them may consume the (still-active) monthly allowance.
+  const allowanceActive = !ent.valid_until || Date.parse(ent.valid_until) > Date.now()
+  const nonMonthly = TEASER_CAP_USD_MICROS + Number(ent.credit_usd_micros ?? 0)
+  const coveredByNonMonthly = Math.min(lifetimeSpend, nonMonthly)
+  const lifetimeRemaining = nonMonthly - coveredByNonMonthly
+  const beyond = lifetimeSpend - coveredByNonMonthly
+  const allowance = allowanceActive ? Number(ent.monthly_allowance_usd_micros ?? 0) : 0
+  const allowanceUsed = Math.min(monthSpend, beyond)
+  const allowanceRemaining = Math.max(0, allowance - allowanceUsed)
+  const remaining = lifetimeRemaining + allowanceRemaining
+  const cap = nonMonthly + allowance
+  const ttsCharCap = Number.isFinite(Number(ent.tts_char_cap))
+    ? Math.max(0, Number(ent.tts_char_cap))
+    : FREE_TTS_CHAR_CAP
   return {
-    spendUsdMicros: spend,
+    spendUsdMicros: cap - remaining,
     capUsdMicros: cap,
-    remainingUsdMicros: Math.max(0, cap - spend),
+    remainingUsdMicros: remaining,
     plan: ent.plan,
-    // M8.1: publish the live pricing config so client meters follow automatically.
     model: TEASER_MODEL,
     prices: PRICES_USD_PER_M,
+    ttsCharCap,
+    ttsCharsUsed: charsUsed,
+    validUntil: ent.valid_until ?? null,
+    cancelAtPeriodEnd: allowanceActive && !!ent.cancel_at_period_end,
   }
 }
 
@@ -448,7 +491,15 @@ Deno.serve(async (req: Request) => {
         ? body.voice
         : DEFAULT_TTS_VOICE
       const rate = Math.min(1.5, Math.max(0.5, body.rate ?? 1))
-      if ((await monthCharTotal(userId)) + text.length > TTS_MONTHLY_CHAR_CAP) {
+      // M9: per-plan monthly HD-voice cap (Basic = 0 → plan gate, not exhaustion).
+      const budget = await budgetOf(userId)
+      if (budget.ttsCharCap <= 0) {
+        return respond(403, {
+          error: 'hd-voice-not-in-plan',
+          message: 'HD cloud voice is a Plus feature — browser voices keep working free.',
+        })
+      }
+      if (budget.ttsCharsUsed + text.length > budget.ttsCharCap) {
         return respond(402, {
           error: 'exhausted',
           message: 'Your monthly HD voice allowance is used up — the browser voice still works.',
