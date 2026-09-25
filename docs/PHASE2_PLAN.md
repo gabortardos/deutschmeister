@@ -176,6 +176,14 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
     already serve as the risk-free try. Rationale: fewer moving parts, honest funnel.
   - **EUR pricing** — EU-first audience, Paddle-as-MoR handles VAT; Paddle fee ≈ 5% + $0.50/txn
     → ~€4.16 net on a €4.90 month; AI cost/member realistically €0.5–2 (≈0 on GLM coding plan).
+  - **Allowance mechanics + worst-case math (2026-09-21):** Plus = **$5/mo list AI budget**
+    (existing meter) + **200k HD-voice chars/mo** (existing TTS cap ≈ 650 spoken replies/mo,
+    browser voice unlimited & free). Cost drivers: chat ≈ $0.0014–0.002/turn (gpt-5-mini /
+    glm-4.6 nominal — ≈€0 real on the GLM Coding Plan); **HD TTS = the real cost** at
+    $16/1M Neural2 chars ≈ 200–390 spoken replies per $1 beyond Google's shared 1M-char/mo
+    free tier; per-turn grading is already inside the turn JSON; on-demand explanations
+    ~$0.0002–0.0004 (LLM-cached, repeats free). Worst-case member fully using the voice cap:
+    ≈ $3.20 → net ≈ €2.0+ (never negative); median member ≈ €0.3–0.7 → net margin ~85%.
 
 ### M10 — Graphics/UI (v2.3)
 - Tailwind design system (tokens/typography/spacing), dark mode, route-based code-splitting
