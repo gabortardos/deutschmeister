@@ -152,6 +152,30 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
   (PSP-hosted portal), "add your own key instead" hint.
 - Prices/allowances in the single config file. Dormant SKU slot: `byo-supporter` plan type.
 - **Owner touchpoints (~20 min + approval wait):** PSP account, products, webhook secret.
+- **Sandbox-first (owner decision 2026-09-21):** registration done; live approval not yet applied
+  for. Build + demo the whole flow on the Paddle **sandbox** (no approval needed, test cards,
+  simulated renewals/cancellations/refunds), apply for live approval in parallel, then swap
+  sandbox → live credentials and recreate products at go-live. Guard: sandbox webhook writes
+  must never grant real entitlements to real users (env-flag / entitlement `source` column;
+  owner's own account only for testing).
+- **Membership pricing draft (2026-09-21, owner to veto/tweak — everything lives in the config
+  file + Paddle dashboard, nothing locked):**
+  - **Free (teaser)** — unchanged: $1 metered AI credit after sign-up, then BYO key (free
+    forever) or upgrade. The acquisition funnel.
+  - **DeutschMeister Plus — single tier at launch: €4.90/month or €39/year (~33% off).**
+    Buys: all AI features unmetered-day-to-day with a generous fair-use monthly AI allowance
+    (~$5 list price ≈ 5× the whole teaser = effectively unlimited for a real learner),
+    HD voice included, future M11 premium content packs included. "No API key, no setup,
+    every device." Implementation: `ai_entitlements.plan='plus'` + bigger monthly
+    `allowanceUsdMicros` — the M8.1 metering engine already does everything else.
+  - **AI Credit Pack (top-up, one-time) — €2.90 = $3 credit / €5.90 = $7 (bonus), 6-month
+    validity.** For "no subscription" learners post-teaser. Phase 2 of M9 (optional at launch).
+  - **BYO stays 100% free** — never paywall what users power themselves; dormant
+    `byo-supporter` SKU (e.g. €1.90/mo tip jar) stays dormant.
+  - **No free trial at launch** — the $1 teaser + published 14-day refund policy (/#/refund)
+    already serve as the risk-free try. Rationale: fewer moving parts, honest funnel.
+  - **EUR pricing** — EU-first audience, Paddle-as-MoR handles VAT; Paddle fee ≈ 5% + $0.50/txn
+    → ~€4.16 net on a €4.90 month; AI cost/member realistically €0.5–2 (≈0 on GLM coding plan).
 
 ### M10 — Graphics/UI (v2.3)
 - Tailwind design system (tokens/typography/spacing), dark mode, route-based code-splitting
