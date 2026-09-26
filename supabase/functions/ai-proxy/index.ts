@@ -487,7 +487,12 @@ Deno.serve(async (req: Request) => {
           message: `Text must be 1–${MAX_TTS_CHARS} characters.`,
         })
       }
-      const voice = typeof body.voice === 'string' && /^de-DE-[A-Za-z0-9-]{1,40}$/.test(body.voice)
+      // Billing safety: the platform key must only ever synthesize free-tier
+      // Neural2 voices (first 1M chars/month free, $16/1M after). Other German
+      // families carry real cost with no free tier (Studio $160/1M, Chirp 3 HD
+      // $30/1M), so a crafted client `voice` must never steer the platform key
+      // onto them. Anything not matching the whitelist falls back to the default.
+      const voice = typeof body.voice === 'string' && /^de-DE-Neural2-[A-Z]$/.test(body.voice)
         ? body.voice
         : DEFAULT_TTS_VOICE
       const rate = Math.min(1.5, Math.max(0.5, body.rate ?? 1))
