@@ -1,4 +1,9 @@
 import { useEffect, useState } from 'react'
+import {
+  closePaddleCheckout,
+  openTransactionCheckout,
+  parseCheckoutResponse,
+} from '../../../billing/paddleClient'
 import { Badge, Button, Card } from '../../../components/ui'
 import { formatUsdMicros } from '../../../llm/entitlement'
 import {
@@ -14,9 +19,12 @@ import { useAuthStore } from '../../../sync/authStore'
 import { getSupabase, supabaseFunctionsUrl } from '../../../sync/supabaseClient'
 
 /**
- * Settings → Account & Billing (M9). Plans are purchased through Paddle's
- * HOSTED checkout (redirect flow — no card data ever touches this app) and
- * arrive via the signature-verified `paddle-webhook` Edge Function, which
+ * Settings → Account & Billing (M9). Plans are purchased through Paddle
+ * checkout — opened as a Paddle.js OVERLAY inside this page (v2.4.1: Paddle
+ * Billing's API has no standalone hosted checkout page, so the Edge Function
+ * creates a transaction and we open it via Paddle.Checkout.open({transactionId})
+ * — card data goes straight to Paddle, never through this app). The grant
+ * arrives via the signature-verified `paddle-webhook` Edge Function, which
  * writes the entitlement row the `ai-proxy` enforces. The client never decides
  * entitlements; it only renders what the server publishes and forwards the
  * buyer to Paddle.
@@ -131,15 +139,51 @@ export default function BillingSection() {
     }
     setBusy(`${planId}-${priceInterval}`)
     setError('')
+    const buyerEmail = user?.email ?? undefined
     try {
-      const r = await paddleCheckout<{ url: string }>({ type: 'checkout', priceId: option.priceId })
-      if (typeof r.url === 'string' && r.url) window.location.assign(r.url)
-      else throw new Error('Paddle did not return a checkout link.')
+      const r = await paddleCheckout<unknown>({ type: 'checkout', priceId: option.priceId })
+      const session = parseCheckoutResponse(r)
+      if (!session) throw new Error('Paddle did not return a checkout session.')
+      const overlayOpened =
+        session.transactionId !== null &&
+        session.clientToken !== null &&
+        (await openTransactionCheckout({
+          env: session.env,
+          clientToken: session.clientToken,
+          transactionId: session.transactionId,
+          customerEmail: buyerEmail,
+          onCompleted: () => void afterPurchase(),
+        }))
+      if (!overlayOpened) {
+        // Fallback: redirect to Paddle's checkout payment link (only useful when
+        // the account's default payment link points at this app — M9_DEPLOY 2B).
+        if (session.url) window.location.assign(session.url)
+        else throw new Error('Paddle checkout could not be opened.')
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy('')
     }
+  }
+
+  /** Overlay paid: close it, then poll the meter until the webhook grants the plan. */
+  async function afterPurchase() {
+    closePaddleCheckout()
+    setNotice('Payment received — activating your plan (usually a few seconds)…')
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      try {
+        await usePlatformStore.getState().refresh()
+      } catch {
+        // network hiccup — keep polling, the webhook may still land
+      }
+      if (usePlatformStore.getState().plan !== 'free') {
+        setNotice('Thanks for subscribing! Your plan is active.')
+        return
+      }
+    }
+    setNotice('Payment received — if the plan badge has not switched yet, refresh in a minute.')
   }
 
   async function manage() {

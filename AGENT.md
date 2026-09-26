@@ -76,8 +76,12 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
   table = webhook idempotency + audit, RLS deny-all → service-role only).
   - `supabase/functions/paddle-checkout/index.ts` (deploy with JWT verify ON): type=plans
     (catalog from PADDLE_PRICE_MAP — price IDs live server-side so sandbox→live needs no
-    client rebuild), type=checkout (POST {api}/transactions → hosted-checkout URL, redirect
-    flow only, custom_data.user_id), type=portal (customer-portal session for manage/cancel).
+    client rebuild), type=checkout (POST {api}/transactions → returns {transactionId,
+    clientToken, env, url}; v2.4.1: Paddle Billing has NO API-hosted checkout page — its
+    checkout.url is just <default payment link>?_ptxn=…, so the client opens the
+    transaction as a Paddle.js overlay; a missing dashboard default payment link ⇒ 400
+    transaction_default_checkout_url_not_set), type=portal (customer-portal session for
+    manage/cancel).
   - `supabase/functions/paddle-webhook/index.ts` (deploy with JWT verify **OFF** — Paddle
     sends no Supabase JWT; the Paddle-Signature HMAC is the auth): verifies ts/h1 over
     `ts:rawBody` (±300 s), idempotent via billing_events, subscription events →
@@ -89,12 +93,20 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
     `remainingBudgetWithMonthly` in `src/llm/entitlement.ts`; per-plan HD-voice caps
     (free 20k taste / Basic 0 → 403 `hd-voice-not-in-plan` / Plus 150k); usage response
     publishes plan envelope (plan/ttsCharsUsed/ttsCharCap/validUntil/cancelAtPeriodEnd).
-  - Secrets (owner, dashboard): PADDLE_API_KEY, PADDLE_ENV (sandbox|live), PADDLE_WEBHOOK_SECRET,
-    PADDLE_PRICE_MAP (JSON priceId→{plan,kind,interval,creditUsdMicros}), PADDLE_SANDBOX_TEST_USER.
+  - Secrets (owner, dashboard): PADDLE_API_KEY, PADDLE_CLIENT_TOKEN (Paddle client-side
+    token `test_…`/`live_…` — public by design, can only OPEN checkouts), PADDLE_ENV
+    (sandbox|live), PADDLE_WEBHOOK_SECRET, PADDLE_PRICE_MAP (JSON
+    priceId→{plan,kind,interval,creditUsdMicros}), PADDLE_SANDBOX_TEST_USER. Paddle-side
+    too: default payment link = app URL (Checkout → Checkout settings), or every
+    transaction-create 400s (sandbox: any URL, no approval; live: reviewed).
     Plan allowances (gpt-5-mini backend: Basic $2 / Plus $3.5) live in paddle-webhook's PLANS.
   - Client: plan catalog `src/llm/plans.ts` (v3: Basic €3.99·€29.99, Plus €5.99·€49.99 ⭐,
     Pro dormant/hidden), Settings → Account & Billing (`BillingSection.tsx`: usage bars,
-    pricing cards, checkout/manage redirects, ?billing=success return handling).
+    pricing cards, checkout/manage redirects, ?billing=success return handling). v2.4.1:
+    `src/billing/paddleClient.ts` lazy-loads cdn.paddle.com/paddle/v2/paddle.js on first
+    subscribe (Initialize-once guard), opens the transaction via
+    Paddle.Checkout.open({transactionId}) overlay, closes it on checkout.completed and
+    polls the meter via getState (no stale closures); redirect fallback to checkout.url.
 - Platform AI teaser (M8, v2.1.0): signed-in keyless users get AI via the `ai-proxy` Edge
   Function (`supabase/functions/ai-proxy/index.ts` — owner deploys by pasting into Dashboard →
   Edge Functions; secrets `OPENAI_PLATFORM_KEY` or `ZAI_PLATFORM_KEY` (chat; z.ai wins when both

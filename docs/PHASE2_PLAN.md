@@ -151,13 +151,20 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
 
 > Built: `paddle-checkout` + `paddle-webhook` Edge Functions, migration `0003_billing.sql`,
 > ai-proxy monthly-allowance + per-plan-voice-cap upgrade, `src/llm/plans.ts` catalog,
-> `src/billing/paddle.ts` signature twin, Settings → Account & Billing UI. Owner deploy
-> checklist (≈30 min): run 0003 in the SQL editor · create the 4 sandbox prices (Basic/Plus ×
-> monthly/annual) · set secrets PADDLE_API_KEY, PADDLE_ENV=sandbox, PADDLE_WEBHOOK_SECRET,
-> PADDLE_PRICE_MAP, PADDLE_SANDBOX_TEST_USER (own uuid) · deploy `paddle-checkout` (JWT ON) and
-> `paddle-webhook` (JWT **OFF**) + register its URL as a Paddle notification destination ·
-> re-paste ai-proxy. Then E2E test: subscribe → webhook grants → meter shows plan → cancel in
-> portal → downgrade. Go-live = live secrets + PADDLE_ENV=live + live price IDs, nothing else.
+> `src/billing/paddle.ts` signature twin, Settings → Account & Billing UI. **v2.4.1 fix
+> (2026-09-21, after the owner hit 400 transaction_default_checkout_url_not_set):** Paddle
+> Billing has no API-hosted checkout page — checkout.url is just <default payment link>?_ptxn,
+> so purchases now open as a Paddle.js overlay in-page (`src/billing/paddleClient.ts`, lazy
+> loaded on first subscribe; new secret `PADDLE_CLIENT_TOKEN`; Paddle dashboard default
+> payment link must be set — M9_DEPLOY Step 2B). Owner deploy checklist (≈30 min): run 0003
+> in the SQL editor · create the 4 sandbox prices (Basic/Plus × monthly/annual) · set the
+> default payment link (Step 2B) · create a client-side token (Step 3) · set secrets
+> PADDLE_API_KEY, PADDLE_CLIENT_TOKEN, PADDLE_ENV=sandbox, PADDLE_WEBHOOK_SECRET,
+> PADDLE_PRICE_MAP, PADDLE_SANDBOX_TEST_USER (own uuid) · deploy `paddle-checkout` (JWT ON)
+> and `paddle-webhook` (JWT **OFF**) + register its URL as a Paddle notification destination ·
+> re-paste ai-proxy. Then E2E test: subscribe → overlay checkout → webhook grants → meter
+> shows plan → cancel in portal → downgrade. Go-live = live secrets (incl. live client
+> token) + PADDLE_ENV=live + live price IDs, nothing else.
 
 - Paddle (preferred, MoR → EU VAT handled) or Stripe: **hosted checkout** products for (a) Pro
   monthly subscription (includes monthly allowance) and (b) top-ups. Redirect flow only.

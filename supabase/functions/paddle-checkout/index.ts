@@ -6,11 +6,19 @@
 //                     between sandbox and live, so the client bundle never
 //                     embeds them — it asks us.
 //   • type=checkout → creates a DRAFT transaction via the Paddle Billing API
-//                     (POST /transactions with items+custom_data+checkout.success_url)
-//                     and returns {url}: Paddle's HOSTED checkout page. Redirect
-//                     flow only (locked decision) — no card data ever near us.
+//                     (POST /transactions with items+custom_data) and returns
+//                     {transactionId, clientToken, env, url}. The client opens
+//                     the transaction as a Paddle.js OVERLAY checkout in-page
+//                     (src/billing/paddleClient.ts) — Paddle Billing has NO
+//                     API-hosted checkout page: its checkout.url is just
+//                     <default payment link>?_ptxn=<id>, so a bare redirect
+//                     lands on our own site with nothing open. `url` is still
+//                     returned as a fallback. No card data ever near us.
 //                     custom_data.user_id is how paddle-webhook maps the purchase
-//                     back to this Supabase user.
+//                     back to this Supabase user. NOTE: Paddle refuses ALL
+//                     transaction creation until the dashboard has a default
+//                     payment link set (Checkout → Checkout settings) — missing
+//                     it yields 400 transaction_default_checkout_url_not_set.
 //   • type=portal   → creates a customer-portal session (Paddle-hosted manage/
 //                     cancel/update-card pages) for the signed-in user's stored
 //                     paddle_customer_id and returns {url}.
@@ -20,21 +28,27 @@
 //
 // Deploy (owner): Dashboard → Edge Functions → New function → name
 // "paddle-checkout" → paste this file → keep "Verify JWT" ENABLED. Secrets:
-//   PADDLE_API_KEY     sandbox (sandbox-api.paddle.com) or live API key
-//   PADDLE_ENV         'sandbox' (default) | 'live' — picks the API base URL
-//   PADDLE_PRICE_MAP   JSON, same shape as paddle-webhook, e.g.
+//   PADDLE_API_KEY       sandbox (sandbox-api.paddle.com) or live API key
+//   PADDLE_ENV           'sandbox' (default) | 'live' — picks the API base URL
+//   PADDLE_CLIENT_TOKEN  Paddle client-side token ('test_…' sandbox / 'live_…'),
+//                        created under Developer tools → Authentication →
+//                        Client-side tokens. Public by design (can only OPEN
+//                        checkouts) — passed through so the client can call
+//                        Paddle.Initialize without a rebuild on go-live.
+//   PADDLE_PRICE_MAP     JSON, same shape as paddle-webhook, e.g.
 //     {"pri_sandbox123": {"plan":"basic","kind":"subscription","interval":"month"},
 //      "pri_sandbox456": {"plan":"basic","kind":"subscription","interval":"year"},
 //      "pri_sandbox789": {"plan":"plus","kind":"subscription","interval":"month"},
 //      "pri_sandboxabc": {"plan":"plus","kind":"subscription","interval":"year"}}
-// Go-live = swap the secret VALUES (live key, PADDLE_ENV=live, live price IDs) +
-// redeploy; nothing changes in this file or in the client.
+// Go-live = swap the secret VALUES (live key, PADDLE_ENV=live, live client token,
+// live price IDs) + redeploy; nothing changes in this file or in the client.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const PADDLE_API_KEY = Deno.env.get('PADDLE_API_KEY') ?? ''
 const PADDLE_ENV = (Deno.env.get('PADDLE_ENV') ?? 'sandbox').toLowerCase()
 const PADDLE_BASE = PADDLE_ENV === 'live' ? 'https://api.paddle.com' : 'https://sandbox-api.paddle.com'
+const PADDLE_CLIENT_TOKEN = Deno.env.get('PADDLE_CLIENT_TOKEN') ?? ''
 
 interface PriceMapping {
   plan?: string
@@ -116,17 +130,16 @@ Deno.serve(async (req: Request) => {
     return respond(200, { options, env: PADDLE_ENV })
   }
 
-  // 3) hosted checkout: create a draft transaction, return its checkout URL.
+  // 3) overlay checkout: create a draft transaction, hand the client the id.
   if (body.type === 'checkout') {
     const priceId = typeof body.priceId === 'string' ? body.priceId : ''
     const mapping = map[priceId]
     if (!mapping) {
       return respond(400, { error: 'unknown-price', message: 'This plan is not available.' })
     }
-    const origin = req.headers.get('origin')
-    if (!origin) return respond(400, { error: 'bad-request', message: 'Missing Origin header.' })
-    // GitHub Pages base path + hash router: back to Settings with a flag param.
-    const successUrl = `${origin}/deutschmeister/#/settings?billing=success`
+    // No checkout.success_url: the client opens this transaction as a Paddle.js
+    // overlay and closes it on checkout.completed (a success_url would load our
+    // whole SPA inside the overlay iframe after payment — ugly and pointless).
     try {
       const res = await fetch(`${PADDLE_BASE}/transactions`, {
         method: 'POST',
@@ -134,7 +147,6 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           items: [{ price_id: priceId, quantity: 1 }],
           custom_data: { user_id: userId },
-          checkout: { success_url: successUrl },
         }),
         signal: AbortSignal.timeout(20_000),
       })
@@ -145,12 +157,17 @@ Deno.serve(async (req: Request) => {
           message: `Paddle checkout error ${res.status}: ${raw.slice(0, 180)}`,
         })
       }
-      const data = JSON.parse(raw) as { data?: { checkout?: { url?: string } } }
-      const url = data.data?.checkout?.url
-      if (typeof url !== 'string' || !url) {
-        return respond(502, { error: 'paddle', message: 'Paddle returned no checkout URL.' })
+      const data = JSON.parse(raw) as { data?: { id?: string; checkout?: { url?: string } } }
+      const transactionId = data.data?.id ?? ''
+      if (!/^txn_[a-z\d]+$/.test(transactionId)) {
+        return respond(502, { error: 'paddle', message: 'Paddle returned no transaction id.' })
       }
-      return respond(200, { url })
+      return respond(200, {
+        transactionId,
+        clientToken: PADDLE_CLIENT_TOKEN,
+        env: PADDLE_ENV === 'live' ? 'live' : 'sandbox',
+        url: data.data?.checkout?.url ?? '',
+      })
     } catch {
       return respond(504, { error: 'paddle-timeout', message: 'Paddle did not answer in time.' })
     }

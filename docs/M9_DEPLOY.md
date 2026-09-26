@@ -51,6 +51,23 @@ price IDs**. These IDs are how our server recognizes what someone bought.
 
 ---
 
+## STEP 2B — Paddle: set the default payment link (~1 min, REQUIRED)
+
+**What/why:** Paddle refuses to create **any** checkout until the account has a *default
+payment link*. Without it, clicking Subscribe fails with error
+`400 transaction_default_checkout_url_not_set`. (It's the base URL Paddle builds its
+payment links on — ours points back at the app itself.) In sandbox any URL is accepted
+immediately, no approval.
+
+1. Still in the sandbox dashboard: left menu **Checkout** → **Checkout settings**
+2. Find the **Default payment link** field and paste the app URL:
+   `https://gabortardos.github.io/deutschmeister/`
+3. Click **Save**
+
+**Verify:** the field shows the URL after saving. That's it — this unblocks checkouts.
+
+---
+
 ## STEP 3 — Paddle: create an API key (~2 min)
 
 **What/why:** The API key lets our `paddle-checkout` function talk to Paddle ("create a
@@ -60,22 +77,30 @@ checkout for this price", "open the manage-subscription page").
    **API keys** → **New API key**
 2. Description: `deutschmeister server` → Create → copy the key (starts with `pdl_…`)
 3. Treat it like a password — it never goes in the repo, only into Supabase secrets (Step 4)
+4. **While you're on this page**, switch to the **Client-side tokens** tab →
+   **New token** → description `deutschmeister checkout` → copy it
+   (in sandbox it starts with **`test_`**)
+5. This one is PUBLIC by design — it can only open checkout windows, nothing else —
+   but we still keep it in Supabase secrets (Step 4, as `PADDLE_CLIENT_TOKEN`) so that
+   switching to live later is just a value swap.
 
-**Verify:** you have a `pdl_…` string copied.
+**Verify:** you have TWO strings copied: a secret `pdl_…` API key and a public
+`test_…` client-side token.
 
 ---
 
 ## STEP 4 — Supabase: set the secrets (~10 min)
 
-**What/why:** Secrets are private settings our Edge Functions read at runtime. Four of the
-five come from Steps 2–3; the fifth (`PADDLE_WEBHOOK_SECRET`) comes in Step 6.
+**What/why:** Secrets are private settings our Edge Functions read at runtime. Five of the
+six come from Steps 2–3; the sixth (`PADDLE_WEBHOOK_SECRET`) comes in Step 6.
 
 1. Supabase dashboard → project → **Edge Functions** → **Secrets** (or "Manage secrets")
-2. Add these **four** now — names must match EXACTLY (uppercase, underscores):
+2. Add these **five** now — names must match EXACTLY (uppercase, underscores):
 
    | Secret name | Value |
    |---|---|
    | `PADDLE_API_KEY` | the `pdl_…` key from Step 3 |
+   | `PADDLE_CLIENT_TOKEN` | the `test_…` client-side token from Step 3 |
    | `PADDLE_ENV` | `sandbox` |
    | `PADDLE_SANDBOX_TEST_USER` | your user UUID — see below |
    | `PADDLE_PRICE_MAP` | the JSON below, with YOUR 4 price IDs pasted in |
@@ -93,7 +118,7 @@ five come from Steps 2–3; the fifth (`PADDLE_WEBHOOK_SECRET`) comes in Step 6.
 
    (It must be ONE line in the dashboard, exactly like above — just with your real `pri_…` IDs.)
 
-**Verify:** the Secrets page lists 4 new `PADDLE_*` secrets.
+**Verify:** the Secrets page lists 5 new `PADDLE_*` secrets.
 
 ---
 
@@ -166,11 +191,14 @@ to receive memberships, so this test only works as you.
 
 1. Open the live app → log in with your account → **Settings → Account & Billing**
    → you should see the pricing cards. *(If they show, `paddle-checkout` + price map work.)*
-2. Click **Basic — monthly** → you land on Paddle's checkout (a "Test mode" badge shows)
+2. Click **Subscribe — Basic monthly** → the Paddle checkout opens as an **overlay on the
+   same page** (dark background, payment form on top; a "Test mode" badge shows).
+   Nothing happening / an error message? → see **Troubleshooting** below.
 3. Pay with Paddle's test card: **4242 4242 4242 4242**, any future expiry, any CVC, any
-   name/email. Nothing real is charged — sandbox play money.
-4. You're redirected back to Settings with a success banner. Wait ~10 s, refresh the page
-   → your plan should now show **Basic** and the budget bar the $2/mo allowance.
+   name (your email is prefilled). Nothing real is charged — sandbox play money.
+4. After payment the overlay closes by itself and the page shows
+   *"Payment received — activating your plan…"*. Within a few seconds the plan badge
+   flips to **Basic** and the budget bar shows the $2/mo allowance.
    *(This proves the whole chain: checkout → Paddle → webhook → database → meter.)*
 5. Click **Manage subscription** → Paddle's customer portal opens (cancel / update card)
 6. Optional cancel-test: cancel in the portal → refresh the app → the plan shows
@@ -184,12 +212,38 @@ function → Settings → toggle off → redeploy).
 
 ---
 
+## Troubleshooting checkout errors
+
+- **`Paddle checkout error 400 … transaction_default_checkout_url_not_set`**
+  → Step 2B is missing. Sandbox dashboard → **Checkout → Checkout settings** → set the
+  **Default payment link** to `https://gabortardos.github.io/deutschmeister/` → Save.
+  Paddle refuses to create *any* transaction until this is set.
+
+- **Clicking Subscribe does nothing (no overlay, no error), or the page seems to
+  redirect to the app's own homepage**
+  → The `PADDLE_CLIENT_TOKEN` secret is missing/empty, so the app couldn't open the
+  Paddle overlay and fell back to a redirect. Check Supabase → Edge Functions →
+  Secrets: `PADDLE_CLIENT_TOKEN` must be the **`test_…`** token from Step 3 (a `live_…`
+  token won't work against sandbox). Also confirm the deployed `paddle-checkout`
+  function is the current code (re-paste it from the repo, see Step 5).
+
+- **Overlay opens but shows a Paddle error inside**
+  → Check **Edge Functions → paddle-checkout → Logs**, and Paddle sandbox →
+  **Transactions** (a failed draft transaction often shows the reason, e.g. an
+  inactive price).
+
+---
+
 ## Going live later (after Paddle approves your live account)
 
 1. In the **live** dashboard (vendors.paddle.com, no `sandbox-`): create the same 2
-   products / 4 prices, a live API key, and a live notification destination (same URL!)
-2. Update the **5 secret values** in Supabase (live API key, `PADDLE_ENV` = `live`, live
-   price IDs in `PADDLE_PRICE_MAP`, live webhook secret) — names stay the same
-3. Redeploy the two functions (re-paste the same code, save) so they pick up new values
+   products / 4 prices, a live API key, a **live client-side token** (`live_…`), and a
+   live notification destination (same URL!)
+2. In the live dashboard also set the **Default payment link** (same app URL) — in live
+   mode the website gets reviewed as part of Paddle's account approval, which is normal
+3. Update the **6 secret values** in Supabase (live API key, `PADDLE_ENV` = `live`,
+   `PADDLE_CLIENT_TOKEN` = live token, live price IDs in `PADDLE_PRICE_MAP`, live
+   webhook secret) — names stay the same
+4. Redeploy the two functions (re-paste the same code, save) so they pick up new values
 
 That's the whole switch — no code changes.
