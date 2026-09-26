@@ -27,7 +27,13 @@ export default function Layout() {
   useEffect(() => {
     void initAuth()
     // M8: signed-in keyless users get the platform HD voice via the same proxy.
-    configurePlatformTts(() => currentPlatformAuth())
+    // M9.7 availability gate: the route must ALSO look closed when signed out or
+    // when the plan envelope has no HD allowance (Basic) — otherwise the picker
+    // offered voices that could never actually play.
+    configurePlatformTts(
+      () => currentPlatformAuth(),
+      () => useAuthStore.getState().user != null && usePlatformStore.getState().ttsCharCap > 0,
+    )
   }, [])
 
   // Refresh the free-credit meter whenever auth state appears/changes.

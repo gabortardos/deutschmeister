@@ -118,6 +118,12 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
     transaction-checkout service rejects settings.customer.email
     (validation.no_validation_set); the webhook maps by custom_data.user_id,
     so the prefill was unnecessary anyway.
+    v2.4.6: platform HD voice is GATED (configurePlatformTts availability
+    predicate: signed-in + plan tts_char_cap > 0) — signed-out users no longer
+    see the included voice picker; ai-proxy gained type=ttsVoices (included
+    German list = Neural2+Wavenet, same whitelist as synthesize — Studio/Chirp
+    stay BYO-only); the Speech section greyes out whichever engine is unused and
+    the HD preview no longer silently plays the browser voice when keyless.
 - Platform AI teaser (M8, v2.1.0): signed-in keyless users get AI via the `ai-proxy` Edge
   Function (`supabase/functions/ai-proxy/index.ts` — owner deploys by pasting into Dashboard →
   Edge Functions; secrets `OPENAI_PLATFORM_KEY` or `ZAI_PLATFORM_KEY` (chat; z.ai wins when both

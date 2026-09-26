@@ -31,9 +31,26 @@ export interface PlatformTtsAuth {
 }
 
 let platformResolver: (() => Promise<PlatformTtsAuth | null>) | null = null
+let platformAvailable: (() => boolean) | null = null
 
-export function configurePlatformTts(resolver: (() => Promise<PlatformTtsAuth | null>) | null): void {
+/**
+ * M9.7: `available` is a SYNC predicate for "the platform route may serve this
+ * user right now" (signed in + plan envelope includes HD voice). Without it the
+ * resolver's mere presence made shouldHandle/listVoices claim platform HD even
+ * when signed out — the picker then offered voices that could never actually
+ * play (speaking silently fell back to the browser voice).
+ */
+export function configurePlatformTts(
+  resolver: (() => Promise<PlatformTtsAuth | null>) | null,
+  available?: () => boolean,
+): void {
   platformResolver = resolver
+  platformAvailable = available ?? null
+}
+
+/** True when the included (platform) HD route can serve the current user. */
+export function platformTtsAvailable(): boolean {
+  return platformResolver !== null && (platformAvailable ? platformAvailable() : true)
 }
 
 /** Pure request body for the ai-proxy tts route (unit-tested). */
@@ -262,20 +279,54 @@ async function speakPlatform(
   }
 }
 
+/** Included German voices via the ai-proxy (type=ttsVoices); [] → curated fallback. */
+async function fetchPlatformVoices(): Promise<HdVoiceInfo[]> {
+  const resolver = platformResolver
+  if (!resolver) return []
+  const auth = await resolver()
+  if (!auth) return []
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+  try {
+    const res = await fetch(auth.endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${auth.token}` },
+      body: JSON.stringify({ type: 'ttsVoices' }),
+      signal: controller.signal,
+    })
+    if (!res.ok) return []
+    const data = (await res.json()) as { voices?: HdVoiceInfo[] }
+    return Array.isArray(data.voices)
+      ? data.voices.filter((v) => typeof v?.id === 'string' && typeof v.gender === 'string')
+      : []
+  } catch {
+    return []
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export const hdTts = {
   /** True when `tts.speak` should route here (browser voice becomes the fallback). */
   shouldHandle(): boolean {
-    return getHdConfig().enabled && (getGoogleTtsKey().trim().length > 0 || platformResolver !== null)
+    return getHdConfig().enabled && (getGoogleTtsKey().trim().length > 0 || platformTtsAvailable())
   },
 
   /** Fetch German (de-DE) voices for the picker. Throws with a friendly message on failure. */
   async listVoices(): Promise<HdVoiceInfo[]> {
     const key = getGoogleTtsKey()
     if (!key.trim()) {
-      // Platform HD voice (M8): the proxy exposes only synthesize, not Google's
-      // voices endpoint — the curated free-tier Neural2 list covers the picker.
-      if (platformResolver) return sortVoiceInfos([...FALLBACK_HD_VOICES])
-      throw new Error('No Google TTS API key set.')
+      // Platform HD voice (M9.7): the proxy serves the INCLUDED German list
+      // (Neural2 + Wavenet — kept in sync with its synthesize whitelist), so paid
+      // users get the full included set without a key of their own. The curated
+      // fallback only covers a failed/offline fetch.
+      if (!platformTtsAvailable()) {
+        throw new Error(
+          'No Google TTS API key set — sign in for the included HD voice or add your own key.',
+        )
+      }
+      const list = await fetchPlatformVoices()
+      return sortVoiceInfos(list.length > 0 ? list : [...FALLBACK_HD_VOICES])
     }
     const res = await fetch(`${API_BASE}/voices?languageCode=de-DE`, {
       headers: { 'x-goog-api-key': key },

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Badge, Card, Field, inputClass } from '../../../components/ui'
 import { voiceQuality, type VoiceQuality } from '../../../engine/voiceRanking'
 import { stt } from '../../../speech/stt'
@@ -13,6 +13,8 @@ import {
   type HdVoiceInfo,
 } from '../../../speech/hdTts'
 import { useAppStore } from '../../../state/store'
+import { useAuthStore } from '../../../sync/authStore'
+import { usePlatformStore } from '../../../state/platformStore'
 
 const PREVIEW_TEXT = 'Hallo! Willkommen bei DeutschMeister. Lernen wir Deutsch!'
 
@@ -20,6 +22,12 @@ export default function SpeechSection() {
   const settings = useAppStore((s) => s.settings)
   const patchSettings = useAppStore((s) => s.patchSettings)
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
+  // M9.7: one clear engine — when HD is active the browser list greys out below.
+  const [hdActive, setHdActive] = useState(false)
+  const user = useAuthStore((s) => s.user)
+  const ttsCharCap = usePlatformStore((s) => s.ttsCharCap)
+  const platformAvailable = user != null && ttsCharCap > 0
+  const handleHdActive = useCallback((a: boolean) => setHdActive(a), [])
 
   useEffect(() => {
     const refresh = (): void => setVoices(tts.germanVoices())
@@ -80,9 +88,17 @@ export default function SpeechSection() {
       <div className="grid gap-4">
         <Field
           label="German voice"
-          hint={`${voices.length} German voice(s) found — ranked by expected quality, best first. ▶ previews and selects.`}
+          hint={
+            hdActive
+              ? 'HD cloud voice is active — this list is the offline fallback only (greyed). Turn HD off below to pick a browser voice.'
+              : `${voices.length} German voice(s) found — ranked by expected quality, best first. ▶ previews and selects.`
+          }
         >
-          <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+          <div
+            className={`divide-y divide-slate-100 rounded-lg border border-slate-200 transition-opacity ${
+              hdActive ? 'pointer-events-none opacity-40' : ''
+            }`}
+          >
             {row('auto', '', 'Automatic', 'best German voice on this device', 'premium')}
             {voices.map((v) =>
               row(
@@ -126,18 +142,29 @@ export default function SpeechSection() {
         </label>
       </div>
 
-      <HdVoiceCard />
+      <HdVoiceCard
+        platformAvailable={platformAvailable}
+        signedIn={user != null}
+        onActiveChange={handleHdActive}
+      />
     </Card>
   )
 }
 
 /**
- * Optional HD cloud TTS (M6.2, Google Cloud TTS): enable toggle, API key (localStorage only),
- * German neural-voice picker with live list + fallback, and a preview that surfaces errors.
- * When active, every `tts.speak` call routes through Google and falls back to the browser
- * voice on any failure.
+ * Optional HD cloud TTS (M6.2 Google Cloud TTS, M9.7 platform voice): enable toggle,
+ * optional own API key (localStorage only), German neural-voice picker with live list +
+ * fallback, and a preview that surfaces errors. Active = own key OR the included plan
+ * voice (signed in + plan cap); when active, every `tts.speak` call routes through HD
+ * and falls back to the browser voice on any failure, and the browser list above is
+ * greyed out to keep one clear engine.
  */
-function HdVoiceCard() {
+function HdVoiceCard(props: {
+  platformAvailable: boolean
+  signedIn: boolean
+  onActiveChange: (active: boolean) => void
+}) {
+  const { platformAvailable, signedIn, onActiveChange } = props
   const settings = useAppStore((s) => s.settings)
   const [cfg, setCfg] = useState(getHdConfig)
   const [key, setKey] = useState(getGoogleTtsKey)
@@ -145,8 +172,13 @@ function HdVoiceCard() {
   const [voiceListError, setVoiceListError] = useState<string | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
 
+  const active = cfg.enabled && (key.trim().length > 0 || platformAvailable)
   useEffect(() => {
-    if (!key.trim()) return
+    onActiveChange(active)
+  }, [active, onActiveChange])
+
+  useEffect(() => {
+    if (!key.trim() && !platformAvailable) return
     let cancelled = false
     hdTts
       .listVoices()
@@ -162,14 +194,12 @@ function HdVoiceCard() {
     return () => {
       cancelled = true
     }
-  }, [key])
-
-  const active = cfg.enabled && key.trim().length > 0
+  }, [key, platformAvailable])
 
   const previewHd = (): void => {
     setPreviewError(null)
     if (!active) {
-      tts.speak(PREVIEW_TEXT, { rate: settings?.ttsRate ?? 0.9 })
+      setPreviewError('HD voice is not active — sign in (included voice) or add your own Google key.')
       return
     }
     hdTts.speak(PREVIEW_TEXT, { rate: settings?.ttsRate ?? 0.9 }).catch((e) => {
@@ -189,25 +219,35 @@ function HdVoiceCard() {
           />
           HD cloud voice (optional)
         </label>
-        {active && <Badge tone="ok">HD voice active</Badge>}
-        {cfg.enabled && !key.trim() && <Badge tone="warn">add API key below</Badge>}
+        {active &&
+          (key.trim() ? (
+            <Badge tone="ok">active — your Google key</Badge>
+          ) : (
+            <Badge tone="ok">active — included with your plan</Badge>
+          ))}
+        {cfg.enabled && !key.trim() && !platformAvailable && (
+          <Badge tone="warn">
+            {signedIn ? 'HD voice is a Plus feature' : 'sign in to use the included HD voice'}
+          </Badge>
+        )}
       </div>
       <p className="mt-1 text-xs text-slate-500">
-        Google Cloud TTS neural voices (free tier ≈ 1M characters/month). All app speech routes
-        through it with automatic fallback to the browser voice. Key + voice are stored only in
-        this browser (localStorage) — never in app data exports.
+        Crystal-clear neural voices from Google Cloud. Signed-in users get an included German set
+        (bigger on paid plans) with no setup; your own Google key unlocks every German voice. All
+        app speech routes through HD with automatic fallback to the browser voice. Key + voice are
+        stored only in this browser (localStorage) — never in app data exports.
       </p>
 
       {cfg.enabled && (
         <div className="mt-3 grid gap-3">
           <Field
-            label="Google Cloud API key"
-            hint="Google Cloud Console → APIs & Services → Credentials (enable the Cloud Text-to-Speech API for the key's project)."
+            label="Google Cloud API key (optional)"
+            hint="Your own key unlocks ALL German voices incl. premium families. Google Cloud Console → APIs & Services → Credentials (Cloud Text-to-Speech API must be enabled)."
           >
             <input
               type="password"
               className={inputClass}
-              placeholder="AIza…"
+              placeholder={platformAvailable ? 'empty = included plan voice' : 'AIza…'}
               value={key}
               onChange={(e) => {
                 setKey(e.target.value)
@@ -221,7 +261,9 @@ function HdVoiceCard() {
             hint={
               voiceListError
                 ? `Could not load the voice list (${voiceListError}) — showing defaults.`
-                : `${hdVoices.length} German voice(s) — Neural2 first.`
+                : key.trim()
+                  ? `${hdVoices.length} German voice(s) on your key — Neural2 first.`
+                  : `${hdVoices.length} included German voice(s) — Neural2 first, then Wavenet.`
             }
           >
             <div className="flex gap-2">

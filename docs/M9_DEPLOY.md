@@ -156,10 +156,14 @@ M7/M8. The files already exist in this repo — you just paste them.
 **Copy the webhook URL:** click `paddle-webhook` in the list → its URL is shown, like
 `https://xxxxx.supabase.co/functions/v1/paddle-webhook` → copy it (needed in Step 6).
 
-**Also re-paste `ai-proxy`** (upgraded in M9 — monthly budgets, HD-voice caps): open
-`ai-proxy` in the list → replace its code with the current
-`supabase/functions/ai-proxy/index.ts` → **Deploy changes** (leave JWT verification ON;
-its secrets are already set from M8).
+**Also re-paste `ai-proxy`** (upgraded in M9/M9.7 — monthly budgets, HD-voice caps, included
+voice list): open `ai-proxy` in the list → replace its code with the current
+`supabase/functions/ai-proxy/index.ts` → **Deploy changes** (leave JWT verification ON).
+Secrets it needs: `OPENAI_PLATFORM_KEY` / `ZAI_PLATFORM_KEY` (chat) and `PLATFORM_TTS_KEY`
+(HD voice) — set under Secrets in the function's detail page. The v2.4.6 paste adds
+`type=ttsVoices` (the included German Neural2+Wavenet list for the Settings picker) and the
+same whitelist on synthesis — without it, keyless paid users only see the 5-voice fallback
+list and their ▶Preview plays the browser voice.
 
 **Verify:** the functions list shows `paddle-checkout` (JWT ✓), `paddle-webhook` (JWT ✗),
 and `ai-proxy` (JWT ✓), all "Successfully deployed".

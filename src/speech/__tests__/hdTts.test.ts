@@ -4,6 +4,7 @@ import {
   LruCache,
   buildSynthesizeRequest,
   configurePlatformTts,
+  platformTtsAvailable,
   decodeBase64,
   hdTts,
   platformTtsBody,
@@ -96,6 +97,18 @@ describe('platform HD voice (M8)', () => {
     } finally {
       configurePlatformTts(null)
     }
+  })
+
+  it('platformTtsAvailable gates on the sync predicate (M9.7)', () => {
+    configurePlatformTts(() => Promise.resolve(null), () => false)
+    expect(platformTtsAvailable()).toBe(false)
+    configurePlatformTts(() => Promise.resolve(null), () => true)
+    expect(platformTtsAvailable()).toBe(true)
+    // No predicate → treat as available (legacy callers keep working).
+    configurePlatformTts(() => Promise.resolve(null))
+    expect(platformTtsAvailable()).toBe(true)
+    configurePlatformTts(null)
+    expect(platformTtsAvailable()).toBe(false)
   })
 
   it('listVoices still throws with no key and no platform resolver', async () => {

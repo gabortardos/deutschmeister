@@ -10,7 +10,10 @@
 //     - type=tts → Google Cloud TTS on PLATFORM_TTS_KEY (optional); meters chars
 //       ($0 while Google's Neural2 free tier covers it) against the PER-PLAN
 //       monthly cap (ai_entitlements.tts_char_cap; default free taste 20k, Basic 0
-//       → 403 hd-voice-not-in-plan, Plus 150k).
+//       → 403 hd-voice-not-in-plan, Plus 150k). Voices are whitelisted to the
+//       INCLUDED German families (Neural2 + Wavenet) for billing safety (M9.7).
+//     - type=ttsVoices (M9.7) → the included German voice list for the client
+//       picker (same whitelist, 1h cache) — paid users need no key of their own.
 //     - type=usage → budget snapshot + live model/prices + plan envelope
 //       (plan, ttsCharsUsed/ttsCharCap, validUntil, cancelAtPeriodEnd) for the
 //       Settings meter and the Account & Billing section.
@@ -66,6 +69,33 @@ const MAX_MESSAGES = 40
 const MAX_MSG_CHARS = 8_000
 const MAX_TTS_CHARS = 500
 const DEFAULT_TTS_VOICE = 'de-DE-Neural2-A'
+
+// M9.7 billing safety: the platform key may ONLY synthesize these German voice
+// families — Neural2 (1M chars/month free, then $16/1M) and Wavenet ($4/1M,
+// 4M chars/month free). Excluded on purpose: Studio ($160/1M) and Chirp 3 HD
+// ($30/1M) have no free tier; Standard is robotic. A crafted client `voice`
+// outside this set silently falls back to the default.
+const INCLUDED_VOICE_RE = /^de-DE-(Neural2|Wavenet)-[A-Z]$/
+
+// The same list as {id, gender} objects for type=ttsVoices, cached 1h — Google's
+// list rarely changes and this caps upstream calls at one per hour per isolate.
+let voiceListCache: { at: number; list: { id: string; gender: string }[] } | null = null
+
+async function includedGermanVoices(): Promise<Array<{ id: string; gender: string }>> {
+  if (voiceListCache && Date.now() - voiceListCache.at < 3_600_000) return voiceListCache.list
+  const res = await fetch('https://texttospeech.googleapis.com/v1/voices?languageCode=de-DE', {
+    headers: { 'x-goog-api-key': TTS_KEY },
+  })
+  const raw = await res.text()
+  if (!res.ok) throw new Error(`voices list ${res.status}: ${raw.slice(0, 180)}`)
+  const data = JSON.parse(raw) as { voices?: Array<{ name: string; ssmlGender?: string }> }
+  const list = (data.voices ?? [])
+    .filter((v) => INCLUDED_VOICE_RE.test(v.name))
+    .map((v) => ({ id: v.name, gender: v.ssmlGender ?? '—' }))
+    .sort((a, b) => a.id.localeCompare(b.id))
+  voiceListCache = { at: Date.now(), list }
+  return list
+}
 
 // --- BYO relay (M8.2) -------------------------------------------------------------------------
 
@@ -476,6 +506,20 @@ Deno.serve(async (req: Request) => {
       })
     }
 
+    if (body.type === 'ttsVoices') {
+      if (!TTS_KEY) {
+        return respond(503, { error: 'tts-not-configured', message: 'HD voice is not configured yet.' })
+      }
+      try {
+        return respond(200, { voices: await includedGermanVoices() })
+      } catch (e) {
+        return respond(502, {
+          error: 'upstream',
+          message: `HD voice list error: ${e instanceof Error ? e.message : 'unexpected'}`,
+        })
+      }
+    }
+
     if (body.type === 'tts') {
       if (!TTS_KEY) {
         return respond(503, { error: 'tts-not-configured', message: 'HD voice is not configured yet.' })
@@ -487,12 +531,7 @@ Deno.serve(async (req: Request) => {
           message: `Text must be 1–${MAX_TTS_CHARS} characters.`,
         })
       }
-      // Billing safety: the platform key must only ever synthesize free-tier
-      // Neural2 voices (first 1M chars/month free, $16/1M after). Other German
-      // families carry real cost with no free tier (Studio $160/1M, Chirp 3 HD
-      // $30/1M), so a crafted client `voice` must never steer the platform key
-      // onto them. Anything not matching the whitelist falls back to the default.
-      const voice = typeof body.voice === 'string' && /^de-DE-Neural2-[A-Z]$/.test(body.voice)
+      const voice = typeof body.voice === 'string' && INCLUDED_VOICE_RE.test(body.voice)
         ? body.voice
         : DEFAULT_TTS_VOICE
       const rate = Math.min(1.5, Math.max(0.5, body.rate ?? 1))
