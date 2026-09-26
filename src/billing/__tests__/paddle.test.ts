@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  creditOptionsOf,
   hmacSha256Hex,
   parsePaddleSignature,
   parsePriceMap,
@@ -97,5 +98,24 @@ describe('PADDLE_PRICE_MAP parsing', () => {
     expect(parsePriceMap(undefined)).toBeNull()
     expect(parsePriceMap('')).toBeNull()
     expect(parsePriceMap('{not json')).toBeNull()
+  })
+})
+
+describe('creditOptionsOf (M9.8)', () => {
+  it('extracts only credit entries, cheapest first, rounded', () => {
+    const map = parsePriceMap(
+      JSON.stringify({
+        pri_a: { plan: 'basic', kind: 'subscription', interval: 'month' },
+        pri_b: { kind: 'credit', creditUsdMicros: 7_000_000 },
+        pri_c: { kind: 'credit', creditUsdMicros: 3_000_000.4 },
+        pri_d: { kind: 'credit' },
+        pri_e: { kind: 'credit', creditUsdMicros: 0 },
+      }),
+    )
+    expect(map).not.toBeNull()
+    expect(creditOptionsOf(map!)).toEqual([
+      { priceId: 'pri_c', creditUsdMicros: 3_000_000 },
+      { priceId: 'pri_b', creditUsdMicros: 7_000_000 },
+    ])
   })
 })

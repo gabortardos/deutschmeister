@@ -9,8 +9,9 @@
 //   subscription.canceled → keep until period end (scheduled_change), then
 //     webhook or the ai-proxy valid_until check downgrades to free.
 //   subscription.paused → keep until period end (owner policy: pause ≠ revoke).
-//   transaction.completed + kind=credit price → creditUsdMicros top-up
-//     (AI Credit Packs — M9 phase 2, products optional).
+//   transaction.completed + kind=credit price → one ROW in ai_credit_packs
+//     (M9.8 AI Credit Packs: 6-month validity, consumed by ai-proxy BEFORE the
+//     lifetime pools; ai_entitlements.credit_usd_micros stays legacy/unused).
 //
 // SECURITY:
 //   • Deploy with "Verify JWT with Supabase" DISABLED — Paddle servers send no
@@ -302,13 +303,27 @@ Deno.serve(async (req: Request) => {
       const priceId = data.items?.[0]?.price?.id
       const mapped = priceId ? map[priceId] : undefined
       if (mapped?.kind === 'credit' && (mapped.creditUsdMicros ?? 0) > 0) {
+        // M9.8: a pack is its own ledger row with a 6-month expiry — never a
+        // bump to ai_entitlements.credit_usd_micros (legacy). ai-proxy drops
+        // expired rows and consumes the soonest-expiring packs first.
+        const expires = new Date()
+        expires.setUTCMonth(expires.getUTCMonth() + 6)
+        const inserted = await rest('/ai_credit_packs', {
+          method: 'POST',
+          body: {
+            user_id: userId,
+            amount_usd_micros: Math.round(mapped.creditUsdMicros!),
+            expires_at: expires.toISOString(),
+            source: PADDLE_ENV === 'live' ? 'paddle-live' : 'paddle-sandbox',
+          },
+        })
+        // Keep paddle_customer_id fresh for portal links (read-merge-write).
         const row = await readEntitlement(userId)
         await writeEntitlement(userId, {
           ...row,
-          credit_usd_micros: row.credit_usd_micros + Math.round(mapped.creditUsdMicros!),
           paddle_customer_id: data.customer_id ?? row.paddle_customer_id,
         })
-        outcome = 'credit-added'
+        outcome = inserted.ok ? 'credit-pack-added' : 'credit-pack-insert-failed'
       }
     }
     await rest(`/billing_events?paddle_event_id=eq.${eventId}`, {

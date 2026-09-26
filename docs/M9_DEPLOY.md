@@ -332,3 +332,28 @@ Client behavior: key users get a 30-day trial from the day they first save a key
 (stored in their synced settings), then the Supporter card (Account & Billing →
 Annual tab) sells the membership; a manual entitlement row (plan
 `byo-supporter`) also works for owner testing.
+
+## Credit packs (M9.8 / v2.7.0) — sandbox first
+
+One-time top-ups (€2.90 → $3 / €5.90 → $7 managed-AI credit, 6-month validity):
+
+1. Supabase → SQL editor → run `supabase/migrations/0004_credit_packs.sql` once
+   (creates the `ai_credit_packs` ledger — copy-paste the whole file, like 0001–0003).
+2. Sandbox dashboard → Catalog → Products → **New product**: "DeutschMeister AI
+   Credit" (description: one-time AI tutor credit, no subscription).
+3. On that product add **TWO one-time prices**: **€2.90** and **€5.90** (no
+   billing interval = one-time). Copy both `pri_…` ids.
+4. Update the `PADDLE_PRICE_MAP` secret on **both** `paddle-checkout` and
+   `paddle-webhook` — add two entries (keep the existing ones):
+   `"pri_SMALL": {"kind":"credit","creditUsdMicros":3000000}`,
+   `"pri_BIG": {"kind":"credit","creditUsdMicros":7000000}`
+5. **Re-paste THREE functions**: paddle-checkout, paddle-webhook AND ai-proxy
+   (all three changed in v2.7.0 — checkout catalog, webhook pack insert,
+   ai-proxy pack-aware budget).
+
+Client behavior: Settings → Account & Billing shows a "Need a little more AI?
+Top up once." section under the plans (Starter credit $3 / Big credit $7 cards);
+after payment the budget bar grows and the meter notes "Includes $X of
+credit-pack credit — next pack expires …". The sandbox guard still applies:
+while PADDLE_ENV ≠ live, only the PADDLE_SANDBOX_TEST_USER account receives
+packs.

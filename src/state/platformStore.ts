@@ -38,6 +38,9 @@ interface PlatformState {
   ttsCharCap: number
   validUntil: string | null
   cancelAtPeriodEnd: boolean
+  /** M9.8 standing credit-pack value + earliest expiry (adopted if present). */
+  packsUsdMicros: number
+  packsExpiresAt: string | null
   fetchedAt: number | null
   exhausted: boolean
   error: string | null
@@ -57,6 +60,8 @@ export const usePlatformStore = create<PlatformState>((set, get) => ({
   ttsCharCap: FREE_TTS_CHAR_CAP,
   validUntil: null,
   cancelAtPeriodEnd: false,
+  packsUsdMicros: 0,
+  packsExpiresAt: null,
   fetchedAt: null,
   exhausted: false,
   error: null,
@@ -85,6 +90,8 @@ export const usePlatformStore = create<PlatformState>((set, get) => ({
         ...(s.ttsCharCap !== undefined ? { ttsCharCap: s.ttsCharCap } : {}),
         ...(s.validUntil !== undefined ? { validUntil: s.validUntil } : {}),
         ...(s.cancelAtPeriodEnd !== undefined ? { cancelAtPeriodEnd: s.cancelAtPeriodEnd } : {}),
+        ...(s.packsUsdMicros !== undefined ? { packsUsdMicros: s.packsUsdMicros } : {}),
+        ...(s.packsExpiresAt !== undefined ? { packsExpiresAt: s.packsExpiresAt } : {}),
         exhausted: s.remainingUsdMicros <= 0,
         fetchedAt: Date.now(),
         error: null,

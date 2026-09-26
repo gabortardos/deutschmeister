@@ -134,6 +134,9 @@ export interface UsageSummary extends UsageMeter {
   ttsCharCap?: number
   validUntil?: string | null
   cancelAtPeriodEnd?: boolean
+  /** M9.8 credit-pack ledger — present once the redeployed ai-proxy publishes it. */
+  packsUsdMicros?: number
+  packsExpiresAt?: string | null
 }
 
 /** Budget snapshot for the Settings meter. */

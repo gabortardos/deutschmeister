@@ -141,3 +141,51 @@ export function annualSavingPercent(monthlyEur: number, annualEur: number): numb
   if (monthlyEur <= 0) return 0
   return Math.round((1 - annualEur / (monthlyEur * 12)) * 100)
 }
+
+// --- M9.8 one-time AI Credit Packs -------------------------------------------------------------
+
+export interface CreditPackCatalogEntry {
+  id: 'small' | 'big'
+  name: string
+  /** One-time price in EUR (Paddle one-time prices; VAT handled by Paddle). */
+  priceEur: number
+  /** Platform-AI credit this pack grants (micro-USD). */
+  creditUsdMicros: number
+  features: string[]
+}
+
+/**
+ * One-time top-ups (owner-approved: €2.90 → $3 / €5.90 → $7 with a bonus),
+ * valid 6 months from purchase. Consumed like the $1 teaser but FIRST among
+ * the lifetime pools (soonest-expiring pack first — see entitlement.ts). Sold
+ * next to the plans; the price IDs come from the checkout function's catalog.
+ */
+export const CREDIT_PACKS: readonly CreditPackCatalogEntry[] = [
+  {
+    id: 'small',
+    name: 'Starter credit',
+    priceEur: 2.9,
+    creditUsdMicros: 3_000_000,
+    features: [
+      '$3.00 of managed-AI credit — no API key needed',
+      'One-time purchase, no subscription',
+      'Valid for 6 months · stacks with any plan',
+    ],
+  },
+  {
+    id: 'big',
+    name: 'Big credit',
+    priceEur: 5.9,
+    creditUsdMicros: 7_000_000,
+    features: [
+      '$7.00 of managed-AI credit (bonus vs. Starter)',
+      'One-time purchase, no subscription',
+      'Valid for 6 months · stacks with any plan',
+    ],
+  },
+]
+
+/** Catalog entry matching a checkout credit amount (the price map owns priceIds). */
+export function packForCredit(creditUsdMicros: number): CreditPackCatalogEntry | undefined {
+  return CREDIT_PACKS.find((p) => p.creditUsdMicros === creditUsdMicros)
+}

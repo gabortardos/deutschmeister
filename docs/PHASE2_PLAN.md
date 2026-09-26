@@ -207,15 +207,15 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
     secret + redeploy ai-proxy; all client meters auto-adopt (M8.1). Per-turn on gpt-5-mini ≈
     $0.0014 (≈700 turns per $1). If a cheaper "-mini" refresh ships, it's the same
     secrets/config swap.
-  - **Kept from earlier drafts:** AI Credit Pack top-ups (€2.90 = $3 / €5.90 = $7, 6-month
-    validity) = M9 phase 2 · `byo-supporter` shipped as M9.6 (€11.99/yr, 30-day BYO trial — old "free forever" superseded 2026-09-21) · no
+  - **Shipped (M9.8 / v2.7.0):** AI Credit Pack top-ups (€2.90 = $3 / €5.90 = $7, 6-month
+    validity) · `byo-supporter` shipped as M9.6 (€11.99/yr, 30-day BYO trial — old "free forever" superseded 2026-09-21) · no
     free trial (14-day refund + $1 teaser instead) · EUR pricing, Paddle-as-MoR handles VAT.
   - **No LLM-API affiliate program exists** (checked 2026-09-21: OpenAI/Anthropic/Google/z.ai
     all have none for API keys) — monetizing key-needing users = the managed tiers above;
     OpenRouter BYO-with-markup is the only real middleman mechanism (extra signup friction —
     dormant idea).
   - **AI Credit Pack (top-up, one-time) — €2.90 = $3 credit / €5.90 = $7 (bonus), 6-month
-    validity.** For "no subscription" learners post-teaser. Phase 2 of M9 (optional at launch).
+    validity.** For "no subscription" learners post-teaser. Shipped as M9.8 / v2.7.0.
   - **BYO Supporter membership (owner decision 2026-09-21 — supersedes "free
     forever")** — 30-day free trial from the first saved key, then €11.99/year
     (shipped as M9.6 / v2.6.0, Paddle plan `byo-supporter`, zero allowances: chat

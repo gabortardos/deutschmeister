@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   annualSavingPercent,
+  CREDIT_PACKS,
   formatEur,
   FREE_TTS_CHAR_CAP,
+  packForCredit,
   planById,
   visiblePlans,
 } from '../plans'
@@ -61,5 +63,23 @@ describe('plan catalog (M9, membership v3)', () => {
   it('formats EUR display prices', () => {
     expect(formatEur(3.99)).toBe('€3.99')
     expect(formatEur(29.99)).toBe('€29.99')
+  })
+})
+
+describe('M9.8 credit packs', () => {
+  it('sells €2.90 → $3 and €5.90 → $7 with 6-month validity copy', () => {
+    expect(CREDIT_PACKS.map((p) => [p.priceEur, p.creditUsdMicros])).toEqual([
+      [2.9, 3_000_000],
+      [5.9, 7_000_000],
+    ])
+    for (const p of CREDIT_PACKS) {
+      expect(p.features.some((f) => f.toLowerCase().includes('6 months'))).toBe(true)
+    }
+  })
+
+  it('maps checkout credit amounts back to catalog entries', () => {
+    expect(packForCredit(3_000_000)?.id).toBe('small')
+    expect(packForCredit(7_000_000)?.id).toBe('big')
+    expect(packForCredit(123)).toBeUndefined()
   })
 })

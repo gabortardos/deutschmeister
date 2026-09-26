@@ -121,3 +121,24 @@ export function subscriptionPlanOf(
     ? m.plan
     : null
 }
+
+/** One-time credit-pack option from the price map (M9.8). */
+export interface CreditOption {
+  priceId: string
+  creditUsdMicros: number
+}
+
+/**
+ * Credit-pack catalog from a PADDLE_PRICE_MAP — pure twin of the `credits`
+ * array in paddle-checkout's type=plans response (cheapest first). Entries
+ * without a positive creditUsdMicros are ignored, subscriptions excluded.
+ */
+export function creditOptionsOf(priceMap: Record<string, PriceMapping>): CreditOption[] {
+  const out: CreditOption[] = []
+  for (const [priceId, m] of Object.entries(priceMap)) {
+    if (m.kind === 'credit' && typeof m.creditUsdMicros === 'number' && m.creditUsdMicros > 0) {
+      out.push({ priceId, creditUsdMicros: Math.round(m.creditUsdMicros) })
+    }
+  }
+  return out.sort((a, b) => a.creditUsdMicros - b.creditUsdMicros)
+}

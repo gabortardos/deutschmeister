@@ -7,6 +7,7 @@ import {
   chatCostUsdMicrosWith,
   classifyPlatformFailure,
   formatUsdMicros,
+  lifetimePoolsRemaining,
   remainingBudgetWithMonthly,
   remainingUsdMicros,
   resolveAiRoute,
@@ -198,6 +199,100 @@ describe('remainingBudgetWithMonthly (M9 lifetime + monthly pools)', () => {
         monthSpendUsdMicros: 2_500_000,
       }),
     ).toEqual({ capUsdMicros: 6_000_000, remainingUsdMicros: 3_500_000 })
+  })
+})
+
+describe('M9.8 credit packs — lifetimePoolsRemaining', () => {
+  const NOW = Date.parse('2026-09-21T12:00:00Z')
+  const pack = (amountUsdMicros: number, daysToExpiry: number) => ({
+    amountUsdMicros,
+    expiresAt: new Date(NOW + daysToExpiry * 86_400_000).toISOString(),
+  })
+
+  it('consumes the soonest-expiring pack first (use-it-or-lose-it)', () => {
+    const r = lifetimePoolsRemaining({
+      teaserCapUsdMicros: 1_000_000,
+      creditUsdMicros: 0,
+      packs: [pack(3_000_000, 60), pack(7_000_000, 10)],
+      lifetimeSpendUsdMicros: 5_000_000,
+      nowMs: NOW,
+    })
+    expect(r.lifetimePoolTotalUsdMicros).toBe(11_000_000)
+    expect(r.packsRemainingUsdMicros).toBe(5_000_000) // 7-pack eaten into, 3-pack untouched
+    expect(r.nextPackExpiresAt).toBe(new Date(NOW + 10 * 86_400_000).toISOString())
+  })
+
+  it('drops expired packs entirely', () => {
+    const r = lifetimePoolsRemaining({
+      teaserCapUsdMicros: 1_000_000,
+      creditUsdMicros: 0,
+      packs: [pack(3_000_000, -1)],
+      lifetimeSpendUsdMicros: 0,
+      nowMs: NOW,
+    })
+    expect(r.lifetimePoolTotalUsdMicros).toBe(1_000_000)
+    expect(r.packsRemainingUsdMicros).toBe(0)
+    expect(r.nextPackExpiresAt).toBeNull()
+  })
+
+  it('spills to legacy credit and teaser only after packs', () => {
+    const r = lifetimePoolsRemaining({
+      teaserCapUsdMicros: 1_000_000,
+      creditUsdMicros: 500_000,
+      packs: [pack(3_000_000, 30)],
+      lifetimeSpendUsdMicros: 4_000_000,
+      nowMs: NOW,
+    })
+    expect(r.lifetimeRemainingUsdMicros).toBe(500_000) // teaser left; pack + credit gone
+    expect(r.packsRemainingUsdMicros).toBe(0)
+  })
+
+  it('keeps numbers identical to the legacy math when no packs exist', () => {
+    const base = {
+      teaserCapUsdMicros: 1_000_000,
+      creditUsdMicros: 2_000_000,
+      monthlyAllowanceUsdMicros: 3_500_000,
+      lifetimeSpendUsdMicros: 2_500_000,
+      monthSpendUsdMicros: 1_500_000,
+      allowanceActive: true,
+    }
+    const legacy = remainingBudgetWithMonthly(base)
+    const withPacks = remainingBudgetWithMonthly({ ...base, packs: [] })
+    expect(withPacks.capUsdMicros).toBe(legacy.capUsdMicros)
+    expect(withPacks.remainingUsdMicros).toBe(legacy.remainingUsdMicros)
+  })
+
+  it('feeds pack value into the monthly math (allowance untouched while packs stand)', () => {
+    const r = remainingBudgetWithMonthly({
+      teaserCapUsdMicros: 1_000_000,
+      creditUsdMicros: 0,
+      packs: [pack(3_000_000, 30)],
+      monthlyAllowanceUsdMicros: 2_000_000,
+      lifetimeSpendUsdMicros: 1_500_000,
+      monthSpendUsdMicros: 1_500_000,
+      allowanceActive: true,
+      nowMs: NOW,
+    })
+    expect(r.capUsdMicros).toBe(6_000_000)
+    expect(r.remainingUsdMicros).toBe(4_500_000)
+    expect(r.packsRemainingUsdMicros).toBe(1_500_000)
+    expect(r.nextPackExpiresAt).toBe(new Date(NOW + 30 * 86_400_000).toISOString())
+  })
+
+  it('expired packs make old spend fall through to the allowance', () => {
+    const r = remainingBudgetWithMonthly({
+      teaserCapUsdMicros: 1_000_000,
+      creditUsdMicros: 0,
+      packs: [pack(3_000_000, -5)], // expired — value gone
+      monthlyAllowanceUsdMicros: 2_000_000,
+      lifetimeSpendUsdMicros: 2_000_000,
+      monthSpendUsdMicros: 2_000_000,
+      allowanceActive: true,
+      nowMs: NOW,
+    })
+    // Pools = teaser only → 1 of this month's 2 spend was "beyond" → allowance 2−1 = 1.
+    expect(r.capUsdMicros).toBe(3_000_000)
+    expect(r.remainingUsdMicros).toBe(1_000_000)
   })
 })
 

@@ -162,9 +162,74 @@ export function formatUsdMicros(micros: number): string {
  * Pure mirror of the same computation in `ai-proxy`'s budgetOf (kept in sync;
  * unit-tested here because the Edge Function itself has no test harness).
  */
+export interface CreditPackInput {
+  amountUsdMicros: number
+  /** ISO timestamp — past it, the pack's unspent value is gone (6-month validity). */
+  expiresAt: string
+}
+
+export interface LifetimePoolsResult {
+  /** Sum of all NON-expired pools: packs + legacy credit + $1 teaser. */
+  lifetimePoolTotalUsdMicros: number
+  /** Pools total minus all-time spend, floored per pool at 0. */
+  lifetimeRemainingUsdMicros: number
+  /** Still-standing value across non-expired packs only (meter display). */
+  packsRemainingUsdMicros: number
+  /** Earliest expiry among packs that still hold value, ISO — null when none. */
+  nextPackExpiresAt: string | null
+}
+
+/**
+ * Lifetime-pool allocation (M9.8): all-time metered spend is charged against
+ * the pools in order — credit PACKS first (soonest-expiring first, so
+ * use-it-or-lose-it value is never stranded behind longer-lived money), then
+ * the legacy ai_entitlements.credit_usd_micros, then the $1 teaser. Packs past
+ * their expiry drop out of the pools before allocation (their value is gone).
+ * Pure mirror of the same walk in `ai-proxy`'s budgetOf.
+ */
+export function lifetimePoolsRemaining(input: {
+  teaserCapUsdMicros: number
+  creditUsdMicros: number
+  packs: readonly CreditPackInput[]
+  lifetimeSpendUsdMicros: number
+  nowMs?: number
+}): LifetimePoolsResult {
+  const now = input.nowMs ?? Date.now()
+  const pools: { amount: number; expiresAt?: string }[] = input.packs
+    .filter((p) => Math.max(0, p.amountUsdMicros) > 0 && Date.parse(p.expiresAt) > now)
+    .sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt))
+    .map((p) => ({ amount: Math.max(0, p.amountUsdMicros), expiresAt: p.expiresAt }))
+  pools.push({ amount: Math.max(0, input.creditUsdMicros) })
+  pools.push({ amount: Math.max(0, input.teaserCapUsdMicros) })
+  let spend = Math.max(0, input.lifetimeSpendUsdMicros)
+  let total = 0
+  let remaining = 0
+  let packsRemaining = 0
+  let nextPackExpiresAt: string | null = null
+  for (const pool of pools) {
+    total += pool.amount
+    const used = Math.min(spend, pool.amount)
+    spend -= used
+    const left = pool.amount - used
+    remaining += left
+    if (pool.expiresAt !== undefined && left > 0) {
+      packsRemaining += left
+      if (nextPackExpiresAt === null) nextPackExpiresAt = pool.expiresAt
+    }
+  }
+  return {
+    lifetimePoolTotalUsdMicros: total,
+    lifetimeRemainingUsdMicros: remaining,
+    packsRemainingUsdMicros: packsRemaining,
+    nextPackExpiresAt,
+  }
+}
+
 export interface MonthlyBudgetInput {
   teaserCapUsdMicros: number
   creditUsdMicros: number
+  /** M9.8 one-time credit packs (6-month validity); omitted = none. */
+  packs?: readonly CreditPackInput[]
   monthlyAllowanceUsdMicros: number
   /** All-time metered platform spend (SUM of ai_usage.cost_usd_micros). */
   lifetimeSpendUsdMicros: number
@@ -172,28 +237,42 @@ export interface MonthlyBudgetInput {
   monthSpendUsdMicros: number
   /** False when the subscription has lapsed (valid_until in the past). */
   allowanceActive: boolean
+  nowMs?: number
 }
 
 export interface BudgetResult {
   capUsdMicros: number
   remainingUsdMicros: number
+  packsRemainingUsdMicros?: number
+  nextPackExpiresAt?: string | null
 }
 
 export function remainingBudgetWithMonthly(input: MonthlyBudgetInput): BudgetResult {
-  const nonMonthly = Math.max(0, input.teaserCapUsdMicros) + Math.max(0, input.creditUsdMicros)
-  const lifetimeSpend = Math.max(0, input.lifetimeSpendUsdMicros)
-  const coveredByNonMonthly = Math.min(lifetimeSpend, nonMonthly)
-  const lifetimeRemaining = nonMonthly - coveredByNonMonthly
+  const pools = lifetimePoolsRemaining({
+    teaserCapUsdMicros: input.teaserCapUsdMicros,
+    creditUsdMicros: input.creditUsdMicros,
+    packs: input.packs ?? [],
+    lifetimeSpendUsdMicros: input.lifetimeSpendUsdMicros,
+    nowMs: input.nowMs,
+  })
   // Spend beyond the lifetime pools can only have come from an allowance — but
   // only THIS month's slice of it may consume this month's allowance window.
-  const beyond = lifetimeSpend - coveredByNonMonthly
+  const spend = Math.max(0, input.lifetimeSpendUsdMicros)
+  const beyond = Math.max(0, spend - pools.lifetimePoolTotalUsdMicros)
   const allowance = input.allowanceActive ? Math.max(0, input.monthlyAllowanceUsdMicros) : 0
   const allowanceUsed = Math.min(Math.max(0, input.monthSpendUsdMicros), beyond)
   const allowanceRemaining = Math.max(0, allowance - allowanceUsed)
-  return {
-    capUsdMicros: nonMonthly + allowance,
-    remainingUsdMicros: lifetimeRemaining + allowanceRemaining,
+  const result: BudgetResult = {
+    capUsdMicros: pools.lifetimePoolTotalUsdMicros + allowance,
+    remainingUsdMicros: pools.lifetimeRemainingUsdMicros + allowanceRemaining,
   }
+  // Pack telemetry only when packs were passed — legacy callers/tests see the
+  // exact same two-field shape they always did.
+  if (input.packs !== undefined) {
+    result.packsRemainingUsdMicros = pools.packsRemainingUsdMicros
+    result.nextPackExpiresAt = pools.nextPackExpiresAt
+  }
+  return result
 }
 
 // --- failure classification -----------------------------------------------------------------

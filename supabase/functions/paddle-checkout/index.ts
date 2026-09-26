@@ -2,7 +2,9 @@
 //
 // What it does (Deno runtime, ZERO external imports — dashboard-paste friendly):
 //   • type=plans    → the purchasable catalog from the PADDLE_PRICE_MAP secret
-//                     ({options:[{plan, interval, priceId}]}). Price IDs differ
+//                     ({options:[{plan, interval, priceId}],
+//                       credits:[{creditUsdMicros, priceId}]} — M9.8 packs,
+//                       cheapest first). Price IDs differ
 //                     between sandbox and live, so the client bundle never
 //                     embeds them — it asks us.
 //   • type=checkout → creates a DRAFT transaction via the Paddle Billing API
@@ -122,15 +124,19 @@ Deno.serve(async (req: Request) => {
   // 2) catalog: which plans can this deployment sell right now?
   if (body.type === 'plans' || !body.type) {
     const options: { plan: string; interval: string; priceId: string }[] = []
+    const credits: { creditUsdMicros: number; priceId: string }[] = []
     for (const [priceId, m] of Object.entries(map)) {
       if (
         m.kind === 'subscription' &&
         (m.plan === 'basic' || m.plan === 'plus' || m.plan === 'pro' || m.plan === 'byo-supporter')
       ) {
         options.push({ plan: m.plan, interval: m.interval ?? 'month', priceId })
+      } else if (m.kind === 'credit' && (m.creditUsdMicros ?? 0) > 0) {
+        credits.push({ creditUsdMicros: Math.round(m.creditUsdMicros!), priceId })
       }
     }
-    return respond(200, { options, env: PADDLE_ENV })
+    credits.sort((a, b) => a.creditUsdMicros - b.creditUsdMicros)
+    return respond(200, { options, credits, env: PADDLE_ENV })
   }
 
   // 3) overlay checkout: create a draft transaction, hand the client the id.

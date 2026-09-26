@@ -12,10 +12,12 @@ import { Badge, Button, Card } from '../../../components/ui'
 import { formatUsdMicros } from '../../../llm/entitlement'
 import {
   annualSavingPercent,
+  CREDIT_PACKS,
   formatEur,
   planById,
   visiblePlans,
   type BillingInterval,
+  type CreditPackCatalogEntry,
   type PlanId,
 } from '../../../llm/plans'
 import { usePlatformStore } from '../../../state/platformStore'
@@ -37,6 +39,12 @@ import { getSupabase, supabaseFunctionsUrl } from '../../../sync/supabaseClient'
 interface PaddleOption {
   plan: PlanId
   interval: BillingInterval
+  priceId: string
+}
+
+/** One-time credit pack from the checkout function's catalog (M9.8). */
+interface PaddleCredit {
+  creditUsdMicros: number
   priceId: string
 }
 
@@ -111,6 +119,7 @@ export default function BillingSection() {
   const meter = usePlatformStore()
   const [interval, setInterval] = useState<BillingInterval>('month')
   const [options, setOptions] = useState<PaddleOption[] | null>(null)
+  const [credits, setCredits] = useState<PaddleCredit[]>([])
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -119,8 +128,11 @@ export default function BillingSection() {
   // sandbox and live — the client bundle never embeds them).
   useEffect(() => {
     if (!user) return
-    paddleCheckout<{ options: PaddleOption[] }>({ type: 'plans' })
-      .then((r) => setOptions(r.options ?? []))
+    paddleCheckout<{ options: PaddleOption[]; credits?: PaddleCredit[] }>({ type: 'plans' })
+      .then((r) => {
+        setOptions(r.options ?? [])
+        setCredits(r.credits ?? [])
+      })
       .catch(() => setOptions([]))
   }, [user])
 
@@ -165,10 +177,25 @@ export default function BillingSection() {
       setError('This plan is not available yet — check back shortly.')
       return
     }
-    setBusy(`${planId}-${priceInterval}`)
+    await startCheckout(option.priceId, `${planId}-${priceInterval}`, () => afterPurchase('plan'))
+  }
+
+  /** Buy a one-time credit pack (M9.8) — same Paddle overlay flow as plans. */
+  async function buyPack(pack: CreditPackCatalogEntry) {
+    const credit = credits.find((c) => c.creditUsdMicros === pack.creditUsdMicros)
+    if (!credit) {
+      setError('Top-ups are being set up — check back shortly.')
+      return
+    }
+    await startCheckout(credit.priceId, `pack-${pack.id}`, () => afterPurchase('credit'))
+  }
+
+  /** Shared Paddle overlay flow for subscriptions and one-time credit packs. */
+  async function startCheckout(priceId: string, busyKey: string, onPaid: () => Promise<void>) {
+    setBusy(busyKey)
     setError('')
     try {
-      const r = await paddleCheckout<unknown>({ type: 'checkout', priceId: option.priceId })
+      const r = await paddleCheckout<unknown>({ type: 'checkout', priceId })
       const session = parseCheckoutResponse(r)
       if (!session) throw new Error('Paddle did not return a checkout session.')
       // v2.4.2: a response without transactionId+clientToken means the DEPLOYED
@@ -188,7 +215,7 @@ export default function BillingSection() {
         env: session.env,
         clientToken: session.clientToken,
         transactionId: session.transactionId,
-        onCompleted: () => void afterPurchase(),
+        onCompleted: () => void onPaid(),
       })
       if (!overlay.ok) {
         // Only redirect when checkout.url is a REAL external page — never to
@@ -212,11 +239,16 @@ export default function BillingSection() {
     }
   }
 
-  /** Overlay paid: close it, then poll the meter until the webhook grants the plan. */
-  async function afterPurchase() {
+  /** Overlay paid: close it, then poll the meter until the webhook grants the purchase. */
+  async function afterPurchase(expect: 'plan' | 'credit') {
     closePaddleCheckout()
     clearCheckoutSession()
-    setNotice('Payment received — activating your plan (usually a few seconds)…')
+    const startCap = usePlatformStore.getState().capUsdMicros
+    setNotice(
+      expect === 'plan'
+        ? 'Payment received — activating your plan (usually a few seconds)…'
+        : 'Payment received — adding your credit (usually a few seconds)…',
+    )
     for (let attempt = 0; attempt < 10; attempt++) {
       await new Promise((resolve) => setTimeout(resolve, 2000))
       try {
@@ -224,12 +256,18 @@ export default function BillingSection() {
       } catch {
         // network hiccup — keep polling, the webhook may still land
       }
-      if (usePlatformStore.getState().plan !== 'free') {
-        setNotice('Thanks for subscribing! Your plan is active.')
+      const s = usePlatformStore.getState()
+      // Plans switch the plan badge; packs grow the budget cap.
+      if (expect === 'plan' ? s.plan !== 'free' : s.capUsdMicros > startCap) {
+        setNotice(
+          expect === 'plan'
+            ? 'Thanks for subscribing! Your plan is active.'
+            : 'Thanks for your purchase! Your AI credit has been added.',
+        )
         return
       }
     }
-    setNotice('Payment received — if the plan badge has not switched yet, refresh in a minute.')
+    setNotice('Payment received — if the badge above has not switched yet, refresh in a minute.')
   }
 
   async function manage() {
@@ -268,6 +306,20 @@ export default function BillingSection() {
               cap={meter.capUsdMicros}
               label={'Managed AI budget — ' + formatUsdMicros(remaining) + ' left'}
             />
+            {meter.packsUsdMicros > 0 && (
+              <p className="text-xs text-slate-500">
+                Includes {formatUsdMicros(meter.packsUsdMicros)} of credit-pack credit
+                {meter.packsExpiresAt
+                  ? ' — next pack expires ' +
+                    new Date(meter.packsExpiresAt).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : ''}
+                .
+              </p>
+            )}
             {meter.ttsCharCap > 0 ? (
               <UsageBar
                 used={meter.ttsCharsUsed}
@@ -369,6 +421,47 @@ export default function BillingSection() {
                 )
               })}
           </div>
+          {/* --- one-time credit packs (M9.8) -------------------------------------------------- */}
+          {credits.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900">Need a little more AI? Top up once.</h4>
+              <p className="mt-1 text-sm text-slate-500">
+                One-time credit for the managed AI tutor — no subscription, valid for 6 months,
+                works on any plan (including Free).
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {CREDIT_PACKS.filter((p) => credits.some((c) => c.creditUsdMicros === p.creditUsdMicros)).map(
+                  (p) => (
+                    <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                      <div className="flex items-baseline justify-between">
+                        <span className="font-semibold text-slate-900">{p.name}</span>
+                        <span className="text-2xl font-bold text-slate-900">{formatEur(p.priceEur)}</span>
+                      </div>
+                      <ul className="mt-2 space-y-1.5">
+                        {p.features.map((f) => (
+                          <li key={f} className="flex gap-2 text-sm text-slate-600">
+                            <span className="text-emerald-600">✓</span>
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-4">
+                        <Button
+                          variant="secondary"
+                          className="w-full"
+                          disabled={busy !== ''}
+                          onClick={() => void buyPack(p)}
+                        >
+                          {busy === 'pack-' + p.id ? 'Opening checkout…' : 'Buy top-up'}
+                        </Button>
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
+
           {options !== null && options.length === 0 && (
             <p className="mt-3 text-sm text-slate-500">
               Plans are being set up — check back shortly. (Your signed-in $1 free AI credit

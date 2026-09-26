@@ -3,10 +3,12 @@
 // What it does (Deno runtime, ZERO external imports — dashboard-paste friendly):
 //   • PLATFORM paths (caller must be a signed-in, email-verified user):
 //     - Rate-limits per user (≤10 metered requests/minute, checked via ai_usage).
-//     - Budget check (M9): LIFETIME pools ($1 teaser + credit_usd_micros) plus the
-//       MONTHLY subscription allowance — which only counts while now < valid_until.
-//       Spend = SUM(ai_usage.cost_usd_micros): lifetime total + this calendar
-//       month's slice (mirror of remainingBudgetWithMonthly in src/llm/entitlement.ts).
+//     - Budget check (M9/M9.8): LIFETIME pools — credit PACKS from ai_credit_packs
+//       (6-month validity, soonest-expiring consumed first) → legacy
+//       credit_usd_micros → $1 teaser — plus the MONTHLY subscription allowance,
+//       which only counts while now < valid_until. Spend = SUM(ai_usage.cost_usd_micros):
+//       lifetime total + this calendar month's slice (mirror of
+//       lifetimePoolsRemaining/remainingBudgetWithMonthly in src/llm/entitlement.ts).
 //     - type=tts → Google Cloud TTS on PLATFORM_TTS_KEY (optional); meters chars
 //       ($0 while Google's Neural2 free tier covers it) against the PER-PLAN
 //       monthly cap (ai_entitlements.tts_char_cap; default free taste 20k, Basic 0
@@ -234,17 +236,21 @@ interface Budget {
   ttsCharsUsed: number
   validUntil: string | null
   cancelAtPeriodEnd: boolean
+  // M9.8 credit-pack ledger (meter display: standing pack value + next expiry).
+  packsUsdMicros: number
+  packsExpiresAt: string | null
 }
 
 async function budgetOf(userId: string): Promise<Budget> {
   const now = new Date()
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
-  const [spendRes, monthRes, entRes, charsUsed] = await Promise.all([
+  const [spendRes, monthRes, entRes, packsRes, charsUsed] = await Promise.all([
     rest(`/ai_usage?select=cost_usd_micros&user_id=eq.${userId}`),
     rest(`/ai_usage?select=cost_usd_micros&user_id=eq.${userId}&created_at=gte.${monthStart}`),
     rest(
       `/ai_entitlements?select=plan,monthly_allowance_usd_micros,credit_usd_micros,valid_until,tts_char_cap,cancel_at_period_end&user_id=eq.${userId}`,
     ),
+    rest(`/ai_credit_packs?select=amount_usd_micros,expires_at&user_id=eq.${userId}&order=expires_at.asc`),
     monthCharTotal(userId),
   ])
   const sumCosts = async (res: Response): Promise<number> => {
@@ -265,14 +271,44 @@ async function budgetOf(userId: string): Promise<Budget> {
     const rows = (await entRes.json()) as Entitlement[]
     if (rows.length > 0) ent = rows[0]
   }
-  // Monthly-aware budget — mirror of remainingBudgetWithMonthly (src/llm/entitlement.ts):
-  // lifetime pools ($1 teaser + credit) are consumed first; only this month's
+  // Monthly-aware budget — mirror of lifetimePoolsRemaining +
+  // remainingBudgetWithMonthly (src/llm/entitlement.ts): lifetime pools
+  // (M9.8 credit packs first — soonest-expiring, expired ones dropped — then
+  // legacy credit, then the $1 teaser) are consumed first; only this month's
   // spend beyond them may consume the (still-active) monthly allowance.
+  const nowMs = Date.now()
+  const packRows: { amount: number; expiresAt?: string }[] = []
+  if (packsRes.ok) {
+    const rows = (await packsRes.json()) as { amount_usd_micros?: number; expires_at?: string }[]
+    for (const r of rows) {
+      const amount = Number(r.amount_usd_micros ?? 0)
+      if (amount > 0 && r.expires_at && Date.parse(r.expires_at) > nowMs) {
+        packRows.push({ amount, expiresAt: r.expires_at })
+      }
+    }
+    packRows.sort((a, b) => (a.expiresAt! < b.expiresAt! ? -1 : 1))
+  }
+  const pools: { amount: number; expiresAt?: string }[] = [...packRows]
+  pools.push({ amount: Math.max(0, Number(ent.credit_usd_micros ?? 0)) })
+  pools.push({ amount: TEASER_CAP_USD_MICROS })
+  let spendLeft = lifetimeSpend
+  let nonMonthly = 0
+  let lifetimeRemaining = 0
+  let packsUsdMicros = 0
+  let packsExpiresAt: string | null = null
+  for (const pool of pools) {
+    nonMonthly += pool.amount
+    const used = Math.min(spendLeft, pool.amount)
+    spendLeft -= used
+    const left = pool.amount - used
+    lifetimeRemaining += left
+    if (pool.expiresAt !== undefined && left > 0) {
+      packsUsdMicros += left
+      if (packsExpiresAt === null) packsExpiresAt = pool.expiresAt
+    }
+  }
+  const beyond = spendLeft
   const allowanceActive = !ent.valid_until || Date.parse(ent.valid_until) > Date.now()
-  const nonMonthly = TEASER_CAP_USD_MICROS + Number(ent.credit_usd_micros ?? 0)
-  const coveredByNonMonthly = Math.min(lifetimeSpend, nonMonthly)
-  const lifetimeRemaining = nonMonthly - coveredByNonMonthly
-  const beyond = lifetimeSpend - coveredByNonMonthly
   const allowance = allowanceActive ? Number(ent.monthly_allowance_usd_micros ?? 0) : 0
   const allowanceUsed = Math.min(monthSpend, beyond)
   const allowanceRemaining = Math.max(0, allowance - allowanceUsed)
@@ -292,6 +328,8 @@ async function budgetOf(userId: string): Promise<Budget> {
     ttsCharsUsed: charsUsed,
     validUntil: ent.valid_until ?? null,
     cancelAtPeriodEnd: allowanceActive && !!ent.cancel_at_period_end,
+    packsUsdMicros,
+    packsExpiresAt,
   }
 }
 

@@ -170,6 +170,24 @@ catalog + `paddle-webhook` PLANS row accept the plan. Owner sandbox steps: creat
 "Supporter" €11.99/year → add the price id to `PADDLE_PRICE_MAP` on BOTH Paddle functions →
 re-paste BOTH functions (code changed in both). No DB migration. 261 tests (253→261).
 
+## M9.8 AI Credit Packs — one-time top-ups (v2.7.0)
+
+PHASE2 spec: €2.90 → $3 / €5.90 → $7 managed-AI credit, 6-month validity, no subscription.
+Data: migration `0004_credit_packs.sql` = `ai_credit_packs` ledger (amount, expires_at; RLS
+read-own, service-role writes; spend still lives in ai_usage — pack rows are never decremented,
+expiry just drops them). `paddle-webhook` turns transaction.completed + kind=credit into a pack
+row (expires = purchase + 6 months; deduped via billing_events). `paddle-checkout` type=plans
+also returns `credits:[{creditUsdMicros, priceId}]` (cheapest first). `ai-proxy` budget walk:
+PACKS (soonest-expiring first, expired dropped) → legacy credit_usd_micros → $1 teaser →
+monthly allowance — mirrored in `lifetimePoolsRemaining` (src/llm/entitlement.ts;
+`remainingBudgetWithMonthly` keeps its exact legacy result shape when no packs are passed) and
+published as packsUsdMicros / packsExpiresAt in every usage response (platformStore +
+BillingSection meter adopt them). BillingSection: "Top up once" cards bought via the SAME
+overlay flow (`startCheckout` refactor); `afterPurchase('credit')` polls until the cap grows.
+Owner sandbox steps: run 0004 SQL once → create 2 one-time prices (€2.90, €5.90) → add
+`{"kind":"credit","creditUsdMicros":…}` entries to PADDLE_PRICE_MAP on BOTH Paddle functions →
+re-paste paddle-checkout + paddle-webhook + ai-proxy (all three changed). 270 tests (261→270).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
