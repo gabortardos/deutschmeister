@@ -73,8 +73,10 @@ function overlayFailureText(res: Extract<OverlayResult, { ok: false }>): string 
       return 'Paddle.js could not be loaded from cdn.paddle.com — an ad-blocker or network issue? Disable it for this site and click Subscribe again.'
     case 'initialize-failed':
       return (
-        'Paddle rejected the client-side token. It must be the test_… token from the SAME sandbox account ' +
-        '(Paddle → Developer tools → Authentication → Client-side tokens).' +
+        'Paddle.js could not start. Most often this means the client-side token is from the wrong account — use the ' +
+        'test_… token from the SAME sandbox account (Paddle → Developer tools → Authentication → Client-side tokens). ' +
+        'If the Paddle message below says something else entirely, it is an app bug: hard-refresh (top bar must show the ' +
+        'latest version) and report that exact text.' +
         detail
       )
     case 'open-failed':

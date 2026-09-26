@@ -229,6 +229,12 @@ function → Settings → toggle off → redeploy).
   token from Step 3 (a `live_…` token won't work against sandbox). The function itself
   also returns this error (HTTP 500) when the secret is unset.
 
+- **"[PADDLE] Unknown option parameter 'environment'"** (app ≤ v2.4.2)
+  → Fixed in v2.4.3: Paddle moved sandbox selection out of `Paddle.Initialize` —
+  the app now calls `Paddle.Environment.set('sandbox')` before initializing. Your
+  token and secret were fine all along; no Supabase change is needed. Hard-refresh
+  until the top bar shows **v2.4.3** and click Subscribe again.
+
 - **Pre-v2.4.2 symptom: clicking Subscribe silently redirected to the app's own
   homepage**
   → Fixed in v2.4.2 — that redirect targeted Paddle's "payment link" URL, which is our

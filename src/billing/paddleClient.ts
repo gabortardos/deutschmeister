@@ -11,8 +11,12 @@
  *      and returns `{ transactionId, clientToken, env, url }`.
  *   2. We lazy-load https://cdn.paddle.com/paddle/v2/paddle.js (only when a
  *      purchase is actually attempted — everyone else never downloads it).
- *   3. `Paddle.Initialize({ token, environment })` — once per page (Paddle
- *      throws if called twice; we remember the token we initialized with).
+ *   3. `Paddle.Environment.set('sandbox')` (sandbox only) followed by
+ *      `Paddle.Initialize({ token })` — once per page (Paddle throws if called
+ *      twice; we remember the token we initialized with). NOTE (v2.4.3): the CDN
+ *      SDK no longer accepts `environment` inside Initialize — it throws
+ *      "Unknown option parameter 'environment'" (that's what the npm wrapper
+ *      still allows, but we load the script global).
  *   4. `Paddle.Checkout.open({ transactionId })` — Paddle's overlay checkout;
  *      card data goes straight to Paddle (MoR), never through this app.
  *   5. `checkout.completed` (via the Initialize `eventCallback`) → we close the
@@ -35,7 +39,6 @@ export interface PaddleEvent {
 
 export interface PaddleInitializeOptions {
   token: string
-  environment?: string
   eventCallback?: (event: PaddleEvent) => void
 }
 
@@ -46,6 +49,8 @@ export interface PaddleCheckoutOpenOptions {
 
 export interface PaddleSdk {
   Initialize?: (options: PaddleInitializeOptions) => void
+  /** Current CDN SDK: sandbox selection lives here (Initialize rejects `environment`). */
+  Environment?: { set?: (environment: 'sandbox' | 'production') => void }
   Checkout?: {
     open?: (options: PaddleCheckoutOpenOptions) => void
     close?: () => void
@@ -162,9 +167,20 @@ export async function ensurePaddleReady(env: PaddleEnv, clientToken: string): Pr
   if (typeof sdk.Initialize !== 'function') return { ok: false, reason: 'sdk-invalid' }
   if (initializedToken === clientToken) return { ok: true }
   try {
+    // Sandbox is selected BEFORE Initialize via Paddle.Environment.set() — the
+    // CDN SDK rejects `environment` inside Initialize ("Unknown option parameter
+    // 'environment'", the v2.4.2 live failure). Live needs no call (production
+    // is the default).
+    if (env === 'sandbox') {
+      try {
+        sdk.Environment?.set?.('sandbox')
+      } catch {
+        // SDK build without Environment.set — best effort; Initialize's own
+        // validation will surface any problem as initialize-failed.
+      }
+    }
     sdk.Initialize({
       token: clientToken,
-      ...(env === 'sandbox' ? { environment: 'sandbox' } : {}),
       eventCallback: (event: PaddleEvent) => {
         if (event?.name === 'checkout.completed' && completedHandler) {
           const fn = completedHandler

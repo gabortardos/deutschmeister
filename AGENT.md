@@ -109,7 +109,10 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
     polls the meter via getState (no stale closures); typed failure reasons are
     surfaced in the UI (v2.4.2) — the old silent redirect to checkout.url was a
     dead end (it IS our homepage?_ptxn); redirect only to genuine external pages,
-    and landing with ?_ptxn=… auto-resumes the overlay (main.tsx).
+    and landing with ?_ptxn=… auto-resumes the overlay (main.tsx). v2.4.3: the
+    CDN SDK removed Initialize({environment}) ("Unknown option parameter") —
+    sandbox is now selected with Paddle.Environment.set('sandbox') BEFORE
+    Initialize; live needs no call (production is the default).
 - Platform AI teaser (M8, v2.1.0): signed-in keyless users get AI via the `ai-proxy` Edge
   Function (`supabase/functions/ai-proxy/index.ts` — owner deploys by pasting into Dashboard →
   Edge Functions; secrets `OPENAI_PLATFORM_KEY` or `ZAI_PLATFORM_KEY` (chat; z.ai wins when both
