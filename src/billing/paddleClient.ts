@@ -35,6 +35,11 @@ export type PaddleEnv = 'sandbox' | 'live'
 export interface PaddleEvent {
   name?: string
   data?: unknown
+  /** checkout.error/checkout.warning diagnostics (Paddle's documented payloads). */
+  type?: string
+  code?: string
+  detail?: string
+  errors?: { field?: string; message?: string }[]
 }
 
 export interface PaddleInitializeOptions {
@@ -182,7 +187,18 @@ export async function ensurePaddleReady(env: PaddleEnv, clientToken: string): Pr
     sdk.Initialize({
       token: clientToken,
       eventCallback: (event: PaddleEvent) => {
-        if (event?.name === 'checkout.completed' && completedHandler) {
+        // v2.4.4: surface Paddle's own diagnostics — checkout.error /
+        // checkout.warning carry {type, code, detail, errors[]} and are the
+        // documented first stop when the overlay misbehaves (e.g. it opens,
+        // then shows Paddle's "Something went wrong" popup). Console-only:
+        // paste these lines verbatim when reporting.
+        const name = event?.name ?? ''
+        if (name.endsWith('.error')) {
+          console.error(`[PADDLE] ${name}: ${event.type ?? ''}/${event.code ?? ''} — ${event.detail ?? ''}`, event.errors ?? '')
+        } else if (name.endsWith('.warning')) {
+          console.warn(`[PADDLE] ${name}: ${event.type ?? ''}/${event.code ?? ''} — ${event.detail ?? ''}`, event.errors ?? '')
+        }
+        if (name === 'checkout.completed' && completedHandler) {
           const fn = completedHandler
           completedHandler = null
           fn()

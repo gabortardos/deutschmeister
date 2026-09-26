@@ -236,6 +236,23 @@ function → Settings → toggle off → redeploy).
   token from Step 3 (a `live_…` token won't work against sandbox). The function itself
   also returns this error (HTTP 500) when the secret is unset.
 
+- **Overlay opens and loads, then a "Something went wrong — please try again
+  later" popup appears INSIDE the Paddle frame** (seen in sandbox testing)
+  → The app-side chain is fine — token, sandbox env and transaction are all good
+  (the overlay wouldn't open at all otherwise). Check, in order:
+  1. **Website approval:** sandbox dashboard → **Checkout → Checkout settings →
+     Website approval** — the site's domain (`gabortardos.github.io`) must be
+     approved; on unapproved domains Paddle refuses to render the checkout and
+     shows exactly this popup. (Same screen where the default payment link lives.)
+  2. **Read Paddle's own complaint:** since v2.4.4 every `checkout.error` /
+     `checkout.warning` is logged to the browser console as `[PADDLE] …` lines.
+     Open DevTools (Cmd+Opt+J / F12 → Console), click Subscribe, and read/paste
+     those lines — Paddle's docs name this as the first troubleshooting stop;
+     the `code`/`detail` say exactly what Paddle rejected.
+  3. **Sanity check:** sandbox dashboard → **Transactions** should list a draft
+     transaction for each attempt (proves the API side is healthy).
+  4. Still nothing? Sandbox can be transiently flaky — wait 2 minutes and retry.
+
 - **"[PADDLE] Unknown option parameter 'environment'"** (app ≤ v2.4.2)
   → Fixed in v2.4.3: Paddle moved sandbox selection out of `Paddle.Initialize` —
   the app now calls `Paddle.Environment.set('sandbox')` before initializing. Your
