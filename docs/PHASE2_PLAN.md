@@ -145,6 +145,10 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
 
 ### M9 — Payments, hybrid (v2.2) — **✅ CODE COMPLETE 2026-09-21 (v2.4.0), awaiting owner sandbox deployment**
 
+> **Step-by-step deploy guide with screenshots-level detail: `docs/M9_DEPLOY.md`** (answers
+> the owner's questions about each dashboard step, Paddle products/prices/keys, secrets,
+> function deploys, and the sandbox E2E test).
+
 > Built: `paddle-checkout` + `paddle-webhook` Edge Functions, migration `0003_billing.sql`,
 > ai-proxy monthly-allowance + per-plan-voice-cap upgrade, `src/llm/plans.ts` catalog,
 > `src/billing/paddle.ts` signature twin, Settings → Account & Billing UI. Owner deploy
