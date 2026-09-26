@@ -8,13 +8,25 @@ import {
 } from '../plans'
 
 describe('plan catalog (M9, membership v3)', () => {
-  it('sells exactly Basic and Plus; Pro stays dormant, Free is not a purchase', () => {
+  it('sells Basic and Plus monthly, Supporter yearly, Pro dormant, Free not a purchase', () => {
     const visible = visiblePlans().map((p) => p.id)
-    expect(visible).toEqual(['free', 'basic', 'plus'])
+    expect(visible).toEqual(['free', 'basic', 'plus', 'byo-supporter'])
     const purchasable = visiblePlans().filter((p) => p.monthlyEur !== null).map((p) => p.id)
     expect(purchasable).toEqual(['basic', 'plus'])
     expect(planById('pro')?.hidden).toBe(true)
     expect(planById('free')?.monthlyEur).toBeNull()
+  })
+
+  it('Supporter is the yearly-only BYO tier (owner decisions 2026-09-21)', () => {
+    const s = planById('byo-supporter')
+    expect(s).toMatchObject({
+      monthlyEur: null,
+      annualEur: 11.99,
+      allowanceUsdMicros: 0,
+      ttsCharCap: 0,
+    })
+    // must not promise platform HD voice (owner decision c) or "free forever"
+    expect(s?.features.join(' ')).not.toMatch(/platform hd voice|free forever/i)
   })
 
   it('carries the v3 prices: Basic 3.99/29.99, Plus 5.99/49.99, Pro 9.99/89.99', () => {

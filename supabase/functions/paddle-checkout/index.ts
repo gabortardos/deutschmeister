@@ -123,7 +123,10 @@ Deno.serve(async (req: Request) => {
   if (body.type === 'plans' || !body.type) {
     const options: { plan: string; interval: string; priceId: string }[] = []
     for (const [priceId, m] of Object.entries(map)) {
-      if (m.kind === 'subscription' && (m.plan === 'basic' || m.plan === 'plus' || m.plan === 'pro')) {
+      if (
+        m.kind === 'subscription' &&
+        (m.plan === 'basic' || m.plan === 'plus' || m.plan === 'pro' || m.plan === 'byo-supporter')
+      ) {
         options.push({ plan: m.plan, interval: m.interval ?? 'month', priceId })
       }
     }

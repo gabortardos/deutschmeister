@@ -50,6 +50,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
   patchApiKey: (key) => {
     setApiKey(key)
     set({ apiKey: key })
+    // M9.6 Supporter gate: stamp the BYO trial clock the first time a key is
+    // saved (idempotent — later key changes never restart it). Fire-and-forget:
+    // the gate graces an unstamped value as "trial" until this write lands.
+    const s = get().settings
+    if (key.trim() && s && s.byoKeyFirstSeenAt == null) {
+      void updateSettings({ byoKeyFirstSeenAt: Date.now() }).then((settings) => {
+        set({ settings })
+      })
+    }
   },
   refreshToday: async () => {
     const { profile } = get()

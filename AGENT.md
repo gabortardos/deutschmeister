@@ -154,6 +154,22 @@ Note: the Google button needs the Google provider enabled in Supabase (dashboard
 sign-up needs SMTP — without them the buttons show the provider's error and the guest path
 always works.
 
+## M9.6 BYO Supporter membership (v2.6.0)
+
+Owner decisions 2026-09-21: yearly · €11.99/yr · NO platform HD-voice allowance (own Google TTS
+key instead) — supersedes the old "BYO free forever" lock. Model: 30-DAY FREE TRIAL stamped the
+moment a key is first saved (`AppSettings.byoKeyFirstSeenAt`, migration-free optional Dexie
+column, idempotent write in `patchApiKey`), then the Paddle plan `byo-supporter` (ZERO platform
+allowances — chat AI + HD voice stay on the user's own keys; a Supporter row replaces any prior
+plan in `ai_entitlements`). Pure gate in `src/llm/entitlement.ts` (`byoAccess` /
+`byoTrialDaysLeft` / `resolveAiRoute` `byoAllowed` fall-through: locked key → platform/guest
+path) driven by `useByoGate()` in `src/state/useLlmDeps.ts`. UI: status banner in Settings →
+AI Model (member ✓ / trial countdown / locked paywall), Supporter card on the Annual tab of
+Account & Billing, welcome-tour + all stale "free forever" copy corrected. Edge: `paddle-checkout`
+catalog + `paddle-webhook` PLANS row accept the plan. Owner sandbox steps: create product
+"Supporter" €11.99/year → add the price id to `PADDLE_PRICE_MAP` on BOTH Paddle functions →
+re-paste BOTH functions (code changed in both). No DB migration. 261 tests (253→261).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

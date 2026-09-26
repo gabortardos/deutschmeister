@@ -208,7 +208,7 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
     $0.0014 (≈700 turns per $1). If a cheaper "-mini" refresh ships, it's the same
     secrets/config swap.
   - **Kept from earlier drafts:** AI Credit Pack top-ups (€2.90 = $3 / €5.90 = $7, 6-month
-    validity) = M9 phase 2 · BYO stays 100% free forever · `byo-supporter` SKU dormant · no
+    validity) = M9 phase 2 · `byo-supporter` shipped as M9.6 (€11.99/yr, 30-day BYO trial — old "free forever" superseded 2026-09-21) · no
     free trial (14-day refund + $1 teaser instead) · EUR pricing, Paddle-as-MoR handles VAT.
   - **No LLM-API affiliate program exists** (checked 2026-09-21: OpenAI/Anthropic/Google/z.ai
     all have none for API keys) — monetizing key-needing users = the managed tiers above;
@@ -216,8 +216,10 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
     dormant idea).
   - **AI Credit Pack (top-up, one-time) — €2.90 = $3 credit / €5.90 = $7 (bonus), 6-month
     validity.** For "no subscription" learners post-teaser. Phase 2 of M9 (optional at launch).
-  - **BYO stays 100% free** — never paywall what users power themselves; dormant
-    `byo-supporter` SKU (e.g. €1.90/mo tip jar) stays dormant.
+  - **BYO Supporter membership (owner decision 2026-09-21 — supersedes "free
+    forever")** — 30-day free trial from the first saved key, then €11.99/year
+    (shipped as M9.6 / v2.6.0, Paddle plan `byo-supporter`, zero allowances: chat
+    AI + HD voice run on the user's own keys; the system itself is the product).
   - **No free trial at launch** — the $1 teaser + published 14-day refund policy (/#/refund)
     already serve as the risk-free try. Rationale: fewer moving parts, honest funnel.
   - **EUR pricing** — EU-first audience, Paddle-as-MoR handles VAT.
@@ -272,7 +274,7 @@ wins → Paddle.
 
 ## Dormant options (owner may activate later — deliberately not precluded)
 
-1. **Mild subscription for BYO-key users.** Today BYO = everything free. The M8 entitlement
+1. **Monetizing BYO-key users — DONE as M9.6** (historical: until then BYO was free). The M8 entitlement
    layer makes future charging a **config change** (e.g. conversations/voice → Pro while drills
    stay free with any key) — no rework. Technical limit to know: BYO calls go direct
    browser→provider, so they **cannot be metered** — only feature-level gating is possible.

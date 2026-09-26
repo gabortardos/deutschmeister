@@ -402,8 +402,8 @@ function StepAiChoice({ onBack, onFinish }: { onBack: () => void; onFinish: () =
         />
         <span className="text-sm font-medium text-slate-800">Use my own API key</span>
         <p className="mt-1 text-xs text-slate-600">
-          100% free forever — your AI calls go straight from this browser to the provider, nothing
-          is metered or stored by us.
+          Your AI calls go straight from this browser to the provider — nothing is metered or
+          stored by us. Free for the first 30 days, then €11.99/year (Supporter membership).
         </p>
         {choice === 'own' && (
           <div className="mt-3 grid max-w-md gap-3" onClick={(e) => e.stopPropagation()}>

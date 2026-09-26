@@ -10,6 +10,7 @@ import {
   timingSafeEqualHex,
   verifyPaddleSignature,
 } from '../paddle'
+import type { PriceMapping } from '../paddle'
 
 const SECRET = 'pdl_ntfset_test_secret_0123456789'
 const BODY = JSON.stringify({ event_id: 'evt_01abc', event_type: 'subscription.activated' })
@@ -83,6 +84,13 @@ describe('PADDLE_PRICE_MAP parsing', () => {
     expect(subscriptionPlanOf(map, 'pri_credit3')).toBeNull() // credit, not a plan
     expect(subscriptionPlanOf(map, 'pri_unknown')).toBeNull()
     expect(subscriptionPlanOf(map, undefined)).toBeNull()
+  })
+
+  it('maps the byo-supporter yearly price (M9.6 Supporter tier)', () => {
+    const map: Record<string, PriceMapping> = {
+      pri_byo_y: { plan: 'byo-supporter', kind: 'subscription', interval: 'year' },
+    }
+    expect(subscriptionPlanOf(map, 'pri_byo_y')).toBe('byo-supporter')
   })
 
   it('returns null for unset or invalid JSON (function replies not-configured)', () => {

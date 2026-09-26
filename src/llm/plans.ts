@@ -12,7 +12,7 @@
  * Pure TS: no React, no network.
  */
 
-export type PlanId = 'free' | 'basic' | 'plus' | 'pro'
+export type PlanId = 'free' | 'basic' | 'plus' | 'pro' | 'byo-supporter'
 export type BillingInterval = 'month' | 'year'
 
 export interface PlanCatalogEntry {
@@ -52,7 +52,7 @@ export const PLAN_CATALOG: readonly PlanCatalogEntry[] = [
       'Full offline course — vocabulary, grammar, SRS review',
       '$1 of managed AI credit (one-time welcome)',
       'HD voice taste: ~20k characters/month',
-      'Browser voices + your own API keys: free forever',
+      'Browser voices free forever · own API key after a 30-day trial (Supporter €11.99/yr)',
     ],
   },
   {
@@ -100,6 +100,24 @@ export const PLAN_CATALOG: readonly PlanCatalogEntry[] = [
       'Larger HD-voice allowance',
       'Premium tutoring features (in development)',
       'Priority support',
+    ],
+  },
+  {
+    id: 'byo-supporter',
+    name: 'Supporter',
+    tagline: 'For learners with their own API key',
+    // Owner decision 2026-09-21: yearly-only, €11.99/yr, NO platform allowances —
+    // chat AI and HD voice keep running on the user's own keys (that's the point).
+    // monthlyEur null ⇒ rendered on the Annual tab only (BillingSection filter).
+    monthlyEur: null,
+    annualEur: 11.99,
+    allowanceUsdMicros: 0,
+    ttsCharCap: 0,
+    features: [
+      'The whole system on YOUR key — after the 30-day free trial',
+      'Your AI runs on your own provider: unmetered, never stored by us',
+      'Bring your own Google TTS key for the full HD-voice list',
+      'Early access to new features + keeps an indie project alive ❤',
     ],
   },
 ]

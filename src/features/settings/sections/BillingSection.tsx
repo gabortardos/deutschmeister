@@ -142,7 +142,8 @@ export default function BillingSection() {
       >
         <p className="text-sm text-slate-500">
           Sign in above to see plans and manage a subscription. Everything else in the app stays
-          free — and if you bring your own API key, every AI feature stays free forever.
+          free — and your own API key gets a 30-day free trial, then the €11.99/year Supporter
+          membership.
         </p>
       </Card>
     )
@@ -310,7 +311,7 @@ export default function BillingSection() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {visiblePlans()
-              .filter((p) => p.id !== 'free')
+              .filter((p) => p.id !== 'free' && (interval === 'year' || p.monthlyEur !== null))
               .map((p) => {
                 const price = interval === 'month' ? p.monthlyEur! : (p.annualEur ?? p.monthlyEur! * 12)
                 const perMonth = interval === 'month' ? formatEur(price) : formatEur(price / 12) + '/mo'
@@ -370,8 +371,8 @@ export default function BillingSection() {
           </div>
           {options !== null && options.length === 0 && (
             <p className="mt-3 text-sm text-slate-500">
-              Plans are being set up — check back shortly. (Your own API key unlocks everything free
-              in the meantime: Settings → AI Model.)
+              Plans are being set up — check back shortly. (Your signed-in $1 free AI credit
+              already works in the meantime: just use any AI feature.)
             </p>
           )}
         </div>

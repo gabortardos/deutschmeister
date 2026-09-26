@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  BYO_TRIAL_DAYS,
+  byoAccess,
+  byoTrialDaysLeft,
   chatCostUsdMicros,
   chatCostUsdMicrosWith,
   classifyPlatformFailure,
@@ -22,6 +25,44 @@ describe('resolveAiRoute (entitlement layer)', () => {
 
   it('guests without a key get no AI layer (deterministic core only)', () => {
     expect(resolveAiRoute({ hasByoKey: false, signedIn: false })).toBe('none')
+  })
+})
+
+describe('BYO Supporter gate (M9.6)', () => {
+  const DAY = 86_400_000
+  const t0 = 1_700_000_000_000
+
+  it('no key ⇒ off, regardless of membership or trial clock', () => {
+    expect(byoAccess({ hasKey: false, member: true, trialStartMs: t0, nowMs: t0 })).toBe('off')
+    expect(byoAccess({ hasKey: false, member: false, trialStartMs: null, nowMs: t0 })).toBe('off')
+  })
+
+  it('membership wins even when the trial window is long gone', () => {
+    expect(byoAccess({ hasKey: true, member: true, trialStartMs: t0, nowMs: t0 + 365 * DAY })).toBe('member')
+  })
+
+  it('within 30 days of the first saved key ⇒ trial; unstamped graces as trial', () => {
+    expect(byoAccess({ hasKey: true, member: false, trialStartMs: t0, nowMs: t0 })).toBe('trial')
+    expect(byoAccess({ hasKey: true, member: false, trialStartMs: t0, nowMs: t0 + 29 * DAY })).toBe('trial')
+    expect(byoAccess({ hasKey: true, member: false, trialStartMs: null, nowMs: t0 })).toBe('trial')
+  })
+
+  it('boundary: the last ms of day 30 is trial, exactly 30 days locks', () => {
+    expect(byoAccess({ hasKey: true, member: false, trialStartMs: t0, nowMs: t0 + BYO_TRIAL_DAYS * DAY - 1 })).toBe('trial')
+    expect(byoAccess({ hasKey: true, member: false, trialStartMs: t0, nowMs: t0 + BYO_TRIAL_DAYS * DAY })).toBe('locked')
+  })
+
+  it('day counting rounds up to whole days and floors at zero', () => {
+    expect(byoTrialDaysLeft(t0, t0)).toBe(BYO_TRIAL_DAYS)
+    expect(byoTrialDaysLeft(t0, t0 + 29.1 * DAY)).toBe(1)
+    expect(byoTrialDaysLeft(t0, t0 + 30 * DAY)).toBe(0)
+    expect(byoTrialDaysLeft(null)).toBe(BYO_TRIAL_DAYS)
+  })
+
+  it('locked keys fall through in the route matrix; gate-unaware callers keep old behavior', () => {
+    expect(resolveAiRoute({ hasByoKey: true, signedIn: true, byoAllowed: false })).toBe('platform')
+    expect(resolveAiRoute({ hasByoKey: true, signedIn: false, byoAllowed: false })).toBe('none')
+    expect(resolveAiRoute({ hasByoKey: true, signedIn: true })).toBe('byo')
   })
 })
 

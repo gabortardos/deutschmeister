@@ -2,9 +2,11 @@
  * Entitlement layer (M8) — the single config-driven place that decides HOW an AI
  * call is routed and what platform usage costs. Pure TS: no React, no network.
  *
- * Routing rules (PHASE2_PLAN locked decisions #2/#3):
+ * Routing rules (PHASE2_PLAN decisions #2/#3; #1 amended by owner 2026-09-21):
  *   - BYO key            → 'byo': everything unlocked, direct browser→provider,
- *                          free, unmetered (unchanged M3 behavior).
+ *                          unmetered — BUT since M9.6 gated by the Supporter
+ *                          membership (30-day free trial from the first saved
+ *                          key, then €11.99/year; see byoAccess below).
  *   - No key but signed in → 'platform': calls go through the `ai-proxy` Supabase
  *                          Edge Function with the owner's key (never in the client),
  *                          metered server-side: Pro allowance + credit + $1 teaser.
@@ -17,12 +19,57 @@ export type AiRoute = 'byo' | 'platform' | 'none'
 export interface RouteInput {
   hasByoKey: boolean
   signedIn: boolean
+  /** M9.6: false = key present but the Supporter gate is locked → fall through. */
+  byoAllowed?: boolean
 }
 
-/** BYO always wins (it's a feature, not a punishment); the teaser needs an account. */
+/** BYO wins whenever it's allowed (it's a feature, not a punishment); the teaser needs an account. */
 export function resolveAiRoute(input: RouteInput): AiRoute {
-  if (input.hasByoKey) return 'byo'
+  if (input.hasByoKey && input.byoAllowed !== false) return 'byo'
   return input.signedIn ? 'platform' : 'none'
+}
+
+// --- BYO Supporter gate (M9.6) ----------------------------------------------------------------
+//
+// Owner decision 2026-09-21 (amends the old "BYO free forever" lock): key-bringers
+// get the whole system — and that system is worth a little money. Fair model:
+// a 30-DAY FREE TRIAL starting the moment the user first saves a key, then the
+// €11.99/year "Supporter" membership (Paddle plan 'byo-supporter'; no platform
+// allowances — both chat AI and HD voice keep running on the user's own keys).
+//
+// This is a PRODUCT gate, not a security boundary: the key lives in the user's
+// browser and works in any other OpenAI-compatible app regardless; the gate
+// protects the value of the tutoring system layered on top of it.
+
+/** Trial length in days from the first saved key (owner pick 2026-09-21: 30). */
+export const BYO_TRIAL_DAYS = 30
+
+export type ByoAccess = 'off' | 'member' | 'trial' | 'locked'
+
+export interface ByoGateInput {
+  hasKey: boolean
+  /** True when ai_entitlements says plan 'byo-supporter' with a live period. */
+  member: boolean
+  /** Epoch ms of the first key entry (settings.byoKeyFirstSeenAt); null = not yet stamped. */
+  trialStartMs: number | null
+  nowMs?: number
+}
+
+/** Where does this user's BYO usage stand? 'off' = no key saved at all. */
+export function byoAccess(input: ByoGateInput): ByoAccess {
+  if (!input.hasKey) return 'off'
+  if (input.member) return 'member'
+  const now = input.nowMs ?? Date.now()
+  // Not stamped yet = the write hasn't landed; grace as trial (clock starts now anyway).
+  if (input.trialStartMs == null) return 'trial'
+  return now < input.trialStartMs + BYO_TRIAL_DAYS * 86_400_000 ? 'trial' : 'locked'
+}
+
+/** Whole days of trial left (0 once expired; full length when not stamped). */
+export function byoTrialDaysLeft(trialStartMs: number | null, nowMs?: number): number {
+  if (trialStartMs == null) return BYO_TRIAL_DAYS
+  const now = nowMs ?? Date.now()
+  return Math.max(0, Math.ceil((trialStartMs + BYO_TRIAL_DAYS * 86_400_000 - now) / 86_400_000))
 }
 
 // --- teaser model + prices -----------------------------------------------------------------

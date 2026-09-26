@@ -141,6 +141,8 @@ export interface AppSettings {
   ttsVoice: string | null
   ttsRate: number
   sttEnabled: boolean
+  /** M9.6 Supporter gate: epoch ms when the user FIRST saved a BYO key (trial clock). */
+  byoKeyFirstSeenAt: number | null
 }
 
 export interface LlmCacheEntry {

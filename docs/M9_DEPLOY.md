@@ -311,3 +311,24 @@ function → Settings → toggle off → redeploy).
 4. Redeploy the two functions (re-paste the same code, save) so they pick up new values
 
 That's the whole switch — no code changes.
+
+---
+
+## Supporter tier (M9.6 / v2.6.0) — sandbox first
+
+One extra product in the SAME sandbox catalog:
+
+1. Sandbox dashboard → Catalog → Products → **New product**: "DeutschMeister
+   Supporter" (description: the system for learners with their own API key).
+2. Add a **recurring price: €11.99 / year** (12-month billing interval). Copy the
+   `pri_…` id.
+3. Update the `PADDLE_PRICE_MAP` secret on **both** `paddle-checkout` and
+   `paddle-webhook` — add one entry:
+   `"pri_NEW": {"plan":"byo-supporter","kind":"subscription","interval":"year"}`
+4. **Re-paste BOTH functions** (their code changed in v2.6.0: checkout catalog
+   whitelist + webhook PLANS row). No DB migration, no other secrets.
+
+Client behavior: key users get a 30-day trial from the day they first save a key
+(stored in their synced settings), then the Supporter card (Account & Billing →
+Annual tab) sells the membership; a manual entitlement row (plan
+`byo-supporter`) also works for owner testing.

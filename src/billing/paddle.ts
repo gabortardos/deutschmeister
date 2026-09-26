@@ -95,7 +95,7 @@ export interface PriceMapping {
 }
 
 /** Plan ids the webhook may grant (free is never a purchasable plan). */
-export type PlanIdLite = 'basic' | 'plus' | 'pro'
+export type PlanIdLite = 'basic' | 'plus' | 'pro' | 'byo-supporter'
 
 /** Parses the PADDLE_PRICE_MAP secret JSON; returns null when unset/invalid. */
 export function parsePriceMap(raw: string | undefined | null): Record<string, PriceMapping> | null {
@@ -115,7 +115,9 @@ export function subscriptionPlanOf(
 ): PlanIdLite | null {
   if (!priceId) return null
   const m = priceMap[priceId]
-  return m && m.kind === 'subscription' && (m.plan === 'basic' || m.plan === 'plus' || m.plan === 'pro')
+  return m &&
+    m.kind === 'subscription' &&
+    (m.plan === 'basic' || m.plan === 'plus' || m.plan === 'pro' || m.plan === 'byo-supporter')
     ? m.plan
     : null
 }

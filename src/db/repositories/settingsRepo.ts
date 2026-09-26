@@ -18,12 +18,19 @@ function defaultSettings(): AppSettings {
     ttsVoice: null,
     ttsRate: 0.9,
     sttEnabled: true,
+    byoKeyFirstSeenAt: null,
   }
 }
 
 function normalize(row: AppSettings): AppSettings {
   const providerValid = PROVIDERS.some((p) => p.id === row.provider)
-  return { ...row, provider: providerValid ? row.provider : 'glm' }
+  // Pre-M9.6 rows lack byoKeyFirstSeenAt — coerce to null so the trial clock only
+  // starts when a key is actually saved, never from a merely missing field.
+  return {
+    ...row,
+    provider: providerValid ? row.provider : 'glm',
+    byoKeyFirstSeenAt: row.byoKeyFirstSeenAt ?? null,
+  }
 }
 
 export async function getSettings(): Promise<AppSettings> {
