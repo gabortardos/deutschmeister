@@ -141,6 +141,19 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
   a managed static field, and the 5 public Paddle-compliance pages live at `/#/about|contact|`
   `terms|privacy|refund` (`src/features/legal/LegalPages.tsx`, footer-linked everywhere).
 
+## M9.5 onboarding (v2.5.0)
+
+First-visit tour at `#/welcome` (`src/features/onboarding/WelcomeFlow.tsx` + `welcome.ts`
+helpers): auto-opens from the Dashboard when the `dm-welcome-done` localStorage flag is absent
+(fresh browser on an existing account sees it once too — deliberate). Four steps: intro →
+optional account (reuses `sync/authActions.ts`: Google / email sign-in + sign-up / guest) →
+basics (name / A1–B2 / 5-10-15-20 daily goal, saved via `patchProfile`) → explicit AI choice:
+included teaser (with meter + run-out copy + guest warning) vs own key (provider + key →
+`setApiKey` + `patchSettings`). "Replay welcome tour" lives in Settings → Getting started.
+Note: the Google button needs the Google provider enabled in Supabase (dashboard) and email
+sign-up needs SMTP — without them the buttons show the provider's error and the guest path
+always works.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

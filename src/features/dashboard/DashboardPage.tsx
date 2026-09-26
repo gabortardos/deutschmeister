@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Badge, Button, Card } from '../../components/ui'
 import { getCards } from '../../db/repositories/vocabRepo'
 import { getLlmLog } from '../../llm/adapter'
@@ -7,11 +7,13 @@ import { stt } from '../../speech/stt'
 import { tts } from '../../speech/tts'
 import { useAppStore } from '../../state/store'
 import { useAuthStore } from '../../sync/authStore'
+import { welcomeDone } from '../onboarding/welcome'
 
 export default function DashboardPage() {
   const { hydrated, profile, apiKey, todayLog, dueCount, stats, refreshToday } = useAppStore()
   const [introToday, setIntroToday] = useState(0)
   const { ready, configured, user } = useAuthStore()
+  const navigate = useNavigate()
   const [accountPromptHidden, setAccountPromptHidden] = useState(
     () => localStorage.getItem('dm.accountPromptDismissed') === '1',
   )
@@ -25,6 +27,12 @@ export default function DashboardPage() {
   useEffect(() => {
     void refreshToday()
   }, [refreshToday])
+
+  // M9.5: very first visit in this browser → run the welcome tour (once; the
+  // flag is set when the tour finishes or is skipped from its last step).
+  useEffect(() => {
+    if (!welcomeDone()) navigate('welcome', { replace: true })
+  }, [navigate])
 
   useEffect(() => {
     if (!todayLog || todayLog.newWordIds.length === 0) {

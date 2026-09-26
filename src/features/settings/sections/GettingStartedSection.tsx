@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button, Card } from '../../../components/ui'
 import { getLlmLog } from '../../../llm/adapter'
 import { useAppStore } from '../../../state/store'
 import { useAuthStore } from '../../../sync/authStore'
+import { resetWelcome } from '../../onboarding/welcome'
 
 /**
  * First-run checklist (M4.2 — moved here from the dashboard so the Today page stays
@@ -12,6 +13,7 @@ export default function GettingStartedSection() {
   const apiKey = useAppStore((s) => s.apiKey)
   const stats = useAppStore((s) => s.stats)
   const user = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
 
   const lastCall = getLlmLog()[0] ?? null
   const checklist = [
@@ -26,8 +28,8 @@ export default function GettingStartedSection() {
     },
     { done: (stats?.introduced ?? 0) > 0, label: 'Learn your first words in Vocabulary' },
   ]
-  if (checklist.every((item) => item.done)) return null
-
+  // M9.5: no early return any more — the card also hosts the "Replay welcome
+  // tour" entry point, so it stays available even when the checklist is done.
   return (
     <Card
       title="Getting started"
@@ -53,6 +55,17 @@ export default function GettingStartedSection() {
           Last AI call: {lastCall.ok ? '✓ succeeded' : '✗ failed'} · {lastCall.model} · {lastCall.ms} ms
         </p>
       )}
+      <div className="mt-3 border-t border-slate-100 pt-3">
+        <Button
+          variant="ghost"
+          onClick={() => {
+            resetWelcome()
+            navigate('/welcome')
+          }}
+        >
+          ↻ Replay the welcome tour
+        </Button>
+      </div>
     </Card>
   )
 }
