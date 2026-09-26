@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import {
+  clearCheckoutSession,
   closePaddleCheckout,
+  isOwnSiteUrl,
   openTransactionCheckout,
   parseCheckoutResponse,
+  rememberCheckoutSession,
+  type OverlayResult,
 } from '../../../billing/paddleClient'
 import { Badge, Button, Card } from '../../../components/ui'
 import { formatUsdMicros } from '../../../llm/entitlement'
@@ -57,6 +61,27 @@ async function paddleCheckout<T>(body: Record<string, unknown>): Promise<T> {
     )
   }
   return json as T
+}
+
+/** Maps an overlay-open failure to actionable guidance (shown in red under the plans). */
+function overlayFailureText(res: Extract<OverlayResult, { ok: false }>): string {
+  const detail = res.detail ? ` (Paddle said: ${res.detail})` : ''
+  switch (res.reason) {
+    case 'client-token-missing':
+      return 'No Paddle client token reached the app — the paddle-checkout function or its PADDLE_CLIENT_TOKEN secret is not set up yet (docs/M9_DEPLOY.md Step 3).'
+    case 'script-load-failed':
+      return 'Paddle.js could not be loaded from cdn.paddle.com — an ad-blocker or network issue? Disable it for this site and click Subscribe again.'
+    case 'initialize-failed':
+      return (
+        'Paddle rejected the client-side token. It must be the test_… token from the SAME sandbox account ' +
+        '(Paddle → Developer tools → Authentication → Client-side tokens).' +
+        detail
+      )
+    case 'open-failed':
+      return 'Paddle could not open this checkout — the transaction may have expired. Click Subscribe again.' + detail
+    default:
+      return 'Paddle checkout could not be opened.' + detail
+  }
 }
 
 function UsageBar({ used, cap, label }: { used: number; cap: number; label: string }) {
@@ -144,22 +169,41 @@ export default function BillingSection() {
       const r = await paddleCheckout<unknown>({ type: 'checkout', priceId: option.priceId })
       const session = parseCheckoutResponse(r)
       if (!session) throw new Error('Paddle did not return a checkout session.')
-      const overlayOpened =
-        session.transactionId !== null &&
-        session.clientToken !== null &&
-        (await openTransactionCheckout({
-          env: session.env,
-          clientToken: session.clientToken,
-          transactionId: session.transactionId,
-          customerEmail: buyerEmail,
-          onCompleted: () => void afterPurchase(),
-        }))
-      if (!overlayOpened) {
-        // Fallback: redirect to Paddle's checkout payment link (only useful when
-        // the account's default payment link points at this app — M9_DEPLOY 2B).
-        if (session.url) window.location.assign(session.url)
-        else throw new Error('Paddle checkout could not be opened.')
+      // v2.4.2: a response without transactionId+clientToken means the DEPLOYED
+      // function is outdated or its PADDLE_CLIENT_TOKEN secret is missing. The
+      // old behavior (silently redirecting to checkout.url) landed users on our
+      // own homepage — Paddle payment links are <our site>?_ptxn=…, not a real
+      // checkout page. Name the problem instead (fnVersion tells the two apart).
+      const fnVersion = (r as { fnVersion?: unknown }).fnVersion
+      if (session.transactionId === null || session.clientToken === null) {
+        throw new Error(
+          fnVersion === 2
+            ? 'The billing function is missing its PADDLE_CLIENT_TOKEN secret (Supabase → Edge Functions → Secrets — value: the test_… client-side token from Paddle → Developer tools → Authentication → Client-side tokens).'
+            : 'The paddle-checkout function on the server is an older version. Re-paste the current supabase/functions/paddle-checkout/index.ts into Supabase → Edge Functions → paddle-checkout (keep "Verify JWT" on) and try again.',
+        )
       }
+      const overlay = await openTransactionCheckout({
+        env: session.env,
+        clientToken: session.clientToken,
+        transactionId: session.transactionId,
+        customerEmail: buyerEmail,
+        onCompleted: () => void afterPurchase(),
+      })
+      if (!overlay.ok) {
+        // Only redirect when checkout.url is a REAL external page — never to
+        // our own site (that is the dead-end ?_ptxn payment link).
+        if (session.url && !isOwnSiteUrl(session.url, window.location.origin)) {
+          window.location.assign(session.url)
+          return
+        }
+        throw new Error(overlayFailureText(overlay))
+      }
+      rememberCheckoutSession({
+        transactionId: session.transactionId,
+        clientToken: session.clientToken,
+        env: session.env,
+      })
+      setNotice('Checkout is open — complete the payment in the Paddle window.')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -170,6 +214,7 @@ export default function BillingSection() {
   /** Overlay paid: close it, then poll the meter until the webhook grants the plan. */
   async function afterPurchase() {
     closePaddleCheckout()
+    clearCheckoutSession()
     setNotice('Payment received — activating your plan (usually a few seconds)…')
     for (let attempt = 0; attempt < 10; attempt++) {
       await new Promise((resolve) => setTimeout(resolve, 2000))

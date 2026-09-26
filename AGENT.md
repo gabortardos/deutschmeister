@@ -106,7 +106,10 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
     `src/billing/paddleClient.ts` lazy-loads cdn.paddle.com/paddle/v2/paddle.js on first
     subscribe (Initialize-once guard), opens the transaction via
     Paddle.Checkout.open({transactionId}) overlay, closes it on checkout.completed and
-    polls the meter via getState (no stale closures); redirect fallback to checkout.url.
+    polls the meter via getState (no stale closures); typed failure reasons are
+    surfaced in the UI (v2.4.2) — the old silent redirect to checkout.url was a
+    dead end (it IS our homepage?_ptxn); redirect only to genuine external pages,
+    and landing with ?_ptxn=… auto-resumes the overlay (main.tsx).
 - Platform AI teaser (M8, v2.1.0): signed-in keyless users get AI via the `ai-proxy` Edge
   Function (`supabase/functions/ai-proxy/index.ts` — owner deploys by pasting into Dashboard →
   Edge Functions; secrets `OPENAI_PLATFORM_KEY` or `ZAI_PLATFORM_KEY` (chat; z.ai wins when both

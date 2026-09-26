@@ -137,6 +137,16 @@ Deno.serve(async (req: Request) => {
     if (!mapping) {
       return respond(400, { error: 'unknown-price', message: 'This plan is not available.' })
     }
+    // Fail fast + loudly when the client token secret is missing — the client
+    // cannot open an overlay without it (v2.4.1 silently fell back to a
+    // pointless redirect to our own homepage; see BillingSection).
+    if (!PADDLE_CLIENT_TOKEN) {
+      return respond(500, {
+        error: 'client-token-missing',
+        message:
+          'PADDLE_CLIENT_TOKEN secret is not set — Supabase → Edge Functions → Secrets: add PADDLE_CLIENT_TOKEN = the test_… client-side token (Paddle sandbox → Developer tools → Authentication → Client-side tokens), then try again.',
+      })
+    }
     // No checkout.success_url: the client opens this transaction as a Paddle.js
     // overlay and closes it on checkout.completed (a success_url would load our
     // whole SPA inside the overlay iframe after payment — ugly and pointless).
@@ -163,6 +173,7 @@ Deno.serve(async (req: Request) => {
         return respond(502, { error: 'paddle', message: 'Paddle returned no transaction id.' })
       }
       return respond(200, {
+        fnVersion: 2,
         transactionId,
         clientToken: PADDLE_CLIENT_TOKEN,
         env: PADDLE_ENV === 'live' ? 'live' : 'sandbox',

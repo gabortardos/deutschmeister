@@ -20,8 +20,10 @@
  *
  * The client-side token is public by design (it can only open checkouts); it
  * still arrives via the Edge Function so the sandbox→live switch stays a pure
- * secret-value swap. Everything is defensive: any failure returns `false` and
- * BillingSection falls back to redirecting to `checkout.url`.
+ * secret-value swap. Every failure returns a typed reason (OverlayResult) —
+ * v2.4.2 removed the old silent redirect to checkout.url: for API-created
+ * transactions that URL is OUR OWN homepage with ?_ptxn appended, so the
+ * BillingSection now surfaces the reason instead of navigating nowhere.
  */
 
 export type PaddleEnv = 'sandbox' | 'live'
@@ -93,6 +95,21 @@ export function ptxnFromSearch(search: string): string | null {
   const value = new URLSearchParams(search).get('_ptxn')
   return value && value.startsWith('txn_') ? value : null
 }
+/**
+ * True when a checkout URL points back at THIS site. Paddle Billing payment
+ * links are `<default payment link>?_ptxn=…` — i.e. our own homepage — so
+ * redirecting to them is a dead end (v2.4.1 did exactly that, "silently").
+ * Used to decide fallback-redirect vs. surfacing an explicit error.
+ */
+export function isOwnSiteUrl(url: string, origin: string): boolean {
+  if (url.startsWith('/')) return true
+  try {
+    return new URL(url, origin).origin === origin
+  } catch {
+    return false
+  }
+}
+
 // --- side-effectful Paddle.js glue ------------------------------------------------------------
 
 const PADDLE_JS_SRC = 'https://cdn.paddle.com/paddle/v2/paddle.js'
@@ -124,15 +141,26 @@ function loadPaddleSdk(): Promise<PaddleSdk | null> {
   return scriptPromise
 }
 
+/** Why an overlay open failed — mapped to actionable guidance by BillingSection. */
+export type OverlayFailReason =
+  | 'client-token-missing'
+  | 'script-load-failed'
+  | 'sdk-invalid'
+  | 'initialize-failed'
+  | 'open-failed'
+
+export type OverlayResult = { ok: true } | { ok: false; reason: OverlayFailReason; detail?: string }
+
 /**
  * Loads Paddle.js and calls `Paddle.Initialize` exactly once per page load.
- * Returns false when the script or the init fails (blocked, offline, bad token…).
+ * Returns a typed failure reason (blocked, offline, bad token…).
  */
-export async function ensurePaddleReady(env: PaddleEnv, clientToken: string): Promise<boolean> {
-  if (!clientToken) return false
+export async function ensurePaddleReady(env: PaddleEnv, clientToken: string): Promise<OverlayResult> {
+  if (!clientToken) return { ok: false, reason: 'client-token-missing' }
   const sdk = await loadPaddleSdk()
-  if (!sdk || typeof sdk.Initialize !== 'function') return false
-  if (initializedToken === clientToken) return true
+  if (!sdk) return { ok: false, reason: 'script-load-failed', detail: PADDLE_JS_SRC }
+  if (typeof sdk.Initialize !== 'function') return { ok: false, reason: 'sdk-invalid' }
+  if (initializedToken === clientToken) return { ok: true }
   try {
     sdk.Initialize({
       token: clientToken,
@@ -146,9 +174,9 @@ export async function ensurePaddleReady(env: PaddleEnv, clientToken: string): Pr
       },
     })
     initializedToken = clientToken
-    return true
-  } catch {
-    return false
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, reason: 'initialize-failed', detail: e instanceof Error ? e.message : String(e) }
   }
 }
 
@@ -162,14 +190,17 @@ export interface OpenOverlayOptions {
 
 /**
  * Opens Paddle's overlay checkout for an existing transaction, in this page.
- * Returns false when Paddle.js could not be used (caller should fall back to
- * redirecting to `checkout.url`). `onCompleted` fires on `checkout.completed`.
+ * Returns `{ ok: false, reason }` when Paddle.js could not be used — the caller
+ * surfaces the error (only redirect when `checkout.url` is a genuine EXTERNAL
+ * page; never to our own site, see `isOwnSiteUrl`). `onCompleted` fires on
+ * `checkout.completed`.
  */
-export async function openTransactionCheckout(opts: OpenOverlayOptions): Promise<boolean> {
-  if (!opts.clientToken || !opts.transactionId) return false
-  if (!(await ensurePaddleReady(opts.env, opts.clientToken))) return false
+export async function openTransactionCheckout(opts: OpenOverlayOptions): Promise<OverlayResult> {
+  if (!opts.clientToken || !opts.transactionId) return { ok: false, reason: 'client-token-missing' }
+  const ready = await ensurePaddleReady(opts.env, opts.clientToken)
+  if (!ready.ok) return ready
   const sdk = window.Paddle
-  if (!sdk || typeof sdk.Checkout?.open !== 'function') return false
+  if (!sdk || typeof sdk.Checkout?.open !== 'function') return { ok: false, reason: 'sdk-invalid' }
   try {
     completedHandler = opts.onCompleted ?? null
     sdk.Checkout.open({
@@ -182,10 +213,10 @@ export async function openTransactionCheckout(opts: OpenOverlayOptions): Promise
         ...(opts.customerEmail ? { customer: { email: opts.customerEmail } } : {}),
       },
     })
-    return true
-  } catch {
+    return { ok: true }
+  } catch (e) {
     completedHandler = null
-    return false
+    return { ok: false, reason: 'open-failed', detail: e instanceof Error ? e.message : String(e) }
   }
 }
 
@@ -196,4 +227,71 @@ export function closePaddleCheckout(): void {
   } catch {
     // closing is best-effort — never let it break the post-purchase flow
   }
+}
+
+// --- checkout-session stash + ?_ptxn resume (v2.4.2) -----------------------------------------
+
+const STASH_KEY = 'dm.paddle.checkout'
+
+export interface StashedCheckout {
+  transactionId: string
+  clientToken: string
+  env: PaddleEnv
+}
+
+/** Remembers the open checkout so a reload/redirect with ?_ptxn can resume it. */
+export function rememberCheckoutSession(s: StashedCheckout): void {
+  try {
+    sessionStorage.setItem(STASH_KEY, JSON.stringify(s))
+  } catch {
+    // private mode / storage disabled — resume just won't be possible
+  }
+}
+
+export function recallCheckoutSession(): StashedCheckout | null {
+  try {
+    const raw = sessionStorage.getItem(STASH_KEY)
+    if (!raw) return null
+    const s = JSON.parse(raw) as Partial<StashedCheckout>
+    if (typeof s.transactionId === 'string' && s.transactionId && typeof s.clientToken === 'string' && s.clientToken) {
+      return { transactionId: s.transactionId, clientToken: s.clientToken, env: normalizePaddleEnv(s.env) }
+    }
+  } catch {
+    // corrupt or unavailable — ignore
+  }
+  return null
+}
+
+export function clearCheckoutSession(): void {
+  try {
+    sessionStorage.removeItem(STASH_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Landing on the site with `?_ptxn=txn_…` in the URL means a checkout came
+ * through Paddle's payment-link flow (the pre-2.4.2 redirect fallback did
+ * exactly this). Strips the parameter and, when we stashed this exact
+ * transaction, re-opens it as an overlay. Returns the transaction id found
+ * (null = nothing to resume).
+ */
+export async function resumePaddleCheckoutFromUrl(onCompleted: () => void): Promise<string | null> {
+  const txn = ptxnFromSearch(window.location.search)
+  if (!txn) return null
+  try {
+    window.history.replaceState(null, '', window.location.pathname + window.location.hash)
+  } catch {
+    // history API unavailable (rare) — a leftover param is cosmetic only
+  }
+  const saved = recallCheckoutSession()
+  if (!saved || saved.transactionId !== txn) return txn
+  await openTransactionCheckout({
+    env: saved.env,
+    clientToken: saved.clientToken,
+    transactionId: txn,
+    onCompleted,
+  })
+  return txn
 }

@@ -219,13 +219,23 @@ function → Settings → toggle off → redeploy).
   **Default payment link** to `https://gabortardos.github.io/deutschmeister/` → Save.
   Paddle refuses to create *any* transaction until this is set.
 
-- **Clicking Subscribe does nothing (no overlay, no error), or the page seems to
-  redirect to the app's own homepage**
-  → The `PADDLE_CLIENT_TOKEN` secret is missing/empty, so the app couldn't open the
-  Paddle overlay and fell back to a redirect. Check Supabase → Edge Functions →
-  Secrets: `PADDLE_CLIENT_TOKEN` must be the **`test_…`** token from Step 3 (a `live_…`
-  token won't work against sandbox). Also confirm the deployed `paddle-checkout`
-  function is the current code (re-paste it from the repo, see Step 5).
+- **"The paddle-checkout function on the server is an older version"** (shown in red
+  under the plans, v2.4.2+)
+  → The deployed Edge Function predates the overlay flow — re-paste the current
+  `supabase/functions/paddle-checkout/index.ts` (Step 5) and confirm it really saved.
+
+- **"…missing its PADDLE_CLIENT_TOKEN secret"**
+  → Supabase → Edge Functions → Secrets: `PADDLE_CLIENT_TOKEN` must be the **`test_…`**
+  token from Step 3 (a `live_…` token won't work against sandbox). The function itself
+  also returns this error (HTTP 500) when the secret is unset.
+
+- **Pre-v2.4.2 symptom: clicking Subscribe silently redirected to the app's own
+  homepage**
+  → Fixed in v2.4.2 — that redirect targeted Paddle's "payment link" URL, which is our
+  own homepage + `?_ptxn=…`, *not* a checkout page. The app now shows the real reason
+  in red text instead, and landing with `?_ptxn=…` in the URL auto-resumes the checkout
+  overlay. If you still see this, hard-refresh (Cmd/Ctrl+Shift+R) — the top bar must
+  show **v2.4.2**.
 
 - **Overlay opens but shows a Paddle error inside**
   → Check **Edge Functions → paddle-checkout → Logs**, and Paddle sandbox →

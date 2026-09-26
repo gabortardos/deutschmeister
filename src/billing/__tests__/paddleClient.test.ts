@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizePaddleEnv, parseCheckoutResponse, ptxnFromSearch } from '../paddleClient'
+import { isOwnSiteUrl, normalizePaddleEnv, parseCheckoutResponse, ptxnFromSearch } from '../paddleClient'
 
 describe('Paddle client pure helpers (overlay checkout, v2.4.1)', () => {
   it('normalizes the env — only exactly "live" counts as live', () => {
@@ -60,5 +60,19 @@ describe('Paddle client pure helpers (overlay checkout, v2.4.1)', () => {
     expect(ptxnFromSearch('?other=1')).toBeNull()
     expect(ptxnFromSearch('?_ptxn=not-a-txn')).toBeNull()
     expect(ptxnFromSearch('?_ptxn=')).toBeNull()
+  })
+
+  it('isOwnSiteUrl: only our own origin (or relative URLs) count as internal (v2.4.2)', () => {
+    const origin = 'https://gabortardos.github.io'
+    // Paddle Billing payment link → our own homepage with _ptxn: dead end, NOT a checkout page
+    expect(isOwnSiteUrl('https://gabortardos.github.io/deutschmeister/?_ptxn=txn_1', origin)).toBe(true)
+    expect(isOwnSiteUrl('/deutschmeister/?_ptxn=txn_1', origin)).toBe(true)
+    // A genuine external hosted page → redirecting there is fine
+    expect(isOwnSiteUrl('https://sandbox.paddle.com/checkout?x=1', origin)).toBe(false)
+    expect(isOwnSiteUrl('https://pay.paddle.com/txn_1', origin)).toBe(false)
+    expect(isOwnSiteUrl('mailto:support@example.com', origin)).toBe(false)
+    // Path-only strings resolve against our own origin → internal (safe default:
+    // never "fall back" to a redirect for something that isn't a real page)
+    expect(isOwnSiteUrl('deutschmeister/?_ptxn=txn_1', origin)).toBe(true)
   })
 })
