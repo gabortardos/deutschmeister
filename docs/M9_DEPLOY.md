@@ -253,6 +253,26 @@ function → Settings → toggle off → redeploy).
      transaction for each attempt (proves the API side is healthy).
   4. Still nothing? Sandbox can be transiently flaky — wait 2 minutes and retry.
 
+- **"[PADDLE] checkout.error … validation.no_validation_set" on
+  `settings.customer.email` + popup inside the overlay** (seen in sandbox
+  testing, app ≤ v2.4.4)
+  → Fixed in v2.4.5: the app prefilled the signed-in email into
+  `settings.customer.email`, but Paddle's transaction-checkout service rejects
+  that field for checkouts opened by `transactionId` — prefill is only
+  supported for items-based checkouts. The buyer now types their email
+  straight into Paddle's form. Nothing changes for the entitlement: the
+  webhook maps the purchase by the user id in the transaction's
+  `custom_data`, never by email. Hard-refresh until the top bar shows
+  **v2.4.5** and click Subscribe again.
+
+- **Sandbox dashboard → Transactions looks empty**
+  → Draft transactions DO appear there (status "Draft"), so if the list is
+  empty you are almost certainly looking at the wrong place: make sure the URL
+  is **sandbox-vendors.paddle.com** (not vendors.paddle.com = live) and that
+  you're logged into the same Paddle account that owns the API key /
+  client-side token. The overlay opening at all proves a transaction was
+  created in that account.
+
 - **"[PADDLE] Unknown option parameter 'environment'"** (app ≤ v2.4.2)
   → Fixed in v2.4.3: Paddle moved sandbox selection out of `Paddle.Initialize` —
   the app now calls `Paddle.Environment.set('sandbox')` before initializing. Your

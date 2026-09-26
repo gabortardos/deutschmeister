@@ -216,7 +216,6 @@ export interface OpenOverlayOptions {
   env: PaddleEnv
   clientToken: string
   transactionId: string
-  customerEmail?: string
   onCompleted?: () => void
 }
 
@@ -241,8 +240,14 @@ export async function openTransactionCheckout(opts: OpenOverlayOptions): Promise
         displayMode: 'overlay',
         theme: 'light',
         locale: 'en',
-        allowLogout: false,
-        ...(opts.customerEmail ? { customer: { email: opts.customerEmail } } : {}),
+        // v2.4.5: deliberately NO `customer` prefill (and no `allowLogout`).
+        // Paddle's transaction-checkout service rejects settings.customer.email
+        // with checkout.error `validation.no_validation_set`
+        // (/data/settings/customer/email) — the field has no validation ruleset
+        // in this context (Paddle's own prefill examples are items-based only).
+        // The buyer types their email in Paddle's form instead; entitlement
+        // routing is unaffected — paddle-webhook maps by custom_data.user_id set
+        // server-side at transaction creation, never by email.
       },
     })
     return { ok: true }

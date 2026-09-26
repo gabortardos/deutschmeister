@@ -112,7 +112,12 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
     and landing with ?_ptxn=… auto-resumes the overlay (main.tsx). v2.4.3: the
     CDN SDK removed Initialize({environment}) ("Unknown option parameter") —
     sandbox is now selected with Paddle.Environment.set('sandbox') BEFORE
-    Initialize; live needs no call (production is the default).
+    Initialize; live needs no call (production is the default). v2.4.4:
+    eventCallback logs every checkout.error/warning as `[PADDLE]` console lines.
+    v2.4.5: NO customer-email prefill in Checkout.open — Paddle's
+    transaction-checkout service rejects settings.customer.email
+    (validation.no_validation_set); the webhook maps by custom_data.user_id,
+    so the prefill was unnecessary anyway.
 - Platform AI teaser (M8, v2.1.0): signed-in keyless users get AI via the `ai-proxy` Edge
   Function (`supabase/functions/ai-proxy/index.ts` — owner deploys by pasting into Dashboard →
   Edge Functions; secrets `OPENAI_PLATFORM_KEY` or `ZAI_PLATFORM_KEY` (chat; z.ai wins when both

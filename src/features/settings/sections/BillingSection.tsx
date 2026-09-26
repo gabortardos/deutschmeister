@@ -166,7 +166,6 @@ export default function BillingSection() {
     }
     setBusy(`${planId}-${priceInterval}`)
     setError('')
-    const buyerEmail = user?.email ?? undefined
     try {
       const r = await paddleCheckout<unknown>({ type: 'checkout', priceId: option.priceId })
       const session = parseCheckoutResponse(r)
@@ -188,7 +187,6 @@ export default function BillingSection() {
         env: session.env,
         clientToken: session.clientToken,
         transactionId: session.transactionId,
-        customerEmail: buyerEmail,
         onCompleted: () => void afterPurchase(),
       })
       if (!overlay.ok) {
@@ -205,7 +203,7 @@ export default function BillingSection() {
         clientToken: session.clientToken,
         env: session.env,
       })
-      setNotice('Checkout is open — complete the payment in the Paddle window.')
+      setNotice('Checkout is open — enter your email and card in the Paddle window.')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
