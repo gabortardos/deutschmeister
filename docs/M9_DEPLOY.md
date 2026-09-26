@@ -84,6 +84,13 @@ checkout for this price", "open the manage-subscription page").
    but we still keep it in Supabase secrets (Step 4, as `PADDLE_CLIENT_TOKEN`) so that
    switching to live later is just a value swap.
 
+> **Regenerating the token later** (typo, revocation, spring cleaning): create a fresh
+> one here, then update ONLY the `PADDLE_CLIENT_TOKEN` secret in Supabase (Step 4) —
+> no function re-paste is needed, `paddle-checkout` reads the secret live on every
+> call. Revoke stale tokens so exactly ONE active `test_…` token remains. Multiple
+> tokens never conflict with each other — only the string inside the Supabase secret
+> ever reaches the app.
+
 **Verify:** you have TWO strings copied: a secret `pdl_…` API key and a public
 `test_…` client-side token.
 
