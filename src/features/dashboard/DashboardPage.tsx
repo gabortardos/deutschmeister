@@ -7,6 +7,7 @@ import { stt } from '../../speech/stt'
 import { tts } from '../../speech/tts'
 import { useAppStore } from '../../state/store'
 import { useAuthStore } from '../../sync/authStore'
+import StatsZone from './StatsZone'
 import { welcomeDone } from '../onboarding/welcome'
 
 export default function DashboardPage() {
@@ -151,6 +152,8 @@ export default function DashboardPage() {
           </p>
         )}
       </Card>
+
+      <StatsZone />
     </div>
   )
 }

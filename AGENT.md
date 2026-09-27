@@ -188,6 +188,24 @@ Owner sandbox steps: run 0004 SQL once → create 2 one-time prices (€2.90, �
 `{"kind":"credit","creditUsdMicros":…}` entries to PADDLE_PRICE_MAP on BOTH Paddle functions →
 re-paste paddle-checkout + paddle-webhook + ai-proxy (all three changed). 270 tests (261→270).
 
+## M10.1 Dashboard stats zone (v2.8.0)
+
+`src/engine/progressStats.ts` (pure, +21 tests, 270→291): streaks (grace: an
+inactive today still counts through yesterday), 12-week heatmap cells
+(HEATMAP_DAYS=84, intensity 0–4 vs the busiest day), 7-day due forecast
+(overdue folds into today; Math.round day-index absorbs DST ±1 h), mature-share
+ring (`learnedRing`: review/introduced + introduced/totalWords coverage, null
+guards for fresh accounts). Facade `computeProgressStats` is the decorator seam
+for a future `engagement.ts` (Dormant option #2). `statsRepo.activityDays()`
+aggregates REAL activity only — drillAttempts.at, vocabCards.updatedAt +
+introducedDate (sync bulkPut keeps original timestamps), conversationSessions.
+startedAt; LessonLogs are excluded because their plan fields are stamped on
+app-open, not on study. UI `features/dashboard/StatsZone.tsx` (self-loading,
+store untouched): SVG ring, weekday-aligned heatmap, forecast bars. Streaks are
+computed but NOT displayed (gamification dormant). Remaining M10 slices: design
+tokens + dark mode, route-based code-splitting, mobile bottom nav, flashcard
+polish.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
