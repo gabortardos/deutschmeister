@@ -275,6 +275,10 @@ offline, feeds SM-2).
 Cloze reviews → M11.6 (v2.18.0): pure `engine/clozeReviews.ts` gap finding +
 distractor picking + "🧩 Cloze review" session on the Vocab page (example
 sentences with the word gapped, 4 same-theme choices; offline, feeds SM-2).
+Insights page → M11.7 (v2.19.0): pure `engine/insights.ts` skill aggregation
+(accuracy by drill type & CEFR level, vocab coverage per level, conversation
+correction types) + `/#/insights` page with streak badges and top-5 trouble
+words; offline, local data only.
 
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 

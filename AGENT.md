@@ -381,6 +381,25 @@ every answer feeds SM-2 (`reviewWord(4/1)`) + `bumpDrills`. The engine
 returns `[answer, ...distractors]` deterministically — the page shuffles
 for display. 100% offline.
 
+## M11.7 Insights page (v2.19.0)
+
+New `/#/insights` route ("Insights" in the desktop nav + mobile More
+sheet). The Dashboard stats zone (M10.1) owns the TIME dimension
+(heatmap, streaks, due forecast); this page owns the SKILL dimension —
+where you are strong/weak. Pure engine `src/engine/insights.ts` (+7
+tests → 371/371), mistakeBank-style `*Like` structural inputs:
+`accuracyByType` (attempts joined to drill items; orphaned attempts —
+deleted LLM drills — skipped; integer %; worst accuracy first),
+`accuracyByCefr` (A1→C2 order, attempted levels only),
+`vocabCoverage` (introduced vs total bank words per CEFR level, empty
+levels skipped), `mistakeTypeCounts` (conversation corrections, most
+frequent first), `computeInsights` (totals incl. overall drill
+accuracy, conversation count, corrections received). Page
+`src/features/insights/InsightsPage.tsx` reuses `computeStreaks` +
+`activityDays` for streak badges and `collectTroubleWords` for the
+top-5 lapsed words (link to the Mistake bank); bar rows are green ≥80%,
+amber ≥60%, red below; every section has an empty state. 100% offline.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

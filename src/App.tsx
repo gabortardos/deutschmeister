@@ -16,6 +16,7 @@ const GrammarTopicPage = lazy(() => import('./features/grammar/GrammarTopicPage'
 const PlacementPage = lazy(() => import('./features/grammar/PlacementPage'))
 const ReviewPage = lazy(() => import('./features/review/ReviewPage'))
 const MistakeBankPage = lazy(() => import('./features/mistakes/MistakeBankPage'))
+const InsightsPage = lazy(() => import('./features/insights/InsightsPage'))
 const ConversationPage = lazy(() => import('./features/conversation/ConversationPage'))
 const ConversationSessionPage = lazy(() =>
   import('./features/conversation/ConversationSessionPage'),
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="grammar/:topicId" element={<GrammarTopicPage />} />
           <Route path="review" element={<ReviewPage />} />
           <Route path="mistakes" element={<MistakeBankPage />} />
+          <Route path="insights" element={<InsightsPage />} />
           <Route path="conversation" element={<ConversationPage />} />
           <Route path="conversation/:scenarioId" element={<ConversationSessionPage />} />
           <Route path="practice" element={<SpeakListenPage />} />
