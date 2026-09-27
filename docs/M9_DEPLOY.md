@@ -357,3 +357,28 @@ after payment the budget bar grows and the meter notes "Includes $X of
 credit-pack credit — next pack expires …". The sandbox guard still applies:
 while PADDLE_ENV ≠ live, only the PADDLE_SANDBOX_TEST_USER account receives
 packs.
+
+## Current sandbox PADDLE_PRICE_MAP (complete, 2026-09-27)
+
+The price IDs below are the OWNER'S REAL sandbox catalog (sandbox IDs are useless
+outside his sandbox account and are public to any signed-in user via type=plans
+anyway). This is the COMPLETE map — paste identical copies into the
+`PADDLE_PRICE_MAP` secret of BOTH `paddle-checkout` and `paddle-webhook`.
+⚠ Lesson from 2026-09-27: never write a partial map — a secret overwrite REPLACES
+the whole JSON; check this section (not memory) for the current entries before
+ever touching the secret.
+
+```json
+{
+  "pri_01m3ejp8vnyqgnnvvwsx89mgq7": {"plan":"basic","kind":"subscription","interval":"month"},
+  "pri_01m3ejq2yz8dpq2ve50ed0d98t": {"plan":"basic","kind":"subscription","interval":"year"},
+  "pri_01m3ejkdws8bccdbtqxs7racm4": {"plan":"plus","kind":"subscription","interval":"month"},
+  "pri_01m3ejmkwmapbpzh9ahqf0ffn1": {"plan":"plus","kind":"subscription","interval":"year"},
+  "pri_01m3fqpya2mpt13d6qwqfyw3g0": {"plan":"byo-supporter","kind":"subscription","interval":"year"},
+  "pri_01m3fqws71jx6dmpb1abgncm86": {"kind":"credit","creditUsdMicros":3000000},
+  "pri_01m3fr31kjv2mc8redk26ek9vg": {"kind":"credit","creditUsdMicros":7000000}
+}
+```
+
+Go-live: recreate all 7 prices in the LIVE Paddle account, put the live `pri_…`
+IDs into this same JSON shape, set `PADDLE_ENV=live`, redeploy — code unchanged.
