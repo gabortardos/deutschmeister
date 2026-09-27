@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   conversationTurn,
+  explainMistake,
   mistakesToDrills,
   normalizeCategory,
   shortHash,
@@ -249,5 +250,40 @@ describe('shortHash', () => {
     expect(shortHash('abc')).not.toBe(shortHash('abd'))
   })
 })
+
+describe('explainMistake', () => {
+  const INPUT = { said: 'Ich sehe der Hund', corrected: 'Ich sehe den Hund', type: 'case' as const, cefr: 'A2' as const }
+
+  it('returns the markdown explanation from a JSON reply', async () => {
+    fetchMock.mockResolvedValueOnce(
+      completions(JSON.stringify({ markdown: 'The direct object takes the **Akkusativ** (Ich sehe *den* Hund).' })),
+    )
+    const out = await explainMistake(deps(), INPUT)
+    expect(out).toContain('Akkusativ')
+    const body = JSON.stringify(fetchMock.mock.calls[0]?.[1]?.body ?? '') as string
+    expect(body).toContain('Ich sehe der Hund')
+    expect(body).toContain('Ich sehe den Hund')
+    expect(body).toContain('case')
+  })
+
+  it('caches per mistake — the second identical call makes no fetch', async () => {
+    const cache = memoryCache()
+    fetchMock.mockResolvedValueOnce(completions(JSON.stringify({ markdown: 'cached explanation' })))
+    await explainMistake(deps(cache), INPUT)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const again = await explainMistake(deps(cache), INPUT)
+    expect(again).toBe('cached explanation')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('a different correction is a different cache key (new fetch)', async () => {
+    const cache = memoryCache()
+    fetchMock.mockResolvedValue(completions(JSON.stringify({ markdown: 'explanation' })))
+    await explainMistake(deps(cache), INPUT)
+    await explainMistake(deps(cache), { ...INPUT, said: 'der Buch', corrected: 'das Buch', type: 'gender' })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+})
+
 
 

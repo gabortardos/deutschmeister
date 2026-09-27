@@ -518,6 +518,48 @@ export async function exampleSentences(
 }
 
 // ---------------------------------------------------------------------------
+// 6. explainMistake — 2–3 sentence explanation of ONE tutor correction
+// (M11.3 hybrid explanations; static micro-lessons live in the engine)
+// ---------------------------------------------------------------------------
+
+const MistakeExplainSchema = z.object({ markdown: z.string().min(1) })
+
+export async function explainMistake(
+  deps: LlmServiceDeps,
+  input: { said: string; corrected: string; type: MistakeCategory; cefr: CefrLevel },
+): Promise<string> {
+  const key = `explain-mistake:${input.type}:${input.said.trim().toLowerCase()}:${input.corrected.trim().toLowerCase()}:${deps.config.model}`
+  return withCache(deps, key, async () => {
+    const parsed = await chatJSON(
+      deps.config,
+      [
+        {
+          role: 'system',
+          content: [
+            'You are an expert German teacher explaining ONE corrected mistake to an English speaker.',
+            'Explain why the correction is right in 2-3 sentences: the rule behind it plus the reusable pattern.',
+            'English prose with German examples in parentheses. Use only **bold** for emphasis — no headings, no lists.',
+            `The mistake category is "${input.type}" (${MISTAKE_CATEGORY_LABEL[input.type]}).`,
+            'Return ONLY valid JSON: { "markdown": "..." }.',
+          ].join('\n'),
+        },
+        {
+          role: 'user',
+          content: [
+            `Learner (CEFR ${input.cefr}) wrote: "${input.said}"`,
+            `Corrected to: "${input.corrected}"`,
+            'Explain this specific correction.',
+          ].join('\n'),
+        },
+      ],
+      MistakeExplainSchema,
+      { maxTokens: 350, temperature: 0.3 },
+    )
+    return parsed.markdown.trim()
+  })
+}
+
+// ---------------------------------------------------------------------------
 // mistakes → drills (pure, used by the end-of-session report)
 // ---------------------------------------------------------------------------
 

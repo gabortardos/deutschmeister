@@ -311,6 +311,22 @@ rows on reload; StudySession reviews go through reviewWord → SRS +
 refreshToday. Pickers are generic `<T extends { id: string }>` so tests use
 minimal rows.
 
+## M11.3 Mistake explanations — hybrid (v2.15.0)
+
+Tappable correction pills (click/tap ONLY, no hover) expand inline (Esc
+collapses): (a) static micro-lesson per MistakeCategory from pure
+`engine/mistakeLessons.ts` (+6 tests; tolerant lookup falls back to 'other'),
+deep link to the matching grammar topic via `findTopicForMistake` (title
+keyword, case-insensitive; vocab/other → null); (b) "Explain this ✨" → 6th
+LLM contract `explainMistake(deps, { said, corrected, type, cefr })` in
+llm/services.ts (+3 tests): 2–3 sentences about that exact sentence,
+LlmCache key type+said+corrected+model → repeats free. Shared component
+`features/mistakes/MistakeExplainer.tsx` (variants pill/plain; without AI
+deps it shows the settings hint instead of the button). Wired in 3 places:
+ConversationSessionPage transcript + session feedback, MistakeBankPage rows.
+RULE unchanged: category logic pure in engine, LLM contract in services,
+component only orchestrates.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

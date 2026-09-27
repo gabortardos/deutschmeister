@@ -8,6 +8,7 @@ import type { DrillItem, VocabWord } from '../../db/types'
 import { useAppStore } from '../../state/store'
 import DrillRunner from '../grammar/DrillRunner'
 import { StudySession } from '../vocab/StudySession'
+import { MistakeExplainer } from './MistakeExplainer'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' })
 
@@ -222,11 +223,14 @@ export default function MistakeBankPage() {
           <ul className="space-y-2">
             {convRows.map((c, i) => (
               <li key={`${c.sessionId}-${i}`} className="rounded-lg border border-slate-200 bg-surface p-3">
-                <p className="text-sm">
-                  <span className="text-red-700 line-through">{c.said}</span>
-                  {' → '}
-                  <span className="font-medium text-emerald-700">{c.corrected}</span>
-                </p>
+                {/* M11.3: tap for the micro-lesson + optional AI explanation. */}
+                <MistakeExplainer said={c.said} corrected={c.corrected} type={c.type}>
+                  <p className="text-sm">
+                    <span className="text-red-700 line-through">{c.said}</span>
+                    {' → '}
+                    <span className="font-medium text-emerald-700">{c.corrected}</span>
+                  </p>
+                </MistakeExplainer>
                 <p className="mt-1 text-xs text-slate-400">
                   {c.type} · {dateFmt.format(c.at)}
                 </p>

@@ -263,10 +263,12 @@ drill mistakes (latest attempt wrong), lapsed words, and tutor corrections.
 Practice-my-mistakes → M11.2 (v2.14.0): pure `pickPracticeDrills` /
 `pickPracticeWords` + "Practice these drills / words" sessions on the same
 page, reusing DrillRunner and the vocab StudySession.
+Mistake explanations → M11.3 (v2.15.0): the hybrid design below, built as
+specced (static micro-lessons + cached `explainMistake`).
 
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 
-- **Mistake explanations — on demand, hybrid.** The conversation mistake pills
+- **Mistake explanations — on demand, hybrid — SHIPPED as M11.3 (v2.15.0).** The conversation mistake pills
   (`said → corrected (type)`) become tappable → popover (click/tap, NOT hover — mobile-first
   PWA has no hover, and hover needs a separate a11y path). Popover shows: (a) an instant
   **static micro-lesson** per `MistakeCategory` (gender/case/word-order/vocab/verb-form/

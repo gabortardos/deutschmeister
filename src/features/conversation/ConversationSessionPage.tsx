@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, inputClass } from '../../components/ui'
 import DrillRunner from '../grammar/DrillRunner'
+import { MistakeExplainer } from '../mistakes/MistakeExplainer'
 import { addTurn, endSession, startSession } from '../../db/repositories/conversationRepo'
 import { getDrillsForTopic, saveDrills } from '../../db/repositories/grammarRepo'
 import { ensureScenariosSeeded, getScenario } from '../../db/repositories/scenarioRepo'
@@ -410,12 +411,12 @@ export default function ConversationSessionPage() {
               {t.mistakes && t.mistakes.length > 0 && (
                 <ul className="mt-1 max-w-[85%] space-y-1">
                   {t.mistakes.map((m, i) => (
-                    <li
-                      key={`${t.id}-m-${i}`}
-                      className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700"
-                    >
-                      <span className="line-through opacity-70">{m.said}</span> → <strong>{m.corrected}</strong>
-                      <span className="ml-1 opacity-60">({m.type})</span>
+                    <li key={`${t.id}-m-${i}`}>
+                      {/* M11.3: tap a correction for the hybrid micro-lesson + AI explain. */}
+                      <MistakeExplainer said={m.said} corrected={m.corrected} type={m.type} variant="pill">
+                        <span className="line-through opacity-70">{m.said}</span> → <strong>{m.corrected}</strong>
+                        <span className="ml-1 opacity-60">({m.type})</span>
+                      </MistakeExplainer>
                     </li>
                   ))}
                 </ul>
@@ -491,9 +492,11 @@ export default function ConversationSessionPage() {
               <ul className="mt-2 space-y-1.5">
                 {feedback.mistakes.map((m, i) => (
                   <li key={`${m.said}-${i}`} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm">
-                    <span className="text-slate-500 line-through">{m.said}</span> →{' '}
-                    <span className="font-medium text-slate-900">{m.corrected}</span>{' '}
-                    <span className="text-xs text-slate-400">({MISTAKE_CATEGORY_LABEL[m.type]})</span>
+                    <MistakeExplainer said={m.said} corrected={m.corrected} type={m.type}>
+                      <span className="text-slate-500 line-through">{m.said}</span> →{' '}
+                      <span className="font-medium text-slate-900">{m.corrected}</span>{' '}
+                      <span className="text-xs text-slate-400">({MISTAKE_CATEGORY_LABEL[m.type]})</span>
+                    </MistakeExplainer>
                   </li>
                 ))}
               </ul>
