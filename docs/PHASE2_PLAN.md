@@ -242,6 +242,10 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
   `src/state/theme.ts` with system/light/dark, anti-flash bootstrap, Settings → Appearance,
   header quick toggle). Remaining M10 slices: route-based code-splitting, mobile bottom nav,
   flashcard polish.
+- **Shipped M10.3 (v2.10.0): code-splitting** — React.lazy routes (15 chunks), async
+  `getSupabase()` factory (supabase-js leaves the eager bundle; guest builds never download it),
+  react/db/content vendor chunks. Initial JS −35% gzip; >500 KB build warning gone.
+  Remaining M10 slices: mobile bottom nav, flashcard polish.
 
 ### M11 — Learning depth (v2.4+, order re-negotiable with owner)
 Mistake bank (from `drillAttempts`/matcher failures) · custom scenario builder · tutor chat ·

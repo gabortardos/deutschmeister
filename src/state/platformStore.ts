@@ -17,7 +17,7 @@ import { getSupabase, supabaseFunctionsUrl } from '../sync/supabaseClient'
 /** Session-token auth for ai-proxy; null when signed out or the build lacks env. */
 export async function currentPlatformAuth(): Promise<PlatformAuth | null> {
   const base = supabaseFunctionsUrl()
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!base || !sb) return null
   const { data } = await sb.auth.getSession()
   const token = data.session?.access_token

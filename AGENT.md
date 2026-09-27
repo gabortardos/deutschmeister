@@ -226,6 +226,25 @@ page background per color scheme (PWA manifest keeps brand indigo). Remaining
 M10 slices: route-based code-splitting (1.1 MB single chunk), mobile bottom
 nav, flashcard polish.
 
+## M10.3 Code-splitting (v2.10.0)
+
+Three layers. (1) Routes: `App.tsx` wraps Routes in `<Suspense fallback={<PageLoader/>}>`
+and every route EXCEPT DashboardPage + WelcomeFlow (first screen on open) is
+`React.lazy` — 15 on-demand chunks. RULE: new pages get `lazy(() => import(...))`;
+only first-screen pages stay eager. (2) Supabase: `getSupabase()` in
+`src/sync/supabaseClient.ts` is now an ASYNC factory — env check first, then
+`await import('@supabase/supabase-js')`; RULE: always `const sb = await
+getSupabase()` (returns null when unconfigured OR chunk load failed — memo
+resets so it retries). The type import stays type-only; never re-add a value
+import of supabase-js to eager code. (3) Vendor/content: `manualChunks` in
+vite.config.ts → react-vendor / db-vendor (dexie) / content (src/content —
+vocab+grammar seed, still eager because the dashboard plan needs it day one).
+Numbers: initial JS 1108 → 669 KB raw (~217 KB gzip, −35%); supabase-js
+(232 KB) + route pages load post-paint. SW needed no change (assets are
+cache-first; visited lazy pages work offline). Diagnosed with a source-map
+sizes script (sourcesContent per module) — see AGENT history if you need it
+again. Remaining M10 slices: mobile bottom nav, flashcard polish.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

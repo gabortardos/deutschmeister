@@ -50,7 +50,7 @@ interface PaddleCredit {
 
 async function paddleCheckout<T>(body: Record<string, unknown>): Promise<T> {
   const base = supabaseFunctionsUrl()
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!base || !sb) throw new Error('Account features are not enabled in this build.')
   const { data } = await sb.auth.getSession()
   const token = data.session?.access_token

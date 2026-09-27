@@ -36,7 +36,7 @@ let initialized = false
 export async function initAuth(): Promise<void> {
   if (initialized) return
   initialized = true
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!sb) {
     useAuthStore.setState({ ready: true, configured: false })
     return

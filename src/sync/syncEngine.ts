@@ -64,7 +64,7 @@ export function syncNow(mode: 'merge' | 'claim' = 'merge'): Promise<SyncOutcome>
 }
 
 async function runSync(mode: 'merge' | 'claim'): Promise<SyncOutcome> {
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!sb) {
     useSyncStore.setState({ status: 'error', message: 'Accounts are not enabled in this build.' })
     return { ok: false, pushed: 0, pulled: 0, error: 'not configured' }

@@ -11,7 +11,7 @@ export interface AuthActionResult {
 const NOT_CONFIGURED = 'Accounts are not enabled in this build.'
 
 export async function signInWithGoogle(): Promise<AuthActionResult> {
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!sb) return { ok: false, error: NOT_CONFIGURED }
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
@@ -21,14 +21,14 @@ export async function signInWithGoogle(): Promise<AuthActionResult> {
 }
 
 export async function signInEmail(email: string, password: string): Promise<AuthActionResult> {
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!sb) return { ok: false, error: NOT_CONFIGURED }
   const { error } = await sb.auth.signInWithPassword({ email, password })
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
 export async function signUpEmail(email: string, password: string): Promise<AuthActionResult> {
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!sb) return { ok: false, error: NOT_CONFIGURED }
   const { data, error } = await sb.auth.signUp({
     email,
@@ -40,21 +40,21 @@ export async function signUpEmail(email: string, password: string): Promise<Auth
 }
 
 export async function requestPasswordReset(email: string): Promise<AuthActionResult> {
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!sb) return { ok: false, error: NOT_CONFIGURED }
   const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: appUrl() })
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
 export async function setNewPassword(password: string): Promise<AuthActionResult> {
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!sb) return { ok: false, error: NOT_CONFIGURED }
   const { error } = await sb.auth.updateUser({ password })
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 
 export async function signOut(): Promise<AuthActionResult> {
-  const sb = getSupabase()
+  const sb = await getSupabase()
   if (!sb) return { ok: false, error: NOT_CONFIGURED }
   const { error } = await sb.auth.signOut()
   return error ? { ok: false, error: error.message } : { ok: true }
