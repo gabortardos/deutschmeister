@@ -272,6 +272,9 @@ Sentence listening → M11.5 (v2.17.0): pure `engine/sentenceListening.ts`
 dictation grading + "✍️ Sentence dictation" session mode on the Speak &
 Listen page (TTS speaks a learned word's example sentence, learner types it;
 offline, feeds SM-2).
+Cloze reviews → M11.6 (v2.18.0): pure `engine/clozeReviews.ts` gap finding +
+distractor picking + "🧩 Cloze review" session on the Vocab page (example
+sentences with the word gapped, 4 same-theme choices; offline, feeds SM-2).
 
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 

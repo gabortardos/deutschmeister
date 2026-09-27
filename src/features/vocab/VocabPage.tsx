@@ -10,11 +10,15 @@ import {
   reviewWord,
 } from '../../db/repositories/vocabRepo'
 import type { VocabWord } from '../../db/types'
+import { clozeItems, type ClozeItem } from '../../engine/clozeReviews'
 import { useAppStore } from '../../state/store'
+import { ClozeSession } from './ClozeSession'
 import { StudySession } from './StudySession'
 
 /** A practice session recaps a random slice of the learned bank. */
 const PRACTICE_SIZE = 10
+/** Sentences per cloze review (M11.6). */
+const CLOZE_SIZE = 8
 const EXTRA_CHOICES = [5, 10, 15, 20] as const
 
 function shuffle<T>(items: readonly T[]): T[] {
@@ -27,9 +31,12 @@ function shuffle<T>(items: readonly T[]): T[] {
 }
 
 interface ActiveSession {
+  kind: 'study' | 'cloze'
   title: string
   description: string
   words: VocabWord[]
+  /** Cloze items when kind === 'cloze' (built from `words` + the bank at start). */
+  cloze?: ClozeItem[]
 }
 
 export default function VocabPage() {
@@ -60,6 +67,7 @@ export default function VocabPage() {
     ])
     const done = new Set(cards.map((c) => c.wordId))
     setSession({
+      kind: 'study',
       title: "Today's new words",
       description: 'Your daily goal from Settings, planned once per calendar day.',
       words: planWords.filter((w) => !done.has(w.id)),
@@ -70,6 +78,7 @@ export default function VocabPage() {
   async function startPractice(): Promise<void> {
     const words = shuffle(await introducedWords()).slice(0, PRACTICE_SIZE)
     setSession({
+      kind: 'study',
       title: 'Practice — learned words',
       description: `A recap of ${words.length} word(s) you already know. Results update your SRS schedule.`,
       words,
@@ -80,9 +89,23 @@ export default function VocabPage() {
   async function startExtra(): Promise<void> {
     const words = await nextUnseenWords(extraCount)
     setSession({
+      kind: 'study',
       title: `Extra new words (+${words.length})`,
       description: 'Beyond today’s goal — these words count as introduced right away.',
       words,
+    })
+  }
+
+  /** M11.6: cloze review — fill the gap in example sentences of learned words. */
+  async function startCloze(): Promise<void> {
+    const words = shuffle(await introducedWords())
+    const items = clozeItems(words, bank, CLOZE_SIZE)
+    setSession({
+      kind: 'cloze',
+      title: 'Cloze review — fill the gap',
+      description: 'Sentences from your learned words with one word missing — pick the right one.',
+      words,
+      cloze: items,
     })
   }
 
@@ -91,16 +114,27 @@ export default function VocabPage() {
   }
 
   if (session) {
+    const sessionEmpty = session.kind === 'study' ? session.words.length === 0 : (session.cloze?.length ?? 0) === 0
     return (
       <div className="space-y-4">
         <h1 className="text-lg font-bold text-slate-900">{session.title}</h1>
-        {session.words.length === 0 ? (
+        {sessionEmpty ? (
           <Card title="Nothing to study here 🎉">
             <p className="text-sm text-slate-600">This session has no words left. Back to the overview for more!</p>
             <div className="mt-4">
               <Button onClick={() => setSession(null)}>Back to overview</Button>
             </div>
           </Card>
+        ) : session.kind === 'cloze' ? (
+          <ClozeSession
+            items={session.cloze ?? []}
+            onWordReviewed={(wordId, quality) => reviewWord(wordId, quality)}
+            onDrillDone={() => bumpDrills()}
+            onFinish={() => {
+              setSession(null)
+              void refreshToday()
+            }}
+          />
         ) : (
           <StudySession
             words={session.words}
@@ -154,6 +188,9 @@ export default function VocabPage() {
         <div className="flex flex-wrap items-center gap-3">
           <Button disabled={introduced === 0} onClick={() => void startPractice()}>
             🔁 Practice {introduced === 0 ? 'learned words' : `${Math.min(PRACTICE_SIZE, introduced)} learned words`}
+          </Button>
+          <Button disabled={introduced === 0} onClick={() => void startCloze()}>
+            🧩 Cloze review
           </Button>
           <Link to="/practice">
             <Button disabled={introduced === 0}>🎧 Speak &amp; Listen</Button>

@@ -360,6 +360,27 @@ translation, 🔊 Hear it, Enter → next), SM-2 via
 `reviewWord(qualityForVerdict)` + `bumpDrills`; done screen repeats the
 same mode. 100% offline (device TTS only).
 
+## M11.6 Cloze reviews (v2.18.0)
+
+"🧩 Cloze review" button on the Vocab page ("Want more?" card) starts an
+8-sentence session: German example sentences of learned words with the
+word itself gapped out — pick the missing word from 4 choices. Pure
+engine `src/engine/clozeReviews.ts` (+10 tests → 364/364): `findGap`
+matches only a literal occurrence (case-insensitive with Unicode letter
+boundaries, so "Tag" never matches "Tage"; article form "der Tag"
+preferred, bare word tolerated — sentences where the word only appears
+inflected are skipped, never gapped wrongly), `clozeOptions` builds the
+answer-first distractor list (same-theme words first, mirroring the
+answer's shape — article+noun vs bare word — distinct after
+normalization; wrong-article variants of the same noun stay in as gender
+practice), `clozeItems` dedupes by sentence and caps at 8, `checkCloze`
+compares normalization-tolerantly. `ClozeSession.tsx` renders the gap
+chip + English translation hint, choice buttons with 1–4 shortcuts
+(`sessionKeys`), verdict badge + 🔊 Hear sentence, done-screen summary;
+every answer feeds SM-2 (`reviewWord(4/1)`) + `bumpDrills`. The engine
+returns `[answer, ...distractors]` deterministically — the page shuffles
+for display. 100% offline.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
