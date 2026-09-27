@@ -6,6 +6,7 @@ import { configurePlatformTts } from '../speech/hdTts'
 import { currentPlatformAuth, usePlatformStore } from '../state/platformStore'
 import { currentDark, setTheme, subscribeTheme } from '../state/theme'
 import { APP_VERSION } from '../version'
+import MobileNav from './MobileNav'
 
 /** M10.2: quick light/dark switch in the header. Cycles between the two
  *  explicit choices; pick 'System' in Settings → Appearance to re-follow OS. */
@@ -74,7 +75,9 @@ export default function Layout() {
             <ThemeToggleButton />
           </div>
         </div>
-        <nav className="mx-auto max-w-4xl overflow-x-auto px-4 pb-2">
+        {/* M10.4: header nav is desktop-only; phones get the bottom tab bar
+            (MobileNav below) with the remaining sections in its More sheet. */}
+        <nav className="mx-auto hidden max-w-4xl overflow-x-auto px-4 pb-2 sm:block">
           <ul className="flex gap-1 text-sm font-medium">
             {NAV_ITEMS.map((item) => (
               <li key={item.to}>
@@ -97,11 +100,13 @@ export default function Layout() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-6">
+      {/* M10.4: extra bottom padding on phones so the fixed bottom bar never
+          covers content; desktop keeps the old rhythm. */}
+      <main className="mx-auto max-w-4xl px-4 pb-24 pt-6 sm:pb-6">
         <Outlet />
       </main>
 
-      <footer className="mx-auto max-w-4xl px-4 pb-8 pt-2 text-center text-xs text-slate-400">
+      <footer className="mx-auto max-w-4xl px-4 pb-28 pt-2 text-center text-xs text-slate-400 sm:pb-8">
         <p>
           Local-first: your data and API keys stay in this browser (account sync is optional) ·
           v{APP_VERSION}
@@ -121,6 +126,8 @@ export default function Layout() {
           ))}
         </p>
       </footer>
+
+      <MobileNav />
     </div>
   )
 }

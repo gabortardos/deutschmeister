@@ -245,6 +245,21 @@ cache-first; visited lazy pages work offline). Diagnosed with a source-map
 sizes script (sourcesContent per module) — see AGENT history if you need it
 again. Remaining M10 slices: mobile bottom nav, flashcard polish.
 
+## M10.4 Mobile bottom nav (v2.11.0)
+
+`src/app/MobileNav.tsx` — fixed bottom bar below `sm` (header nav is
+`hidden sm:block` in `Layout.tsx`). Four tabs (Today/Vocab/Review/Talk) + a
+"More" sheet with the secondary sections. RULES for new sections: primary
+sections get a tab in `PRIMARY` (short label ≤5 chars + emoji); secondary go
+in `SECONDARY` (sheet) — keep the two arrays + Layout's NAV_ITEMS in sync.
+Dark-mode gotchas baked in: the sheet scrim is `bg-black/40` because the
+`slate-900` token inverts to a light value in dark mode (an overlay built
+from it would be white); bar/sheet pad with `env(safe-area-inset-bottom)` and
+`index.html` has `viewport-fit=cover` for the installed iOS PWA. Sheet closes
+on navigation (useLocation effect), Esc, and backdrop click. Main/footer have
+mobile bottom padding (`pb-24`/`pb-28`, `sm:` restores) so the fixed bar
+never covers content. Remaining M10: flashcard polish (M10.5).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
