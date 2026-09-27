@@ -256,7 +256,7 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
                       ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
                       : showState && picked
                         ? 'border-red-300 bg-red-50 text-red-800'
-                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                        : 'border-slate-300 bg-surface text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   {opt.english}

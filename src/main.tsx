@@ -8,8 +8,12 @@ import { importKeyFromUrl } from './llm/keyStore'
 import { registerServiceWorker } from './pwa'
 import { usePlatformStore } from './state/platformStore'
 import { useAppStore } from './state/store'
+import { initTheme } from './state/theme'
 
 async function bootstrap(): Promise<void> {
+  // M10.2: apply the stored/system theme (the index.html inline script already
+  // did the first paint) and keep following OS changes while choice='system'.
+  initTheme()
   // Support one-time key loading via URL fragment (#/settings?key=...) before anything renders.
   importKeyFromUrl()
   try {

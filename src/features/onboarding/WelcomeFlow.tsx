@@ -279,7 +279,7 @@ function StepBasics({ onNext, onBack }: { onNext: () => void; onBack: () => void
               className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
                 level === l
                   ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                  : 'border-slate-300 bg-surface text-slate-700 hover:bg-slate-50'
               }`}
             >
               {l}
@@ -300,7 +300,7 @@ function StepBasics({ onNext, onBack }: { onNext: () => void; onBack: () => void
               className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
                 goal === g
                   ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                  : 'border-slate-300 bg-surface text-slate-700 hover:bg-slate-50'
               }`}
             >
               <span className="font-medium">{g} / day</span>{' '}
@@ -357,7 +357,7 @@ function StepAiChoice({ onBack, onFinish }: { onBack: () => void; onFinish: () =
       {/* Teaser card */}
       <label
         className={`block cursor-pointer rounded-xl border p-4 transition-colors ${
-          choice === 'teaser' ? 'border-indigo-600 bg-indigo-50/60' : 'border-slate-200 bg-white'
+          choice === 'teaser' ? 'border-indigo-600 bg-indigo-50/60' : 'border-slate-200 bg-surface'
         }`}
       >
         <input
@@ -391,7 +391,7 @@ function StepAiChoice({ onBack, onFinish }: { onBack: () => void; onFinish: () =
       {/* BYO card */}
       <label
         className={`block cursor-pointer rounded-xl border p-4 transition-colors ${
-          choice === 'own' ? 'border-indigo-600 bg-indigo-50/60' : 'border-slate-200 bg-white'
+          choice === 'own' ? 'border-indigo-600 bg-indigo-50/60' : 'border-slate-200 bg-surface'
         }`}
       >
         <input

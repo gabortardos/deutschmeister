@@ -353,7 +353,7 @@ export default function BillingSection() {
                   onClick={() => setInterval(i)}
                   className={
                     'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ' +
-                    (interval === i ? 'bg-indigo-600 text-white' : 'border border-slate-300 bg-white text-slate-600')
+                    (interval === i ? 'bg-indigo-600 text-white' : 'border border-slate-300 bg-surface text-slate-600')
                   }
                 >
                   {i === 'month' ? 'Monthly' : 'Annual (−' + saving + '%)'}
@@ -377,7 +377,7 @@ export default function BillingSection() {
                     key={p.id}
                     className={
                       'rounded-xl border p-4 ' +
-                      (p.badge ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-200 bg-white')
+                      (p.badge ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-200 bg-surface')
                     }
                   >
                     <div className="flex items-center justify-between">
@@ -432,7 +432,7 @@ export default function BillingSection() {
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {CREDIT_PACKS.filter((p) => credits.some((c) => c.creditUsdMicros === p.creditUsdMicros)).map(
                   (p) => (
-                    <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                    <div key={p.id} className="rounded-xl border border-slate-200 bg-surface p-4">
                       <div className="flex items-baseline justify-between">
                         <span className="font-semibold text-slate-900">{p.name}</span>
                         <span className="text-2xl font-bold text-slate-900">{formatEur(p.priceEur)}</span>

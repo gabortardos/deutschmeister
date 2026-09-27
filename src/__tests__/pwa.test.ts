@@ -58,7 +58,10 @@ describe('index.html PWA wiring', () => {
     const html = read('index.html')
     expect(html).toContain('<link rel="manifest" href="/manifest.webmanifest"')
     expect(html).toContain('<link rel="apple-touch-icon" href="/icon-192.png"')
-    expect(html).toContain('name="theme-color" content="#4f46e5"')
+    // M10.2: theme-color follows the page background per color scheme
+    // (light slate-100 / dark slate-900) instead of the old flat indigo.
+    expect(html).toContain('name="theme-color" content="#f1f5f9"')
+    expect(html).toContain('media="(prefers-color-scheme: dark)" content="#0f172a"')
   })
 })
 

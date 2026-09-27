@@ -423,7 +423,7 @@ export default function ConversationSessionPage() {
             </div>
           ) : (
             <div key={t.id} className="flex flex-col items-start">
-              <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800">
+              <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-slate-200 bg-surface px-4 py-2 text-sm text-slate-800">
                 {t.text}
               </div>
               <div className="mt-1 flex items-center gap-2 text-xs">

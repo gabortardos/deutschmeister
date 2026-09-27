@@ -2,6 +2,126 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+ * M10.2 design tokens — light theme (default). Values are "R G B" triplets so
+ * Tailwind can compose opacity (see tailwind.config.js / <alpha-value>).
+ * The `.dark` block below re-maps each step so the app's existing utility
+ * classes (bg-slate-100, text-slate-900, border-slate-200, …) flip themes
+ * without per-file `dark:` sweeps.
+ * ------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  /* card / panel surface (use bg-surface; text-white stays literal white) */
+  --dm-surface: 255 255 255;
+  /* neutrals — light values are Tailwind's slate scale */
+  --dm-slate-50: 248 250 252;
+  --dm-slate-100: 241 245 249;
+  --dm-slate-200: 226 232 240;
+  --dm-slate-300: 203 213 225;
+  --dm-slate-400: 148 163 184;
+  --dm-slate-500: 100 116 139;
+  --dm-slate-600: 71 85 105;
+  --dm-slate-700: 51 65 85;
+  --dm-slate-800: 30 41 59;
+  --dm-slate-900: 15 23 42;
+  /* accent (indigo) */
+  --dm-indigo-50: 238 242 255;
+  --dm-indigo-100: 224 231 255;
+  --dm-indigo-200: 199 210 254;
+  --dm-indigo-300: 165 180 252;
+  --dm-indigo-400: 129 140 248;
+  --dm-indigo-500: 99 102 241;
+  --dm-indigo-600: 79 70 229;
+  --dm-indigo-700: 67 56 202;
+  --dm-indigo-800: 55 48 163;
+  /* status: emerald / red / amber */
+  --dm-emerald-50: 236 253 245;
+  --dm-emerald-200: 167 243 208;
+  --dm-emerald-300: 110 231 183;
+  --dm-emerald-500: 16 185 129;
+  --dm-emerald-600: 5 150 105;
+  --dm-emerald-700: 4 120 87;
+  --dm-emerald-800: 6 95 70;
+  --dm-red-50: 254 242 242;
+  --dm-red-200: 254 226 226;
+  --dm-red-300: 252 165 165;
+  --dm-red-500: 239 68 68;
+  --dm-red-600: 220 38 38;
+  --dm-red-700: 185 28 28;
+  --dm-red-800: 153 27 27;
+  --dm-amber-50: 255 251 235;
+  --dm-amber-200: 254 215 170;
+  --dm-amber-300: 252 211 77;
+  --dm-amber-500: 245 158 11;
+  --dm-amber-600: 217 119 6;
+  --dm-amber-700: 180 83 9;
+  --dm-amber-800: 146 64 14;
+  /* support: sky / rose */
+  --dm-sky-50: 240 249 255;
+  --dm-sky-300: 125 211 252;
+  --dm-sky-600: 2 132 199;
+  --dm-sky-800: 7 89 133;
+  --dm-rose-50: 255 241 242;
+  --dm-rose-400: 251 113 133;
+  --dm-rose-600: 225 29 72;
+  --dm-rose-700: 190 18 60;
+}
+
+/* Dark theme: fills map to dark surfaces, text/borders to lighter steps.
+ * Accent 400–600 (buttons, rings, heatmap) stay — they read well on dark. */
+.dark {
+  color-scheme: dark;
+  --dm-surface: 30 41 59; /* slate-800 — cards pop on the slate-900 page bg */
+  --dm-slate-50: 30 41 59;
+  --dm-slate-100: 15 23 42;
+  --dm-slate-200: 51 65 85;
+  --dm-slate-300: 51 65 85;
+  --dm-slate-400: 148 163 184;
+  --dm-slate-500: 148 163 184;
+  --dm-slate-600: 148 163 184;
+  --dm-slate-700: 203 213 225;
+  --dm-slate-800: 226 232 240;
+  --dm-slate-900: 241 245 249;
+  --dm-indigo-50: 30 27 75;
+  --dm-indigo-100: 49 46 129;
+  --dm-indigo-200: 67 56 202;
+  --dm-indigo-300: 99 102 241;
+  --dm-indigo-400: 129 140 248;
+  --dm-indigo-500: 99 102 241;
+  --dm-indigo-600: 79 70 229;
+  --dm-indigo-700: 165 180 252;
+  --dm-indigo-800: 199 210 254;
+  --dm-emerald-50: 2 44 34;
+  --dm-emerald-200: 6 78 59;
+  --dm-emerald-300: 6 95 70;
+  --dm-emerald-500: 16 185 129;
+  --dm-emerald-600: 52 211 153;
+  --dm-emerald-700: 110 231 183;
+  --dm-emerald-800: 167 243 208;
+  --dm-red-50: 69 10 10;
+  --dm-red-200: 127 29 29;
+  --dm-red-300: 153 27 27;
+  --dm-red-500: 239 68 68;
+  --dm-red-600: 248 113 113;
+  --dm-red-700: 252 165 165;
+  --dm-red-800: 254 202 202;
+  --dm-amber-50: 69 26 3;
+  --dm-amber-200: 120 53 15;
+  --dm-amber-300: 146 64 14;
+  --dm-amber-500: 245 158 11;
+  --dm-amber-600: 251 191 36;
+  --dm-amber-700: 253 224 71;
+  --dm-amber-800: 254 243 199;
+  --dm-sky-50: 8 47 73;
+  --dm-sky-300: 7 89 133;
+  --dm-sky-600: 56 189 248;
+  --dm-sky-800: 125 211 252;
+  --dm-rose-50: 76 5 25;
+  --dm-rose-400: 251 113 133;
+  --dm-rose-600: 251 113 133;
+  --dm-rose-700: 253 164 175;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }

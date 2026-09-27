@@ -206,6 +206,26 @@ computed but NOT displayed (gamification dormant). Remaining M10 slices: design
 tokens + dark mode, route-based code-splitting, mobile bottom nav, flashcard
 polish.
 
+## M10.2 Design tokens + dark mode (v2.9.0)
+
+Theming lives in `tailwind.config.js` + `src/index.css`: every used color step
+(slate 50–900, indigo 50–800, emerald/red/amber 50–800, sky 50–800, rose 50–700)
+is backed by an `--dm-*` CSS var (RGB triplet), remapped under `.dark`. The
+existing utility classes flip themes WITHOUT per-file `dark:` sweeps — fills
+invert (slate-900↔100), accent 400–600 stay, status fills/text swap to dark
+tints/light steps. RULES for new code: use `bg-surface` for card/panel
+backgrounds (NOT `bg-white` — that stays literal white for text on accent
+buttons); if you adopt a color step that isn't in the var set, add both the
+`:root` and `.dark` values or it will be light-only. Theme state:
+`src/state/theme.ts` (choice 'system'/'light'/'dark' persisted at `dm.theme`;
+pure injected helpers + pub/sub so the header ☀️/🌙 toggle and Settings →
+Appearance stay in sync; `initTheme()` in `main.tsx` follows OS changes while
+'system'). Anti-flash: inline script in `index.html` head must stay in sync
+with theme.ts (same key + class semantics). Theme-color metas now follow the
+page background per color scheme (PWA manifest keeps brand indigo). Remaining
+M10 slices: route-based code-splitting (1.1 MB single chunk), mobile bottom
+nav, flashcard polish.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

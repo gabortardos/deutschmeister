@@ -161,7 +161,7 @@ export default function VocabPage() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-slate-500">➕ Learn</span>
             <select
-              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700"
+              className="rounded-md border border-slate-300 bg-surface px-2 py-1.5 text-sm text-slate-700"
               value={extraCount}
               onChange={(e) => setExtraCount(Number(e.target.value))}
             >

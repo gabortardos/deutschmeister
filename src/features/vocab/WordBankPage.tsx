@@ -162,7 +162,7 @@ export default function WordBankPage() {
     )
   }
   const now = Date.now()
-  const selectClass = 'rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700'
+  const selectClass = 'rounded-md border border-slate-300 bg-surface px-2 py-1.5 text-sm text-slate-700'
 
   return (
     <div className="space-y-4">

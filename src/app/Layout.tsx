@@ -1,10 +1,29 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAppStore } from '../state/store'
 import { initAuth, useAuthStore } from '../sync/authStore'
 import { configurePlatformTts } from '../speech/hdTts'
 import { currentPlatformAuth, usePlatformStore } from '../state/platformStore'
+import { currentDark, setTheme, subscribeTheme } from '../state/theme'
 import { APP_VERSION } from '../version'
+
+/** M10.2: quick light/dark switch in the header. Cycles between the two
+ *  explicit choices; pick 'System' in Settings → Appearance to re-follow OS. */
+function ThemeToggleButton() {
+  const [dark, setDarkState] = useState<boolean>(() => currentDark())
+  useEffect(() => subscribeTheme((_choice, nextDark) => setDarkState(nextDark)), [])
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(dark ? 'light' : 'dark')}
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className="rounded-lg border border-slate-200 bg-surface px-2 py-1 text-base leading-none transition-colors hover:border-indigo-300"
+    >
+      <span aria-hidden="true">{dark ? '☀️' : '🌙'}</span>
+    </button>
+  )
+}
 
 const NAV_ITEMS = [
   { to: '/', label: 'Today', end: true },
@@ -43,14 +62,17 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
           <span className="text-xl font-bold text-indigo-700">DeutschMeister</span>
-          {profile && (
-            <span className="ml-auto hidden rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 sm:inline">
-              {profile.name} · {profile.level}
-            </span>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            {profile && (
+              <span className="hidden rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 sm:inline">
+                {profile.name} · {profile.level}
+              </span>
+            )}
+            <ThemeToggleButton />
+          </div>
         </div>
         <nav className="mx-auto max-w-4xl overflow-x-auto px-4 pb-2">
           <ul className="flex gap-1 text-sm font-medium">

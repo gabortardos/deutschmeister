@@ -131,7 +131,7 @@ export default function DrillRunner({ drills, title, onFinish }: Props) {
                 className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors ${
                   result !== null && opt === item.acceptedAnswers[0]
                     ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50'
+                    : 'border-slate-200 bg-surface text-slate-700 hover:border-indigo-300 hover:bg-indigo-50'
                 }`}
               >
                 <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{i + 1}</span>

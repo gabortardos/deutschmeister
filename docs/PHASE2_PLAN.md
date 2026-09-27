@@ -238,6 +238,10 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
   `engagement.ts` layer can decorate it (Dormant option #2).
 - **Shipped M10.1 (v2.8.0): progressStats engine + dashboard stats zone.** Remaining M10
   slices: design tokens/dark mode, route-based code-splitting, mobile bottom nav, flashcard polish.
+- **Shipped M10.2 (v2.9.0): CSS-var design tokens + dark mode** (`bg-surface` semantic token,
+  `src/state/theme.ts` with system/light/dark, anti-flash bootstrap, Settings → Appearance,
+  header quick toggle). Remaining M10 slices: route-based code-splitting, mobile bottom nav,
+  flashcard polish.
 
 ### M11 — Learning depth (v2.4+, order re-negotiable with owner)
 Mistake bank (from `drillAttempts`/matcher failures) · custom scenario builder · tutor chat ·

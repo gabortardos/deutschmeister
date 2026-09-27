@@ -2,10 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- M10.2 anti-flash: resolve the theme before first paint. Must stay in
+         sync with src/state/theme.ts (same key + class semantics). -->
+    <script>
+      ;(function () {
+        try {
+          var raw = localStorage.getItem('dm.theme')
+          var choice = raw === 'light' || raw === 'dark' || raw === 'system' ? raw : 'system'
+          var osDark =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+          document.documentElement.classList.toggle(
+            'dark',
+            choice === 'dark' || (choice === 'system' && osDark),
+          )
+        } catch (err) {
+          /* private mode / storage disabled — stay light */
+        }
+      })()
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
-    <meta name="theme-color" content="#4f46e5" />
+    <meta name="theme-color" content="#f1f5f9" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f5f9" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
