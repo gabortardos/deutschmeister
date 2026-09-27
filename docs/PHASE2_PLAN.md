@@ -268,6 +268,10 @@ specced (static micro-lessons + cached `explainMistake`).
 Custom scenario builder → M11.4 (v2.16.0): `generateScenario` LLM contract +
 "Create your own scenario ⭐" card on the Conversation page (describe →
 generate → preview → `addCustomScenario`).
+Sentence listening → M11.5 (v2.17.0): pure `engine/sentenceListening.ts`
+dictation grading + "✍️ Sentence dictation" session mode on the Speak &
+Listen page (TTS speaks a learned word's example sentence, learner types it;
+offline, feeds SM-2).
 
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 

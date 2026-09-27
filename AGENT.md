@@ -341,6 +341,25 @@ tweaked text = new scenario. Preview → Save via contentRepo.addCustomScenario
 top of the library (getAllScenarios: customs newest-first). No AI deps →
 Settings hint instead of the Generate button.
 
+## M11.5 Sentence listening / dictation (v2.17.0)
+
+Speak & Listen page (`#/practice`) gains a second session mode:
+"✍️ Sentence dictation →". TTS speaks the German example sentence of a
+learned word (auto-plays on arrival; 🔊 Replay / 🐢 Slower), the learner
+types it; grading is umlaut- and punctuation-tolerant over the whole
+sentence. Pure engine `src/engine/sentenceListening.ts` (+11 tests →
+354/354): `sentenceItems(words, limit=6)` (only words with
+`exampleSentenceDe`, deduped by normalized sentence, deterministic order —
+the page shuffles), `normalizeSentence` (strips punctuation incl. „“
+quotes, then the shared umlaut-folding `normalize`),
+`gradeSentence` (Levenshtein similarity, stricter than the speech matcher:
+≥0.9 correct / ≥0.75 almost / else incorrect — typed input has no STT
+noise). Page: `SessionItem = SpeakListenItem | SentenceItem` union,
+sentence card (Check / Show answer, verdict badge + % match, sentence +
+translation, 🔊 Hear it, Enter → next), SM-2 via
+`reviewWord(qualityForVerdict)` + `bumpDrills`; done screen repeats the
+same mode. 100% offline (device TTS only).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

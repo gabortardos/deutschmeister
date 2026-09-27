@@ -10,12 +10,24 @@ import {
   type SpeakListenItem,
   type SpokenGrade,
 } from '../../engine/speakListen'
+import {
+  gradeSentence,
+  sentenceItems,
+  type SentenceGrade,
+  type SentenceItem,
+} from '../../engine/sentenceListening'
 import { useAppStore } from '../../state/store'
 import { stt } from '../../speech/stt'
 import { tts } from '../../speech/tts'
 
 /** Words per speak & listen session (each word yields one listen + one speak item). */
 const SESSION_WORDS = 10
+
+/** Sentences per dictation session (M11.5) — heavier than word drills. */
+const SENTENCE_ITEMS = 6
+
+/** Anything a session can serve: word drills (M4.1) or sentence dictation (M11.5). */
+type SessionItem = SpeakListenItem | SentenceItem
 
 function shuffle<T>(items: readonly T[]): T[] {
   const out = [...items]
@@ -51,12 +63,14 @@ export default function SpeakListenPage() {
   const settings = useAppStore((s) => s.settings)
 
   const [phase, setPhase] = useState<Phase>('idle')
-  const [items, setItems] = useState<SpeakListenItem[]>([])
+  const [items, setItems] = useState<SessionItem[]>([])
+  const [mode, setMode] = useState<'words' | 'sentences'>('words')
   const [index, setIndex] = useState(0)
   const [introduced, setIntroduced] = useState<number | null>(null)
 
   const [typed, setTyped] = useState('')
   const [listenResult, setListenResult] = useState<ListenResult | null>(null)
+  const [sentenceGrade, setSentenceGrade] = useState<SentenceGrade | null>(null)
   const [speakState, setSpeakState] = useState<SpeakState | null>(null)
   const [listening, setListening] = useState(false)
   const [micError, setMicError] = useState<string | null>(null)
@@ -78,10 +92,10 @@ export default function SpeakListenPage() {
     void introducedWords().then((words) => setIntroduced(words.length))
   }, [])
 
-  // Auto-play the audio when a listening item arrives.
+  // Auto-play the audio when a listening or dictation item arrives.
   useEffect(() => {
-    if (phase === 'session' && item?.kind === 'listen') {
-      speak(item.answer)
+    if (phase === 'session' && item && (item.kind === 'listen' || item.kind === 'sentence')) {
+      speak(item.kind === 'sentence' ? item.sentenceDe : item.answer)
       inputRef.current?.focus()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,13 +109,28 @@ export default function SpeakListenPage() {
   function resetItemState(): void {
     setTyped('')
     setListenResult(null)
+    setSentenceGrade(null)
     setSpeakState(null)
     setMicError(null)
   }
 
   async function startSession(): Promise<void> {
+    setMode('words')
     const words = shuffle(await introducedWords()).slice(0, SESSION_WORDS)
     setItems(speakListenItems(words, { sttAvailable }))
+    setIndex(0)
+    setScore({ ok: 0, almost: 0, bad: 0 })
+    resetItemState()
+    setPhase('session')
+  }
+
+  /** M11.5 sentence dictation: TTS speaks example sentences from the learned bank. */
+  async function startSentences(): Promise<void> {
+    const words = shuffle(await introducedWords())
+    const picked = sentenceItems(words, SENTENCE_ITEMS)
+    if (picked.length === 0) return
+    setMode('sentences')
+    setItems(picked)
     setIndex(0)
     setScore({ ok: 0, almost: 0, bad: 0 })
     resetItemState()
@@ -115,6 +144,23 @@ export default function SpeakListenPage() {
     setListenResult({ correct: graded.correct, revealed })
     setScore((s) => ({ ...s, ok: s.ok + (graded.correct ? 1 : 0), bad: s.bad + (graded.correct ? 0 : 1) }))
     if (graded.correct) speak(item.answer)
+  }
+
+  /** Grade the typed dictation (or reveal the answer — counts as a miss). */
+  function submitSentence(revealed = false): void {
+    if (!item || item.kind !== 'sentence' || sentenceGrade || busy) return
+    if (!revealed && typed.trim().length === 0) return
+    const grade: SentenceGrade = revealed
+      ? { verdict: 'incorrect', similarity: 0 }
+      : gradeSentence(typed, item.sentenceDe)
+    setSentenceGrade(grade)
+    setScore((s) => ({
+      ...s,
+      ok: s.ok + (grade.verdict === 'correct' ? 1 : 0),
+      almost: s.almost + (grade.verdict === 'almost' ? 1 : 0),
+      bad: s.bad + (grade.verdict === 'incorrect' ? 1 : 0),
+    }))
+    if (grade.verdict === 'correct') speak(item.sentenceDe)
   }
 
   async function mic(): Promise<void> {
@@ -156,6 +202,9 @@ export default function SpeakListenPage() {
       } else if (item.kind === 'speak' && speakState) {
         await reviewWord(item.wordId, qualityForVerdict(speakState.best.verdict))
         await bumpDrills()
+      } else if (item.kind === 'sentence' && sentenceGrade) {
+        await reviewWord(item.wordId, qualityForVerdict(sentenceGrade.verdict))
+        await bumpDrills()
       }
       if (index + 1 >= items.length) await refreshToday()
       resetItemState()
@@ -169,7 +218,12 @@ export default function SpeakListenPage() {
   // Enter after a result → next item (matches the grammar DrillRunner UX).
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
-      if (e.key === 'Enter' && ((item?.kind === 'listen' && listenResult) || (item?.kind === 'speak' && speakState))) {
+      if (
+        e.key === 'Enter' &&
+        ((item?.kind === 'listen' && listenResult) ||
+          (item?.kind === 'speak' && speakState) ||
+          (item?.kind === 'sentence' && sentenceGrade))
+      ) {
         e.preventDefault()
         void next()
       }
@@ -198,6 +252,10 @@ export default function SpeakListenPage() {
               <span className="font-medium text-slate-800">Speaking:</span> see the English meaning, say the German word
               — your speech is transcribed and matched, with similarity feedback.
             </li>
+            <li>
+              <span className="font-medium text-slate-800">Sentence dictation:</span> hear a whole example sentence
+              from your words and type it — umlauts and punctuation are forgiven.
+            </li>
           </ul>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Badge tone={tts.supported ? 'ok' : 'bad'}>TTS {tts.supported ? 'available' : 'unsupported'}</Badge>
@@ -215,9 +273,12 @@ export default function SpeakListenPage() {
                 unlocks this trainer.
               </p>
             ) : (
-              <Button variant="primary" onClick={() => void startSession()}>
-                Start session →
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="primary" onClick={() => void startSession()}>
+                  Word session →
+                </Button>
+                <Button onClick={() => void startSentences()}>✍️ Sentence dictation →</Button>
+              </div>
             )}
           </div>
         </Card>
@@ -237,7 +298,7 @@ export default function SpeakListenPage() {
           </p>
           <p className="mt-2 text-sm text-slate-500">All results fed your SM-2 schedule — see Review for the plan.</p>
           <div className="mt-4 flex gap-2">
-            <Button variant="primary" onClick={() => void startSession()}>
+            <Button variant="primary" onClick={() => void (mode === 'sentences' ? startSentences() : startSession())}>
               Another round 🔁
             </Button>
             <Button onClick={() => setPhase('idle')}>Back</Button>
@@ -255,7 +316,11 @@ export default function SpeakListenPage() {
         <div className="flex items-center justify-between text-xs text-slate-500">
           <span>
             Drill {index + 1} / {items.length} ·{' '}
-            {item.kind === 'listen' ? '🔊 Listen — type what you hear' : '🎤 Speak — say it in German'}
+            {item.kind === 'listen'
+              ? '🔊 Listen — type what you hear'
+              : item.kind === 'speak'
+                ? '🎤 Speak — say it in German'
+                : '✍️ Dictation — type the sentence you hear'}
           </span>
           <span>
             {score.ok} ✓ · {score.almost} ~ · {score.bad} ✗
@@ -266,7 +331,71 @@ export default function SpeakListenPage() {
         </div>
       </div>
 
-      {item.kind === 'listen' ? (
+      {item.kind === 'sentence' ? (
+        <Card>
+          <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Type what you hear — practising: {item.word}
+          </p>
+          <div className="mt-3 flex justify-center gap-2">
+            <Button type="button" onClick={() => speak(item.sentenceDe)}>
+              🔊 Replay
+            </Button>
+            <Button type="button" onClick={() => speak(item.sentenceDe, true)}>
+              🐢 Slower
+            </Button>
+          </div>
+          {!sentenceGrade ? (
+            <form
+              className="mt-5 space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault()
+                submitSentence()
+              }}
+            >
+              <input
+                ref={inputRef}
+                className={`${inputClass} text-center`}
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                placeholder="Type the sentence you heard…"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+              <div className="flex justify-center gap-2">
+                <Button variant="primary" type="submit" disabled={typed.trim().length === 0}>
+                  Check
+                </Button>
+                <Button type="button" onClick={() => submitSentence(true)}>
+                  Show answer
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="mt-5 space-y-3 text-center">
+              {sentenceGrade.verdict === 'correct' && (
+                <Badge tone="ok">Richtig! {Math.round(sentenceGrade.similarity * 100)}% match</Badge>
+              )}
+              {sentenceGrade.verdict === 'almost' && (
+                <Badge tone="warn">Fast! {Math.round(sentenceGrade.similarity * 100)}% — check the details</Badge>
+              )}
+              {sentenceGrade.verdict === 'incorrect' && (
+                <Badge tone="bad">Not quite ({Math.round(sentenceGrade.similarity * 100)}%)</Badge>
+              )}
+              <p className="text-base font-semibold text-slate-900">{item.sentenceDe}</p>
+              {item.sentenceEn && <p className="text-sm text-slate-500">{item.sentenceEn}</p>}
+              <div className="flex justify-center gap-2">
+                <Button type="button" onClick={() => speak(item.sentenceDe)}>
+                  🔊 Hear it
+                </Button>
+                <Button variant="primary" disabled={busy} onClick={() => void next()}>
+                  {index + 1 >= items.length ? 'Finish' : 'Next →'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+      ) : item.kind === 'listen' ? (
         <Card>
           <div className="text-center">
             <button
