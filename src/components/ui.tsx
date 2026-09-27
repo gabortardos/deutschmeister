@@ -75,3 +75,16 @@ export function Badge({ tone, children }: { tone: 'ok' | 'warn' | 'bad'; childre
     </span>
   )
 }
+
+/**
+ * M10.5: subtle keycap hint for keyboard shortcuts. Hidden below `sm` —
+ * phones have no keyboard (they use the bottom nav / touch), and the classes
+ * only use existing theme tokens so it flips correctly in dark mode.
+ */
+export function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="hidden rounded border border-slate-300 bg-surface px-1.5 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-block">
+      {children}
+    </kbd>
+  )
+}

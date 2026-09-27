@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Button, Card, inputClass } from '../../components/ui'
+import { Badge, Button, Card, inputClass, Kbd } from '../../components/ui'
 import { dueCards, getWords, reviewWord } from '../../db/repositories/vocabRepo'
 import type { VocabCard, VocabWord } from '../../db/types'
 import { gradeAnswer } from '../../engine/grader'
+import { resultKeyAction } from '../../engine/sessionKeys'
 import { useAppStore } from '../../state/store'
 import { tts } from '../../speech/tts'
 
@@ -38,6 +39,21 @@ export default function ReviewPage() {
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // M10.5: Enter/Space advances to the next card once a result is shown;
+  // while typing, Enter stays with the native form submit.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      if (busy || result === null) return
+      if (resultKeyAction(e.key)) {
+        e.preventDefault()
+        next()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, busy, index])
 
   const item = queue?.[index]
 
@@ -164,6 +180,9 @@ export default function ReviewPage() {
           }}
         >
           <input
+            // M10.5: key per card + autoFocus → caret is always ready.
+            key={index}
+            autoFocus
             className={`${inputClass} text-center text-lg`}
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
@@ -187,6 +206,7 @@ export default function ReviewPage() {
               <Button variant="primary" type="submit" disabled={answer.trim().length === 0}>
                 Check
               </Button>
+              <Kbd>Enter</Kbd>
               <Button type="button" disabled={busy} onClick={() => void submit(true)}>
                 I don&apos;t know
               </Button>
@@ -195,17 +215,18 @@ export default function ReviewPage() {
         </form>
 
         {result !== null && (
-          <div className="mt-4 space-y-3 text-center">
+          <div className="dm-reveal mt-4 space-y-3 text-center">
             {result ? (
               <Badge tone="ok">Richtig!</Badge>
             ) : (
               <Badge tone="bad">Correct: {correctAnswer}</Badge>
             )}
             <p className="text-xs text-slate-400">umlaut-free typing accepted · next interval scheduled by SM-2</p>
-            <div>
+            <div className="flex items-center justify-center gap-2">
               <Button variant="primary" onClick={next}>
                 {index + 1 >= queue.length ? 'Finish' : 'Next →'}
               </Button>
+              <Kbd>Enter</Kbd>
             </div>
           </div>
         )}

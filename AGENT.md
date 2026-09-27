@@ -260,6 +260,24 @@ on navigation (useLocation effect), Esc, and backdrop click. Main/footer have
 mobile bottom padding (`pb-24`/`pb-28`, `sm:` restores) so the fixed bar
 never covers content. Remaining M10: flashcard polish (M10.5).
 
+## M10.5 Learning-surface polish (v2.12.0) — M10 complete
+
+Keyboard-first studying via PURE `src/engine/sessionKeys.ts`
+(introKeyAction / choiceKeyIndex / resultKeyAction; +10 tests in
+`src/engine/__tests__/sessionKeys.test.ts`). RULE: keyboard shortcuts on
+learning surfaces map keys → actions in that module (never inline in
+components) so they stay testable. Wiring gotchas already solved: while a
+typing input is active the components leave Enter to the native form submit;
+`completingRef` in StudySession prevents double-completion when a focused
+button's native Enter ALSO fires the window keydown handler — keep that ref
+if you touch completeWord. Visual: `.dm-reveal` (index.css, 180 ms fade-up,
+disabled under prefers-reduced-motion) marks revealed answers/result blocks;
+`Kbd` in ui.tsx renders keycap hints and is hidden below `sm` (no keyboard
+on phones). Typing inputs auto-focus (StudySession focus effect per phase;
+ReviewPage input has key={index}+autoFocus). ReviewPage imports
+sessionKeys from engine/ (not features/vocab/) on purpose — engine is the
+shared pure-logic home.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

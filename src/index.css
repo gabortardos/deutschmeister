@@ -129,3 +129,26 @@ html {
 body {
   @apply bg-slate-100 text-slate-900 antialiased;
 }
+
+/* M10.5: soft entrance for revealed answers & result feedback on the
+   learning surfaces. Disabled for users who prefer reduced motion. */
+@keyframes dm-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dm-reveal {
+  animation: dm-reveal 180ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-reveal {
+    animation: none;
+  }
+}

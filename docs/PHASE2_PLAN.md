@@ -247,7 +247,10 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
   react/db/content vendor chunks. Initial JS −35% gzip; >500 KB build warning gone.
 - **Shipped M10.4 (v2.11.0): mobile bottom nav** — bottom tab bar below `sm` (Today/Vocab/
   Review/Talk + More sheet for Speak&Listen/Grammar/Word bank/Settings), header nav desktop-only,
-  iOS safe-area padding, theme-safe scrim. Remaining M10 slice: flashcard polish.
+  iOS safe-area padding, theme-safe scrim.
+- **Shipped M10.5 (v2.12.0): learning-surface polish — M10 complete** — keyboard-driven
+  study/review (pure `engine/sessionKeys.ts`, +10 tests → 309/309), dm-reveal animation,
+  Kbd hints, auto-focus inputs.
 
 ### M11 — Learning depth (v2.4+, order re-negotiable with owner)
 Mistake bank (from `drillAttempts`/matcher failures) · custom scenario builder · tutor chat ·

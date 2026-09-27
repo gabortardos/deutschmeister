@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react'
-import { Badge, Button, Card, inputClass } from '../../components/ui'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Badge, Button, Card, inputClass, Kbd } from '../../components/ui'
 import type { VocabWord } from '../../db/types'
 import { gradeAnswer } from '../../engine/grader'
+import { choiceKeyIndex, introKeyAction, resultKeyAction } from '../../engine/sessionKeys'
 import { exampleSentences, type ExampleSentence } from '../../llm/services'
 import { useAppStore } from '../../state/store'
 import { useLlmDeps } from '../../state/useLlmDeps'
@@ -50,6 +51,8 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
   const [score, setScore] = useState({ introduced: 0, correct: 0, wrong: 0 })
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  /** M10.5: guards double completion (focused button Enter + key handler). */
+  const completingRef = useRef(false)
   const speechSettings = useAppStore((s) => s.settings)
 
   // AI example sentences (M3) — only available with a configured key
@@ -60,6 +63,52 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
 
   const word = words[index]
   const options = useMemo(() => (word ? choiceOptions(word, bank) : []), [word, bank])
+
+  // M10.5: keyboard study — Space reveals/continues, 1–4 pick options, Enter
+  // continues after results. While typing without a result, keys stay with
+  // the input/form. completingRef makes double-firing impossible when a
+  // focused button's native Enter ALSO triggers this handler.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      if (!word || busy || aiBusy || completingRef.current) return
+      if (phase === 'type' && typeResult === null) return
+      if (phase === 'intro') {
+        const action = introKeyAction(e.key, revealed)
+        if (!action) return
+        e.preventDefault()
+        if (action === 'reveal') setRevealed(true)
+        else {
+          speakWord()
+          setPhase('choice')
+        }
+      } else if (phase === 'choice') {
+        if (choicePick !== null) {
+          if (resultKeyAction(e.key)) {
+            e.preventDefault()
+            setPhase('type')
+          }
+          return
+        }
+        const i = choiceKeyIndex(e.key, options.length)
+        if (i !== null) {
+          e.preventDefault()
+          setChoicePick(options[i].id)
+          if (options[i].id === word.id) speakWord()
+        }
+      } else if (typeResult !== null && resultKeyAction(e.key)) {
+        e.preventDefault()
+        void completeWord(typeResult.correct ? 4 : 2)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, revealed, choicePick, typeResult, options, word, busy, aiBusy])
+
+  // M10.5: caret straight into the typing field when the phase starts.
+  useEffect(() => {
+    if (phase === 'type') inputRef.current?.focus()
+  }, [phase, index])
 
   async function loadExamples(): Promise<void> {
     if (!aiDeps || !word || aiBusy) return
@@ -102,7 +151,8 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
   }
 
   async function completeWord(quality: number): Promise<void> {
-    if (!word || busy) return
+    if (!word || busy || completingRef.current) return
+    completingRef.current = true
     setBusy(true)
     try {
       await onWordReviewed(word.id, quality)
@@ -117,6 +167,7 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
       setIndex((i) => i + 1)
     } finally {
       setBusy(false)
+      completingRef.current = false
     }
   }
 
@@ -215,16 +266,20 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
               <p className="mt-1 text-sm italic text-slate-400">{word.exampleSentenceEn}</p>
             )}
             {revealed ? (
-              <p className="mt-6 text-2xl font-semibold text-indigo-700">{word.english}</p>
+              <p className="dm-reveal mt-6 text-2xl font-semibold text-indigo-700">{word.english}</p>
             ) : (
-              <Button variant="primary" className="mt-6" onClick={() => setRevealed(true)}>
-                Show meaning
-              </Button>
+              <div className="mt-6 flex items-center justify-center gap-2">
+                <Button variant="primary" onClick={() => setRevealed(true)}>
+                  Show meaning
+                </Button>
+                <Kbd>Space</Kbd>
+              </div>
             )}
-            <div className="mt-6">
+            <div className="mt-6 flex items-center justify-center gap-2">
               <Button variant="primary" disabled={!revealed} onClick={() => { speakWord(); setPhase('choice') }}>
                 Continue →
               </Button>
+              {revealed && <Kbd>Space</Kbd>}
             </div>
           </div>
         </Card>
@@ -238,7 +293,7 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
             <Button onClick={speakWord}>🔊 Listen</Button>
           </div>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {options.map((opt) => {
+            {options.map((opt, optIndex) => {
               const picked = choicePick === opt.id
               const isRight = opt.id === word.id
               const showState = choicePick !== null
@@ -251,7 +306,7 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
                     setChoicePick(opt.id)
                     if (isRight) speakWord()
                   }}
-                  className={`rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors ${
+                  className={`flex items-center justify-between gap-2 rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors ${
                     showState && isRight
                       ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
                       : showState && picked
@@ -259,22 +314,24 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
                         : 'border-slate-300 bg-surface text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  {opt.english}
+                  <span className="flex-1">{opt.english}</span>
+                  <Kbd>{optIndex + 1}</Kbd>
                 </button>
               )
             })}
           </div>
           {choicePick !== null && (
-            <div className="mt-4 text-center">
+            <div className="dm-reveal mt-4 text-center">
               {choicePick === word.id ? (
                 <Badge tone="ok">Richtig!</Badge>
               ) : (
                 <Badge tone="bad">The meaning is “{word.english}”</Badge>
               )}
-              <div className="mt-3">
+              <div className="mt-3 flex items-center justify-center gap-2">
                 <Button variant="primary" onClick={() => setPhase('type')}>
                   Continue →
                 </Button>
+                <Kbd>Enter</Kbd>
               </div>
             </div>
           )}
@@ -323,17 +380,18 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
             )}
           </form>
           {typeResult && (
-            <div className="mt-4 space-y-3 text-center">
+            <div className="dm-reveal mt-4 space-y-3 text-center">
               {typeResult.correct ? (
                 <Badge tone="ok">Richtig! {full}</Badge>
               ) : (
                 <Badge tone="bad">Correct answer: {full}</Badge>
               )}
               <p className="text-xs text-slate-400">umlaut-free typing is accepted (uebung = Übung)</p>
-              <div>
+              <div className="flex items-center justify-center gap-2">
                 <Button variant="primary" disabled={busy} onClick={() => void completeWord(typeResult.correct ? 4 : 2)}>
                   {index + 1 >= words.length ? 'Finish' : 'Next word →'}
                 </Button>
+                <Kbd>Enter</Kbd>
               </div>
             </div>
           )}
