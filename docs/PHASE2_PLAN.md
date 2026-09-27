@@ -257,6 +257,10 @@ Mistake bank (from `drillAttempts`/matcher failures) · custom scenario builder 
 sentence listening · cloze reviews · insights page · vocab placement re-take · free writing
 with correction.
 
+**Shipped:** mistake bank → M11.1 (v2.13.0, see ROADMAP): pure
+`src/engine/mistakeBank.ts` collectors + `/#/mistakes` page aggregating open
+drill mistakes (latest attempt wrong), lapsed words, and tutor corrections.
+
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 
 - **Mistake explanations — on demand, hybrid.** The conversation mistake pills

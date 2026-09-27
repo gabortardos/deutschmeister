@@ -32,6 +32,7 @@ const NAV_ITEMS = [
   { to: '/words', label: 'Word bank', end: false },
   { to: '/grammar', label: 'Grammar', end: false },
   { to: '/review', label: 'Review', end: false },
+  { to: '/mistakes', label: 'Mistakes', end: false },
   { to: '/conversation', label: 'Conversation', end: false },
   { to: '/practice', label: 'Speak & Listen', end: false },
   { to: '/settings', label: 'Settings', end: false },

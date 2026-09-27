@@ -278,6 +278,24 @@ ReviewPage input has key={index}+autoFocus). ReviewPage imports
 sessionKeys from engine/ (not features/vocab/) on purpose — engine is the
 shared pure-logic home.
 
+## M11.1 Mistake bank (v2.13.0)
+
+PURE `src/engine/mistakeBank.ts` (+15 tests): three collectors over plain
+rows — `collectDrillMistakes` (latest-attempt-decides: an item is an active
+mistake only while its LATEST drillAttempt is wrong; `wrongCount` keeps the
+full history; `(revealed)` answers count as misses), `collectTroubleWords`
+(`vocabCards.lapses > 0` — that covers BOTH Review misses and Speak & Listen
+misses, which also go through reviewWord), `collectConversationMistakes`
+(turn `mistakes[]` flattened, newest first, cap 20). RULE: mistake logic
+lives in the engine, never in the page — later M11 slices (practice-my-
+mistakes, mistake SRS, insights) reuse the same collectors.
+`src/db/repositories/mistakeRepo.ts` is the only Dexie-touching part
+(read-only, one Promise.all over 6 tables). Page `/#/mistakes`
+(features/mistakes/MistakeBankPage.tsx) self-loads (StatsZone pattern —
+store untouched). Nav: header NAV_ITEMS after Review + MobileNav SECONDARY
+sheet (📌 Mistake bank). No "clear" button on purpose — mistakes clear by
+learning (answer the drill correctly, review the word, read the correction).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
