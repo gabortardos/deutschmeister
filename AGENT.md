@@ -327,6 +327,20 @@ ConversationSessionPage transcript + session feedback, MistakeBankPage rows.
 RULE unchanged: category logic pure in engine, LLM contract in services,
 component only orchestrates.
 
+## M11.4 Custom scenario builder (v2.16.0)
+
+Conversation page → "Create your own scenario ⭐" card
+(`features/conversation/ScenarioBuilder.tsx`): description (≥8 chars) +
+level (defaults to profile level) → 7th LLM contract
+`generateScenario(deps, { description, cefr })` in llm/services.ts (+3
+tests): zod-validated shape, normalized on return (title ≤60, emoji first
+grapheme + ⭐ fallback, phrases trimmed/capped at 6), maxTokens 600 temp 0.8,
+LlmCache key cefr+model+hash(description) — same text regenerates free,
+tweaked text = new scenario. Preview → Save via contentRepo.addCustomScenario
+(optional `emoji` input added; manual path unchanged) → custom row lands on
+top of the library (getAllScenarios: customs newest-first). No AI deps →
+Settings hint instead of the Generate button.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

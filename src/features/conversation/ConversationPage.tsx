@@ -6,6 +6,7 @@ import { getDrillsForTopic } from '../../db/repositories/grammarRepo'
 import { ensureScenariosSeeded, getAllScenarios } from '../../db/repositories/scenarioRepo'
 import type { ConversationSession, Scenario } from '../../db/types'
 import { useAiRoute } from '../../state/useLlmDeps'
+import { ScenarioBuilder } from './ScenarioBuilder'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 
@@ -16,15 +17,18 @@ export default function ConversationPage() {
   const [drillCounts, setDrillCounts] = useState<Record<string, number>>({})
   const [sessions, setSessions] = useState<ConversationSession[]>([])
 
+  async function load(): Promise<void> {
+    await ensureScenariosSeeded()
+    const list = await getAllScenarios()
+    setScenarios(list)
+    const counts = await Promise.all(list.map((s) => getDrillsForTopic(s.id).then((d) => d.length)))
+    setDrillCounts(Object.fromEntries(list.map((s, i) => [s.id, counts[i] ?? 0])))
+    setSessions(await recentSessions(6))
+  }
+
   useEffect(() => {
-    void (async () => {
-      await ensureScenariosSeeded()
-      const list = await getAllScenarios()
-      setScenarios(list)
-      const counts = await Promise.all(list.map((s) => getDrillsForTopic(s.id).then((d) => d.length)))
-      setDrillCounts(Object.fromEntries(list.map((s, i) => [s.id, counts[i] ?? 0])))
-      setSessions(await recentSessions(6))
-    })()
+    void load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const titleFor = (scenarioId: string): string =>
@@ -51,6 +55,9 @@ export default function ConversationPage() {
           </p>
         </Card>
       )}
+
+      {/* M11.4: describe → generate → save a custom scenario into the library below. */}
+      <ScenarioBuilder onSaved={() => void load()} />
 
       {scenarios === null ? (
         <p className="text-sm text-slate-500">Loading scenarios…</p>

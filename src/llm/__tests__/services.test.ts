@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   conversationTurn,
   explainMistake,
+  generateScenario,
   mistakesToDrills,
   normalizeCategory,
   shortHash,
@@ -241,6 +242,50 @@ describe('mistakesToDrills', () => {
     expect(drills.every((d) => d.type === 'transform' && d.ownerId === 's-fitness' && d.source === 'llm')).toBe(true)
     expect(drills[0]?.acceptedAnswers).toEqual(['Ich gehe ins Fitnessstudio'])
     expect(String(drills[1]?.promptData?.instruction)).toContain('word order')
+  })
+})
+
+describe('generateScenario', () => {
+  const REPLY = {
+    title: '  Flohmarkt-Funde  ',
+    emoji: '🪩',
+    description: 'Du stöberst auf einem Flohmarkt in Berlin.',
+    goal: 'Handel über den Preis eines Plattenspielers.',
+    keyPhrases: [
+      { de: 'Wie viel kostet der Plattenspieler?', en: 'How much is the record player?' },
+      { de: 'Das ist mir zu teuer.', en: "That's too expensive for me." },
+      { de: 'Machen wir 20 Euro?', en: 'How about 20 euros?' },
+      { de: 'Hat er einen Kratzer?', en: 'Does it have a scratch?' },
+    ],
+  }
+
+  it('parses and normalizes the generated scenario', async () => {
+    fetchMock.mockResolvedValueOnce(completions(JSON.stringify(REPLY)))
+    const out = await generateScenario(deps(), { description: 'flea market in Berlin', cefr: 'B1' })
+    expect(out.title).toBe('Flohmarkt-Funde')
+    expect(out.emoji).toBe('🪩')
+    expect(out.keyPhrases).toHaveLength(4)
+    const body = JSON.stringify(fetchMock.mock.calls[0]?.[1]?.body ?? '') as string
+    expect(body).toContain('flea market in Berlin')
+    expect(body).toContain('B1')
+  })
+
+  it('caps keyPhrases at 6 and falls back to ⭐ when the emoji is empty', async () => {
+    const phrases = Array.from({ length: 8 }, (_, i) => ({ de: `Phrase ${i}`, en: `Translation ${i}` }))
+    fetchMock.mockResolvedValueOnce(completions(JSON.stringify({ ...REPLY, emoji: '', keyPhrases: phrases })))
+    const out = await generateScenario(deps(), { description: 'eight phrases', cefr: 'A2' })
+    expect(out.emoji).toBe('⭐')
+    expect(out.keyPhrases).toHaveLength(6)
+  })
+
+  it('caches per description+level — identical input makes no second call', async () => {
+    const cache = memoryCache()
+    fetchMock.mockResolvedValue(completions(JSON.stringify(REPLY)))
+    await generateScenario(deps(cache), { description: 'flea market in Berlin', cefr: 'B1' })
+    await generateScenario(deps(cache), { description: 'flea market in Berlin', cefr: 'B1' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    await generateScenario(deps(cache), { description: 'dentist appointment', cefr: 'B1' })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })
 

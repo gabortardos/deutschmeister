@@ -265,6 +265,9 @@ Practice-my-mistakes → M11.2 (v2.14.0): pure `pickPracticeDrills` /
 page, reusing DrillRunner and the vocab StudySession.
 Mistake explanations → M11.3 (v2.15.0): the hybrid design below, built as
 specced (static micro-lessons + cached `explainMistake`).
+Custom scenario builder → M11.4 (v2.16.0): `generateScenario` LLM contract +
+"Create your own scenario ⭐" card on the Conversation page (describe →
+generate → preview → `addCustomScenario`).
 
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 

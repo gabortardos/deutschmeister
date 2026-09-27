@@ -38,6 +38,8 @@ export interface CustomScenarioInput {
   description: string
   goal: string
   keyPhrases: KeyPhrase[]
+  /** M11.4: AI-generated scenarios carry their own emoji (⭐ default). */
+  emoji?: string
 }
 
 export async function addCustomScenario(input: CustomScenarioInput): Promise<Scenario> {
@@ -46,7 +48,7 @@ export async function addCustomScenario(input: CustomScenarioInput): Promise<Sce
     updatedAt: Date.now(),
     title: input.title.trim(),
     cefr: input.cefr,
-    emoji: '⭐',
+    emoji: input.emoji?.trim() || '⭐',
     description: input.description.trim(),
     goal: input.goal.trim(),
     keyPhrases: input.keyPhrases,

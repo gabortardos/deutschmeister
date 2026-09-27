@@ -560,6 +560,66 @@ export async function explainMistake(
 }
 
 // ---------------------------------------------------------------------------
+// 7. generateScenario — custom role-play scenario from a learner description
+// (M11.4 builder; the saved row goes through contentRepo.addCustomScenario)
+// ---------------------------------------------------------------------------
+
+const ScenarioGenSchema = z.object({
+  title: z.string().min(1),
+  emoji: z.string(),
+  description: z.string().min(1),
+  goal: z.string().min(1),
+  keyPhrases: z.array(z.object({ de: z.string().min(1), en: z.string().min(1) })).min(3),
+})
+
+export interface GeneratedScenario {
+  title: string
+  emoji: string
+  description: string
+  goal: string
+  keyPhrases: KeyPhrase[]
+}
+
+export async function generateScenario(
+  deps: LlmServiceDeps,
+  input: { description: string; cefr: CefrLevel },
+): Promise<GeneratedScenario> {
+  const key = `scenario-gen:${input.cefr}:${deps.config.model}:${shortHash(input.description.trim().toLowerCase())}`
+  return withCache(deps, key, async () => {
+    const parsed = await chatJSON(
+      deps.config,
+      [
+        {
+          role: 'system',
+          content: [
+            'You design role-play scenarios for a German learning app.',
+            'From the learner\'s description, create a concrete everyday situation at the given CEFR level.',
+            'title: short (max 6 words), no quotes. emoji: exactly one emoji that fits the scene.',
+            'description: 1-2 sentences setting the scene (address the learner as "du").',
+            'goal: one concrete communicative goal in a single sentence.',
+            'keyPhrases: 4-6 useful German phrases for this scene with English translations, at or below the level, proper orthography (ä ö ü ß).',
+            'Return ONLY valid JSON: { "title": "...", "emoji": "...", "description": "...", "goal": "...", "keyPhrases": [ { "de": "...", "en": "..." } ] }.',
+          ].join('\n'),
+        },
+        {
+          role: 'user',
+          content: `Situation: ${input.description}\nLearner level: CEFR ${input.cefr}.`,
+        },
+      ],
+      ScenarioGenSchema,
+      { maxTokens: 600, temperature: 0.8 },
+    )
+    return {
+      title: parsed.title.trim().slice(0, 60),
+      emoji: parsed.emoji.trim().slice(0, 4) || '⭐',
+      description: parsed.description.trim(),
+      goal: parsed.goal.trim(),
+      keyPhrases: parsed.keyPhrases.slice(0, 6).map((p) => ({ de: p.de.trim(), en: p.en.trim() })),
+    }
+  })
+}
+
+// ---------------------------------------------------------------------------
 // mistakes → drills (pure, used by the end-of-session report)
 // ---------------------------------------------------------------------------
 
