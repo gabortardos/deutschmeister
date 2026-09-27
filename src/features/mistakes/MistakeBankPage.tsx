@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Card } from '../../components/ui'
+import { Badge, Button, Card } from '../../components/ui'
 import { loadMistakeBank, type MistakeBank } from '../../db/repositories/mistakeRepo'
+import { reviewWord } from '../../db/repositories/vocabRepo'
+import { pickPracticeDrills, pickPracticeWords } from '../../engine/mistakeBank'
+import type { DrillItem, VocabWord } from '../../db/types'
+import { useAppStore } from '../../state/store'
+import DrillRunner from '../grammar/DrillRunner'
+import { StudySession } from '../vocab/StudySession'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' })
 
@@ -17,13 +23,86 @@ const SECTION_LIMIT = 20
  */
 export default function MistakeBankPage() {
   const [bank, setBank] = useState<MistakeBank | null>(null)
+  /** M11.2 practice sessions (WordBankPage pattern: page swaps to a runner). */
+  const [drillPractice, setDrillPractice] = useState<DrillItem[] | null>(null)
+  const [wordPractice, setWordPractice] = useState<VocabWord[] | null>(null)
+  const { bumpDrills, refreshToday } = useAppStore()
+
+  async function load(): Promise<void> {
+    setBank(await loadMistakeBank())
+  }
 
   useEffect(() => {
-    void loadMistakeBank().then(setBank)
+    void load()
   }, [])
+
+  function startDrillPractice(): void {
+    if (!bank) return
+    setDrillPractice(pickPracticeDrills(bank.drills, bank.items))
+  }
+
+  function startWordPractice(): void {
+    if (!bank) return
+    setWordPractice(pickPracticeWords(bank.words, bank.bank))
+  }
+
+  /** Exit either session and refresh the bank — a correct retry should already
+   *  have cleared that drill row (DrillRunner records attempts as you go). */
+  function finishPractice(wordsSession: boolean): void {
+    setDrillPractice(null)
+    setWordPractice(null)
+    void load()
+    if (wordsSession) void refreshToday()
+  }
 
   if (!bank) {
     return <p className="text-sm text-slate-500">Loading your mistakes…</p>
+  }
+
+  if (drillPractice) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-lg font-bold text-slate-900">Practice your mistakes · drills</h1>
+        {drillPractice.length === 0 ? (
+          <Card title="Nothing to practice 🎉">
+            <p className="text-sm text-slate-600">Your open drill mistakes vanished — well done!</p>
+            <div className="mt-4">
+              <Button onClick={() => setDrillPractice(null)}>Back to the mistake bank</Button>
+            </div>
+          </Card>
+        ) : (
+          <DrillRunner
+            drills={drillPractice}
+            title="Mistake bank"
+            onFinish={() => finishPractice(false)}
+          />
+        )}
+      </div>
+    )
+  }
+
+  if (wordPractice) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-lg font-bold text-slate-900">Practice your mistakes · words</h1>
+        {wordPractice.length === 0 ? (
+          <Card title="Nothing to practice 🎉">
+            <p className="text-sm text-slate-600">No lapsed words to drill right now.</p>
+            <div className="mt-4">
+              <Button onClick={() => setWordPractice(null)}>Back to the mistake bank</Button>
+            </div>
+          </Card>
+        ) : (
+          <StudySession
+            words={wordPractice}
+            bank={bank.bank}
+            onWordReviewed={(wordId, quality) => reviewWord(wordId, quality)}
+            onDrillDone={() => bumpDrills()}
+            onFinish={() => finishPractice(true)}
+          />
+        )}
+      </div>
+    )
   }
 
   const drillRows = bank.drills.slice(0, SECTION_LIMIT)
@@ -46,6 +125,13 @@ export default function MistakeBankPage() {
         title={`Grammar drills — last answer wrong (${bank.drills.length})`}
         description="A drill leaves this list the moment you answer it correctly again."
       >
+        {bank.drills.length > 0 && (
+          <div className="mb-4">
+            <Button variant="primary" onClick={startDrillPractice}>
+              Practice these drills →
+            </Button>
+          </div>
+        )}
         {bank.drills.length === 0 ? (
           <p className="text-sm text-slate-500">No open drill mistakes. Keep drilling! 🎯</p>
         ) : (
@@ -85,6 +171,13 @@ export default function MistakeBankPage() {
         title={`Trouble words — ${bank.words.length} with lapses`}
         description="Every failed review (or Speak & Listen miss) adds a lapse; these are your repeat offenders."
       >
+        {bank.words.length > 0 && (
+          <div className="mb-4">
+            <Button variant="primary" onClick={startWordPractice}>
+              Practice these words →
+            </Button>
+          </div>
+        )}
         {bank.words.length === 0 ? (
           <p className="text-sm text-slate-500">No lapsed words — your SRS reviews are going well. 💪</p>
         ) : (

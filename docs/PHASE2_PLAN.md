@@ -260,6 +260,9 @@ with correction.
 **Shipped:** mistake bank → M11.1 (v2.13.0, see ROADMAP): pure
 `src/engine/mistakeBank.ts` collectors + `/#/mistakes` page aggregating open
 drill mistakes (latest attempt wrong), lapsed words, and tutor corrections.
+Practice-my-mistakes → M11.2 (v2.14.0): pure `pickPracticeDrills` /
+`pickPracticeWords` + "Practice these drills / words" sessions on the same
+page, reusing DrillRunner and the vocab StudySession.
 
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 

@@ -171,6 +171,49 @@ export function collectTroubleWords(
   return out
 }
 
+/** Fisher–Yates on a copy — Math.random by design (session variety). */
+function shuffle<T>(items: readonly T[]): T[] {
+  const out = [...items]
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
+/**
+ * M11.2: the drill-practice set for the Mistake bank — the `limit` most-missed
+ * drills (wrongCount desc, then most recent miss), shuffled for the session.
+ * Generic over the row shape so the page passes full DrillItem rows straight
+ * through; rows whose attempt exists but item is gone are dropped by set-join.
+ */
+export function pickPracticeDrills<T extends { id: string }>(
+  mistakes: readonly DrillMistake[],
+  items: readonly T[],
+  limit = 15,
+): T[] {
+  const wanted = new Set(
+    [...mistakes]
+      .sort((a, b) => b.wrongCount - a.wrongCount || b.lastWrongAt - a.lastWrongAt)
+      .slice(0, Math.max(0, limit))
+      .map((m) => m.itemId),
+  )
+  return shuffle(items.filter((i) => wanted.has(i.id)))
+}
+
+/**
+ * M11.2: the word-practice set — the `limit` most-lapsed words (collectTroubleWords
+ * order), shuffled. Lapses never decrease, so "most lapsed first" is stable.
+ */
+export function pickPracticeWords<T extends { id: string }>(
+  trouble: readonly TroubleWord[],
+  bank: readonly T[],
+  limit = 12,
+): T[] {
+  const wanted = new Set(trouble.slice(0, Math.max(0, limit)).map((w) => w.wordId))
+  return shuffle(bank.filter((w) => wanted.has(w.id)))
+}
+
 /**
  * Tutor corrections flattened off conversation turns, newest first, capped.
  * Only turns that actually carry mistakes contribute (tutor turns never do).

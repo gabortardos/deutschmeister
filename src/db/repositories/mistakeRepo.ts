@@ -1,4 +1,5 @@
 import { db } from '../dexie'
+import type { DrillItem, VocabWord } from '../types'
 import type {
   ConvCorrection,
   DrillMistake,
@@ -14,13 +15,16 @@ export interface MistakeBank {
   drills: DrillMistake[]
   words: TroubleWord[]
   conversations: ConvCorrection[]
+  /** M11.2 raw rows for practice sessions: all drill items + the whole word bank. */
+  items: DrillItem[]
+  bank: VocabWord[]
 }
 
 /**
  * M11.1: loads every mistake source and aggregates via the pure engine.
  * Reads only — nothing here mutates; clearing mistakes happens by learning
- * (a correct retry updates drillAttempts, a correct review drops lapses? No:
- * lapses never decrease — trouble words clear only by design choice later).
+ * (a correct retry becomes the latest attempt, a good review still leaves
+ * lapses — those words stay listed until redesigned on purpose).
  */
 export async function loadMistakeBank(): Promise<MistakeBank> {
   const [attempts, items, topics, cards, words, turns] = await Promise.all([
@@ -35,5 +39,7 @@ export async function loadMistakeBank(): Promise<MistakeBank> {
     drills: collectDrillMistakes(attempts, items, topics),
     words: collectTroubleWords(cards, words),
     conversations: collectConversationMistakes(turns, 20),
+    items,
+    bank: words,
   }
 }

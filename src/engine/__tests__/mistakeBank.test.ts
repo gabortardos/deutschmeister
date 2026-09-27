@@ -1,6 +1,96 @@
 import { describe, expect, it } from 'vitest'
-import type { AttemptLike, CardLike, DrillItemLike, TopicLike, TurnLike, WordLike } from '../mistakeBank'
-import { collectConversationMistakes, collectDrillMistakes, collectTroubleWords } from '../mistakeBank'
+import type {
+  AttemptLike,
+  CardLike,
+  DrillItemLike,
+  DrillMistake,
+  TopicLike,
+  TroubleWord,
+  TurnLike,
+  WordLike,
+} from '../mistakeBank'
+import {
+  collectConversationMistakes,
+  collectDrillMistakes,
+  collectTroubleWords,
+  pickPracticeDrills,
+  pickPracticeWords,
+} from '../mistakeBank'
+
+/** Minimal DrillMistake factory — only what the pickers read. */
+const mistake = (itemId: string, wrongCount: number, lastWrongAt = 0): DrillMistake => ({
+  itemId,
+  prompt: itemId,
+  drillType: 'cloze',
+  cefr: 'A1',
+  expected: '',
+  given: '',
+  revealed: false,
+  wrongCount,
+  lastWrongAt,
+  topicId: null,
+  topicTitle: null,
+})
+
+/** Minimal TroubleWord factory. */
+const trouble = (wordId: string, lapses: number): TroubleWord => ({
+  wordId,
+  german: wordId,
+  article: null,
+  english: '',
+  cefr: 'A1',
+  lapses,
+  dueDate: 0,
+  state: 'learning',
+})
+
+describe('pickPracticeDrills', () => {
+  const items = ['a', 'b', 'c', 'd'].map((id) => ({ id, tag: id }))
+
+  it('returns the matching rows, shuffled but as the same set', () => {
+    const out = pickPracticeDrills([mistake('a', 1), mistake('c', 1)], items)
+    expect(out).toHaveLength(2)
+    expect([...out].sort((x, y) => x.id.localeCompare(y.id))).toEqual([
+      { id: 'a', tag: 'a' },
+      { id: 'c', tag: 'c' },
+    ])
+  })
+
+  it('prioritizes the most-missed drills when capped', () => {
+    const out = pickPracticeDrills([mistake('a', 1), mistake('b', 5), mistake('c', 3), mistake('d', 2)], items, 2)
+    expect([...out].sort((x, y) => x.id.localeCompare(y.id))).toEqual([
+      { id: 'b', tag: 'b' },
+      { id: 'c', tag: 'c' },
+    ])
+  })
+
+  it('breaks wrongCount ties by most recent miss', () => {
+    expect(pickPracticeDrills([mistake('a', 2, 100), mistake('b', 2, 200)], items, 1)).toEqual([{ id: 'b', tag: 'b' }])
+  })
+
+  it('drops mistakes whose item row no longer exists', () => {
+    expect(pickPracticeDrills([mistake('ghost', 9)], items)).toHaveLength(0)
+  })
+
+  it('limit 0 gives an empty session', () => {
+    expect(pickPracticeDrills([mistake('a', 1)], items, 0)).toHaveLength(0)
+  })
+})
+
+describe('pickPracticeWords', () => {
+  const bank = [{ id: 'w1' }, { id: 'w2' }, { id: 'w3' }]
+
+  it('takes the most-lapsed words first (collector order is pre-sorted)', () => {
+    const out = pickPracticeWords([trouble('w1', 2), trouble('w2', 5), trouble('w3', 1)], bank, 2)
+    expect([...out].sort((x, y) => x.id.localeCompare(y.id))).toEqual([{ id: 'w1' }, { id: 'w2' }])
+  })
+
+  it('drops trouble words missing from the bank and caps at limit', () => {
+    expect(pickPracticeWords([trouble('ghost', 9), trouble('w1', 1)], bank, 5)).toEqual([{ id: 'w1' }])
+    expect(pickPracticeWords([trouble('w1', 1)], bank, 0)).toHaveLength(0)
+  })
+})
+
 
 const item = (id: string, ownerId = 'top-1', accepted = ['die Übung']): DrillItemLike => ({
   id,

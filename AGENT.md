@@ -296,6 +296,21 @@ store untouched). Nav: header NAV_ITEMS after Review + MobileNav SECONDARY
 sheet (📌 Mistake bank). No "clear" button on purpose — mistakes clear by
 learning (answer the drill correctly, review the word, read the correction).
 
+## M11.2 Practice my mistakes (v2.14.0)
+
+The mistake bank is actionable: "Practice these drills →" replays the open
+drill mistakes through the EXISTING DrillRunner, "Practice these words →"
+replays lapsed words through the vocab StudySession. Selection stays pure:
+`pickPracticeDrills` (cap 15, wrongCount desc then latest miss, shuffled) and
+`pickPracticeWords` (cap 12, most-lapsed first, shuffled) in
+engine/mistakeBank.ts (+7 tests → 331 total). mistakeRepo now also returns
+the raw rows the sessions need (`items`, `bank`) — still read-only. The page
+swaps itself for the runner (WordBankPage session pattern): DrillRunner
+already records drillAttempts mid-session, so correct retries clear bank
+rows on reload; StudySession reviews go through reviewWord → SRS +
+refreshToday. Pickers are generic `<T extends { id: string }>` so tests use
+minimal rows.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
