@@ -548,6 +548,13 @@ Key mechanics (mirror the grammar milestones):
 - Word discovery stays frequency-rank driven (no CEFR filter), so the new
   words surface naturally in "learn extra words" across all learner levels.
 
+**Post-ship hotfix (v2.25.1)**: the C1/C2 grammar banks were seeded but
+invisible — `GrammarPage.tsx` rendered sections from a stale local
+`LEVELS = ['A1','A2','B1','B2']` list. Lesson: when adding a new CEFR band
+anywhere, grep for hardcoded level lists (`'A1', 'A2', 'B1', 'B2'`) — the
+canonical source is `CEFR_LEVELS` in `src/db/types.ts`. Known remaining
+intentional cap: `PLACEMENT_LEVELS` (B2 — placement bank has no C items).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '../../components/ui'
 import { getAllTopics, masteryByTopic, nextTopic } from '../../db/repositories/grammarRepo'
+import { CEFR_LEVELS } from '../../db/types'
 import type { GrammarTopic } from '../../db/types'
 import { masteryPercent } from '../../engine/mastery'
 import type { MasteryInfo } from '../../engine/mastery'
 import { useAppStore } from '../../state/store'
-
-const LEVELS = ['A1', 'A2', 'B1', 'B2'] as const
 
 export default function GrammarPage() {
   const { hydrated, profile } = useAppStore()
@@ -62,7 +61,7 @@ export default function GrammarPage() {
         </Card>
       )}
 
-      {LEVELS.map((level) => {
+      {CEFR_LEVELS.map((level) => {
         const levelTopics = topics.filter((t) => t.cefr === level)
         if (levelTopics.length === 0) return null
         const masteredCount = levelTopics.filter((t) => mastery.get(t.id)?.mastered).length
