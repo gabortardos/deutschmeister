@@ -502,6 +502,24 @@ translate_de_en + translate_en_de ± wordorder (only where the sentence needs no
 interior comma — the wordorder runner checks an exact token permutation of
 acceptedAnswers[0]).
 
+## M12.2 C2 grammar bank (v2.24.0)
+
+`src/content/grammar/c2.ts`: 8 C2 topics × 8 drills — grammar syllabus
+62 → 70, level-complete A1–C2. Same de-dup discipline as M12.1: the recorded
+plan's "Konjunktiv I in Presse", "Nominalstil vs Verbalstil" and "feste
+Präpositionalverben + Idiomatik" were dropped (b2-konjunktiv-i, b2-nominalstil,
+b1-verben-mit-praepositionen + b2-funktionsverbgefuege already ship them).
+Shipped: Modalpartikeln, konditionale Inversion ohne wenn (KII + sollte-Form),
+gehobene Konnektoren (sofern / insofern…als / geschweige denn), Ellipsen,
+Wortbildungs-Nuancen (lösbar/löslich, -bar/-fähig, zer-/ent-/ver-), nur
+prädikative Adjektive (egal/leid/schuld/quitt/gewachsen + case government),
+kaum…als + sobald/sowie, Präpositionspaare (von…aus / auf…hin / aus…heraus /
+um…willen + Genitiv). ids `g-c2-01…`, order 63–70 (append-stable); the test
+id regex `g-[abc][12]-\d{2}` already matched c2, only the counts row changed
+(62 → 70, C2: 8). Also fixed the stale WELCOME_LEVELS comment in
+`src/features/onboarding/welcome.ts` — the tour itself stays A1–B2 while vocab
+tops out at B2 (grammar alone is not a level the app can teach end to end).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

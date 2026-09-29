@@ -334,11 +334,22 @@ options.
     (sofern/geschweige denn stay reserved for C2), Gerundiv, Verben mit Genitiv,
     Satzklammer/Ausklammerung and Appositionen. Append-stable ids `g-c1-01…` ·
     order 51–62; counts test 62, id regex `g-[abc][12]`.
-  - **M12.2 C2 grammar (~8 topics)**: Nominalstil vs Verbalstil
-    (Pressesprache), Inversion + Satzgliedstellung-Feinheiten,
-    Modalpartikeln, feste Präpositionalverben + Idiomatik, Konjunktiv I in
-    Presse/Berichten, Ellipsen, gehobene Konnektoren (sofern, insofern,
-    geschweige denn), produktive Wortbildung (Präfix-/Suffixnuancen).
+  - **M12.2 C2 grammar — SHIPPED (v2.24.0, 2026-09-29)**: `src/content/grammar/c2.ts`,
+    8 topics × 8 drills (syllabus 62 → 70, A1–C2). The original candidate list
+    (Nominalstil vs Verbalstil · Inversion/Satzgliedstellung · Modalpartikeln ·
+    feste Präpositionalverben + Idiomatik · Konjunktiv I in Presse · Ellipsen ·
+    gehobene Konnektoren · produktive Wortbildung) was de-duplicated against
+    shipped content: Konjunktiv I in Presse = `b2-konjunktiv-i`, Nominalstil =
+    `b2-nominalstil`, Präpositionalverben/Idiomatik = `b1-verben-mit-praepositionen`
+    + `b2-funktionsverbgefuege` — all three dropped. Shipped: Modalpartikeln
+    (doch/ja/mal/eben/halt/schon/wohl), konditionale Inversion ohne wenn
+    (Hätte ich…/Sollte es…), gehobene Konnektoren (sofern · insofern…als ·
+    geschweige denn — reserved for C2 since M12.1), Ellipsen,
+    Wortbildungs-Nuancen (lösbar/löslich · -bar/-fähig · zer-/ent-), nur
+    prädikative Adjektive (egal/leid/schuld/quitt/gewachsen + case government),
+    kaum…als + sobald/sowie, Präpositionspaare (von…aus · auf…hin ·
+    aus…heraus · um…willen). Append-stable ids `g-c2-01…` · order 63–70;
+    counts test 70 (C2: 8); id regex already matched c2.
   - **M12.3–M12.7 vocab → 5,000 in five batches (~600/batch)**:
     usefulness-ordered themes (Haushalt, Essen gehen, Gesundheit/Arzt,
     Arbeit/Bewerbung, Reisen/Verkehr, Behörden/Ämter, Gefühle/Charakter,
