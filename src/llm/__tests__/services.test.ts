@@ -7,6 +7,7 @@ import {
   normalizeCategory,
   shortHash,
   suggestReply,
+  tutorChatTurn,
   type LlmCachePort,
   type LlmServiceDeps,
 } from '../services'
@@ -329,6 +330,69 @@ describe('explainMistake', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('tutorChatTurn (M11.8)', () => {
+  const REPLY = JSON.stringify({
+    reply: 'Hallo! Schön, von dir zu hören. Wie war dein Tag?',
+    mistakes: [{ said: 'Ich bin gut', corrected: 'Mir geht es gut', type: 'case' }],
+    replyTranslationEn: 'Hi! Nice to hear from you. How was your day?',
+    tutorQuestion: 'Wie war dein Tag?',
+  })
+
+  function lastBody(): { messages: { role: string; content: string }[] } {
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined
+    return JSON.parse(String(init?.body)) as { messages: { role: string; content: string }[] }
+  }
+
+  it('chat mode: parses the reply and sends system + capped history + user text', async () => {
+    fetchMock.mockResolvedValueOnce(completions(REPLY))
+    const history = Array.from({ length: 14 }, (_, i) => ({
+      role: (i % 2 ? 'user' : 'tutor') as 'user' | 'tutor',
+      text: `Nachricht ${i}`,
+    }))
+    const res = await tutorChatTurn(deps(), { mode: 'chat', level: 'A2', history, userText: 'Hallo!' })
+    expect(res.reply).toContain('Hallo')
+    expect(res.mistakes[0]?.type).toBe('case')
+    expect(res.tutorQuestion).toBe('Wie war dein Tag?')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    const body = lastBody()
+    // system + last 12 turns + the new message = 14 messages total
+    expect(body.messages).toHaveLength(14)
+    expect(body.messages[0]?.role).toBe('system')
+    expect(body.messages[0]?.content).toContain('NO role-play scenario')
+    expect(body.messages[1]?.content).toBe('Nachricht 2') // oldest two dropped
+    expect(body.messages[13]?.role).toBe('user')
+    expect(body.messages[13]?.content).toBe('Hallo!')
+  })
+
+  it('ask mode: answers about the language (English system prompt), defaults empty meta fields', async () => {
+    fetchMock.mockResolvedValueOnce(
+      completions(
+        JSON.stringify({
+          reply: '"zu Hause" is a fixed expression — the noun Haus takes dative after "zu".',
+          mistakes: [],
+          replyTranslationEn: '',
+          tutorQuestion: '',
+        }),
+      ),
+    )
+    const res = await tutorChatTurn(deps(), {
+      mode: 'ask',
+      level: 'B1',
+      history: [{ role: 'tutor', text: 'Was möchtest du wissen?' }],
+      userText: 'Why is it "zu Hause"?',
+    })
+    expect(res.reply).toContain('zu Hause')
+    expect(res.mistakes).toEqual([])
+    expect(res.replyTranslationEn).toBe('')
+
+    const body = lastBody()
+    expect(body.messages[0]?.content).toContain('ABOUT the German language')
+    expect(body.messages[2]?.content).toBe('Why is it "zu Hause"?')
+  })
+})
+
 
 
 

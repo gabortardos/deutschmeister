@@ -35,6 +35,7 @@ const NAV_ITEMS = [
   { to: '/mistakes', label: 'Mistakes', end: false },
   { to: '/insights', label: 'Insights', end: false },
   { to: '/conversation', label: 'Conversation', end: false },
+  { to: '/tutor', label: 'Tutor', end: false },
   { to: '/practice', label: 'Speak & Listen', end: false },
   { to: '/settings', label: 'Settings', end: false },
 ]

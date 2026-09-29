@@ -21,6 +21,7 @@ const ConversationPage = lazy(() => import('./features/conversation/Conversation
 const ConversationSessionPage = lazy(() =>
   import('./features/conversation/ConversationSessionPage'),
 )
+const TutorChatPage = lazy(() => import('./features/tutor/TutorChatPage'))
 const SpeakListenPage = lazy(() => import('./features/practice/SpeakListenPage'))
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'))
 const legalPages = () => import('./features/legal/LegalPages')
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="insights" element={<InsightsPage />} />
           <Route path="conversation" element={<ConversationPage />} />
           <Route path="conversation/:scenarioId" element={<ConversationSessionPage />} />
+          <Route path="tutor" element={<TutorChatPage />} />
           <Route path="practice" element={<SpeakListenPage />} />
           <Route path="settings" element={<SettingsPage />} />
           {/* M9.5: first-visit welcome & onboarding tour (auto-opens once per browser). */}

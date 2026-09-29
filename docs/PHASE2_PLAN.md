@@ -192,10 +192,11 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
   - **Plus — "Most popular" badge — €5.99/mo · €49.99/yr (~30% off):** everything Basic +
     platform HD voice (~150–200k chars/mo ≈ 500–650 spoken replies) + bigger AI budget
     ($3.5/mo mini-backend / $5 coding-plan backend).
-  - **Pro — dormant until M11 fills it — €9.99/mo · €89.99/yr (~25% off):** larger voice
-    allowance + premium tutoring features (M11) + priority support. Only displayed once it has
-    real content (selling promises = refunds); until then Basic/Plus pricing cards anchor
-    each other.
+  - **Pro — activating with M11.10 (owner decision 2026-09-29) — €9.99/mo · €89.99/yr (~25% off):**
+    larger voice allowance (~300k chars/mo) + the expensive learning options: streaming tutor
+    replies, full-rewrite writing grading, 🎲 LLM writing prompts, 250-word / 5-a-day writing.
+    Unhide only when M11.10 ships (selling promises = refunds); until then Basic/Plus pricing
+    cards anchor each other. Owner: create the Paddle products (sandbox first) + PADDLE_PRICE_MAP.
   - **Lineage:** two-tier + anchoring + badge from the GPT analysis; tier split on the voice
     boundary from the owner (cost-aligned — HD TTS at $16/1M chars is the only real marginal
     cost, chat ≈€0 on the coding plan); annual discounts 30–37% (industry norm; GPT's 17%
@@ -253,7 +254,7 @@ deploy the function from `supabase/functions/ai-proxy/index.ts`, set secrets
   Kbd hints, auto-focus inputs.
 
 ### M11 — Learning depth (v2.4+, order re-negotiable with owner)
-Mistake bank (from `drillAttempts`/matcher failures) · custom scenario builder · tutor chat ·
+Mistake bank (from `drillAttempts`/matcher failures) · custom scenario builder ·
 sentence listening · cloze reviews · insights page · vocab placement re-take · free writing
 with correction.
 
@@ -279,6 +280,28 @@ Insights page → M11.7 (v2.19.0): pure `engine/insights.ts` skill aggregation
 (accuracy by drill type & CEFR level, vocab coverage per level, conversation
 correction types) + `/#/insights` page with streak badges and top-5 trouble
 words; offline, local data only.
+Tutor chat → M11.8 (v2.20.0): pure `engine/tutorChat.ts` + `tutorChatTurn`
+contract + `/#/tutor` page (Free chat / Ask-the-tutor, silent corrections
+through the existing mistake pipeline, 12-turn history cap, session resume).
+
+Owner decisions recorded 2026-09-29 — **"both ways"**: default (cheap) versions
+for the existing tiers + the Pro tier activated as the home of the expensive
+options.
+
+- **M11.8 tutor chat — shipped v2.20.0** as the default version for ALL tiers
+  within their existing metered budgets (no plan changes, no streaming).
+- **M11.9 free writing — next**: static per-CEFR prompt bank + correction list
+  grading (`MistakeSchema` + existing Explain ✨ buttons, NOT a full rewrite),
+  ~120-word soft cap, 1 piece/day free · 3/day Basic/Plus; counts toward
+  streak + Insights.
+- **M11.10 Pro activation** (~€9.99/mo · €89.99/yr): streaming tutor replies
+  (Pro-first preview; roll out to everyone later if usage data allows),
+  full-rewrite writing grading, 🎲 LLM-generated writing prompts, 250-word
+  cap + 5 pieces/day (writing stays capped even on Pro — a 250-word graded
+  text ≈ 800–1,200 output tokens, unlimited would eat the budget), larger
+  voice allowance (~300k chars/mo). Owner action: create Pro products in
+  Paddle (sandbox first) → add to `PADDLE_PRICE_MAP` in both Paddle
+  functions → re-paste both.
 
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 

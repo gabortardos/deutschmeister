@@ -19,6 +19,7 @@ const PRIMARY = [
 
 const SECONDARY = [
   { to: '/practice', label: 'Speak & Listen', icon: '🎧' },
+  { to: '/tutor', label: 'Tutor chat', icon: '🎓' },
   { to: '/mistakes', label: 'Mistake bank', icon: '📌' },
   { to: '/insights', label: 'Insights', icon: '📊' },
   { to: '/grammar', label: 'Grammar', icon: '📖' },

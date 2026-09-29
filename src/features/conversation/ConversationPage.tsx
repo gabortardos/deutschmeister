@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '../../components/ui'
-import { recentSessions } from '../../db/repositories/conversationRepo'
+import { recentSessions, TUTOR_CHAT_SCENARIO_ID } from '../../db/repositories/conversationRepo'
 import { getDrillsForTopic } from '../../db/repositories/grammarRepo'
 import { ensureScenariosSeeded, getAllScenarios } from '../../db/repositories/scenarioRepo'
 import type { ConversationSession, Scenario } from '../../db/types'
@@ -32,7 +32,9 @@ export default function ConversationPage() {
   }, [])
 
   const titleFor = (scenarioId: string): string =>
-    scenarios?.find((s) => s.id === scenarioId)?.title ?? 'Unknown scenario'
+    scenarioId === TUTOR_CHAT_SCENARIO_ID
+      ? '🎓 Tutor chat'
+      : scenarios?.find((s) => s.id === scenarioId)?.title ?? 'Unknown scenario'
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,11 @@
 import { z } from 'zod'
 import type { CefrLevel, DrillItem, KeyPhrase } from '../db/types'
 import { newId } from '../utils/id'
+import {
+  trimTutorHistory,
+  type TutorChatMode,
+  type TutorHistoryTurn,
+} from '../engine/tutorChat'
 import { chatJSON, type ChatMessage, type LlmConfig } from './adapter'
 
 /**
@@ -668,6 +673,68 @@ export function mistakesToDrills(
     if (items.length >= 10) break
   }
   return items
+}
+
+// ---------------------------------------------------------------------------
+// 7. tutorChatTurn — free-form tutor chat (M11.8; no scenario)
+// ---------------------------------------------------------------------------
+
+export interface TutorChatTurnInput {
+  mode: TutorChatMode
+  level: CefrLevel
+  history: TutorHistoryTurn[]
+  userText: string
+}
+
+function tutorChatMessages(input: TutorChatTurnInput): ChatMessage[] {
+  const mistakeRules = [
+    'Rules for "mistakes": quote the learner\'s German exactly as said, give the minimal correction, and cover ONLY the latest message; empty array if it was fine.',
+    'mistake "type" must be one of: gender, case, word-order, vocab, verb-form, other.',
+  ]
+  const system =
+    input.mode === 'chat'
+      ? [
+          `You are a friendly, patient German tutor chatting freely with a learner at CEFR level ${input.level}.`,
+          'There is NO role-play scenario — just an everyday conversation about whatever the learner brings up.',
+          'Rules:',
+          `- Write "reply" in German suited to CEFR ${input.level} (short, simple sentences for A1/A2), 1-3 sentences, under ~60 words.`,
+          '- ALWAYS end the reply with a natural question that keeps the conversation going; repeat that question in "tutorQuestion".',
+          '- NEVER interrupt the chat with corrections or meta-comments — mistakes go only in JSON.',
+          '- "replyTranslationEn" = natural English translation of "reply".',
+          ...mistakeRules,
+        ].join('\n')
+      : [
+          `You are a friendly German tutor answering the learner's questions ABOUT the German language (grammar, vocabulary, usage, small culture). The learner studies at CEFR level ${input.level}.`,
+          'Rules:',
+          '- Write "reply" in clear, simple ENGLISH, under ~120 words, with German examples where they help (proper orthography: ä ö ü ß).',
+          '- "tutorQuestion" = "" and "replyTranslationEn" = "".',
+          ...mistakeRules,
+        ].join('\n')
+  const history = trimTutorHistory(input.history).map<ChatMessage>((t) => ({
+    role: t.role === 'user' ? 'user' : 'assistant',
+    content: t.text,
+  }))
+  return [
+    { role: 'system', content: system },
+    ...history,
+    { role: 'user', content: input.userText },
+  ]
+}
+
+export async function tutorChatTurn(
+  deps: LlmServiceDeps,
+  input: TutorChatTurnInput,
+): Promise<ConversationTurnResult> {
+  const parsed = await chatJSON(deps.config, tutorChatMessages(input), ConversationReplySchema, {
+    maxTokens: 900,
+    temperature: 0.7,
+  })
+  return {
+    reply: parsed.reply.trim(),
+    mistakes: parsed.mistakes,
+    replyTranslationEn: parsed.replyTranslationEn,
+    tutorQuestion: parsed.tutorQuestion,
+  }
 }
 
 

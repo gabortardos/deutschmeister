@@ -15,6 +15,20 @@ export async function startSession(scenarioId: string): Promise<ConversationSess
   return session
 }
 
+/** M11.8 tutor chat reuses the conversation tables; this sentinel marks those
+ *  sessions (never a real scenario id — seed/custom ids are `newId()`s). */
+export const TUTOR_CHAT_SCENARIO_ID = 'tutor-chat'
+
+export async function startTutorSession(): Promise<ConversationSession> {
+  return startSession(TUTOR_CHAT_SCENARIO_ID)
+}
+
+/** The most recent tutor chat (page resumes it), null when none exists yet. */
+export async function latestTutorSession(): Promise<ConversationSession | null> {
+  const rows = await db.conversationSessions.where('scenarioId').equals(TUTOR_CHAT_SCENARIO_ID).toArray()
+  return rows.sort((a, b) => b.startedAt - a.startedAt)[0] ?? null
+}
+
 export interface AddTurnInput {
   role: 'user' | 'tutor'
   text: string

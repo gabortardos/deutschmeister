@@ -400,6 +400,31 @@ accuracy, conversation count, corrections received). Page
 top-5 lapsed words (link to the Mistake bank); bar rows are green ≥80%,
 amber ≥60%, red below; every section has an empty state. 100% offline.
 
+## M11.8 Tutor chat (v2.20.0)
+
+New `/#/tutor` route ("Tutor" in the desktop nav, 🎓 Tutor chat in the
+mobile More sheet). Free-form chat with the tutor — NO scenario, unlike
+Conversation role-play. Two modes share one transcript (persisted in
+localStorage via `dm-tutor-mode`): 🗣️ Free chat (German replies at the
+learner's level, 1–3 sentences, always ends in a question, mistakes graded
+silently in JSON) and ❓ Ask the tutor (questions ABOUT German, ≤120-word
+English answers). Pure engine `src/engine/tutorChat.ts` (+6 tests →
+379/379): `TUTOR_MODES` metadata, `TUTOR_HISTORY_CAP = 12` +
+`trimTutorHistory` (drops empty turns, keeps newest 12 — flat input
+tokens), `isTutorChatMode` guard. LLM contract #7 `tutorChatTurn`
+(`llm/services.ts`, maxTokens 900, temp 0.7, no cache) REUSES
+`ConversationReplySchema` → tutor-chat corrections flow into the Mistake
+bank and Insights through the existing pipeline, zero extra wiring.
+Storage: conversation tables reused via sentinel `scenarioId:
+'tutor-chat'` (`TUTOR_CHAT_SCENARIO_ID` in conversationRepo — no Dexie
+schema bump); Conversation "Recent sessions" labels them "🎓 Tutor chat".
+Page: resumes the latest session (messenger, not scene), level-select
+override, EN translation under tutor bubbles, corrections box with
+MistakeExplainer + Mistake bank link, ＋ New chat ends the session.
+Billing unchanged (BYO unmetered; platform teaser→credits→allowance).
+Note: `vite preview` serves under the `/deutschmeister/` base path —
+smoke-test `/deutschmeister/tutor`, not `/tutor`.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
