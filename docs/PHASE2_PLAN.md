@@ -314,6 +314,40 @@ options.
   a 250-word graded text ≈ 800–1,200 output tokens, unlimited would eat the
   budget.
 
+- **M12 content milestones (user-directed 2026-09-29 — next after M11.10a).**
+  Baseline measured: vocab **1,902** words (A1 381 · A2 345 · B1 302 ·
+  B2 874 · C1/C2 0) → target **5,000** (+3,098); grammar **50** topics
+  (A1 13 · A2 12 · B1 10 · B2 15 · C1/C2 0). Words are assigned to the
+  level where they become useful (everyday-usefulness order across A1–C2),
+  NOT a per-level quota:
+  - **M12.1 C1 grammar (~12 topics)**: Konjunktiv II deep (Irreales +
+    Vergangenheit), Konjunktiv I / indirekte Rede, Passiversatzformen
+    (sich lassen / -bar / sein zu), Nominalisierung ↔ Verbalisierung,
+    erweiterte + Partizipialattribute, Genitivpräpositionen (trotz,
+    während, aufgrund, mangels …), Futur II, subjektive Modalverben,
+    N-Deklination deep, Verben mit Präpositionalergänzung, Relativsätze
+    mit Präposition, je…desto.
+  - **M12.2 C2 grammar (~8 topics)**: Nominalstil vs Verbalstil
+    (Pressesprache), Inversion + Satzgliedstellung-Feinheiten,
+    Modalpartikeln, feste Präpositionalverben + Idiomatik, Konjunktiv I in
+    Presse/Berichten, Ellipsen, gehobene Konnektoren (sofern, insofern,
+    geschweige denn), produktive Wortbildung (Präfix-/Suffixnuancen).
+  - **M12.3–M12.7 vocab → 5,000 in five batches (~600/batch)**:
+    usefulness-ordered themes (Haushalt, Essen gehen, Gesundheit/Arzt,
+    Arbeit/Bewerbung, Reisen/Verkehr, Behörden/Ämter, Gefühle/Charakter,
+    Medien/Technik, Natur/Umwelt, Gesellschaft, Wirtschaft, Wissenschaft,
+    abstrakte Verben …) — each word de/en + Beispiel + level-by-usefulness;
+    vocab tests (uniqueness, required fields) extended; each batch ships
+    behind the standard gate.
+  - **M12.8 A1–B2 grammar completeness audit**: diff the topic list
+    against a standard curriculum (Goethe A1–B2 checklists); candidate
+    gaps already spotted: full Präteritum (alle starken Verben +
+    Erzählgebrauch), bevor/nachdem/während, falls, damit vs um…zu,
+    obwohl/trotz, Wortbildung-Basics (-ung/-heit/-keit, ver-/be-),
+    Ordinalzahlen, Plusquamperfekt, Verben mit Präpositionen (warten auf,
+    sich freuen über/auf), Reflexivverben mit Präposition, unbestimmte
+    Pronomen (jeder/manche/alle). Fill as M12.8+.
+
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 
 - **Mistake explanations — on demand, hybrid — SHIPPED as M11.3 (v2.15.0).** The conversation mistake pills
