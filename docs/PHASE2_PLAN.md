@@ -320,13 +320,20 @@ options.
   (A1 13 · A2 12 · B1 10 · B2 15 · C1/C2 0). Words are assigned to the
   level where they become useful (everyday-usefulness order across A1–C2),
   NOT a per-level quota:
-  - **M12.1 C1 grammar (~12 topics)**: Konjunktiv II deep (Irreales +
-    Vergangenheit), Konjunktiv I / indirekte Rede, Passiversatzformen
-    (sich lassen / -bar / sein zu), Nominalisierung ↔ Verbalisierung,
-    erweiterte + Partizipialattribute, Genitivpräpositionen (trotz,
-    während, aufgrund, mangels …), Futur II, subjektive Modalverben,
-    N-Deklination deep, Verben mit Präpositionalergänzung, Relativsätze
-    mit Präposition, je…desto.
+  - **M12.1 C1 grammar — SHIPPED (v2.23.0, 2026-09-29)**: `src/content/grammar/c1.ts`,
+    12 topics × 8 drills (syllabus 50 → 62, A1–C1). The original candidate list
+    (Konjunktiv II deep, Konjunktiv I, Passiversatz, Nominalisierung, erweiterte
+    Attribute, Genitivpräpositionen, Futur II, subjektive Modalverben,
+    N-Deklination, Präpositionalverben, präpositionale Relativsätze, je…desto)
+    was de-duplicated against what B2/B1 already ship (Konjunktiv I · KII
+    Vergangenheit · subjektive Modalverben · N-Deklination · Nominalstil ·
+    Genitiv-Präpositionen · Passiversatz · je…desto = B2; Verben mit
+    Präpositionalergänzung = B1), keeping Konjunktiv-II-Irreales (als ob),
+    erweiterte Attribute, Futur II and präpositionale Relativsätze, and adding
+    Höflichkeits-KII, Bekommen-Passiv, Korrelat-es, Konnektoren-Nuancen
+    (sofern/geschweige denn stay reserved for C2), Gerundiv, Verben mit Genitiv,
+    Satzklammer/Ausklammerung and Appositionen. Append-stable ids `g-c1-01…` ·
+    order 51–62; counts test 62, id regex `g-[abc][12]`.
   - **M12.2 C2 grammar (~8 topics)**: Nominalstil vs Verbalstil
     (Pressesprache), Inversion + Satzgliedstellung-Feinheiten,
     Modalpartikeln, feste Präpositionalverben + Idiomatik, Konjunktiv I in

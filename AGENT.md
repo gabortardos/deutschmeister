@@ -482,6 +482,26 @@ studio, streaming, ~300k voice chars) and `ttsCharCap` is 300k — the
 `paddle-webhook` `PLANS.pro` entry is aligned in-repo and reaches
 production when the owner re-pastes the function in M11.10b.
 
+## M12.1 C1 grammar bank (v2.23.0)
+
+`src/content/grammar/c1.ts`: 12 C1 topics × 8 drills each — grammar syllabus
+50 → 62 (A1–C1). The PHASE2_PLAN candidate list was first de-duplicated against
+shipped B2/B1 (B2 already had Konjunktiv I, KII Vergangenheit, subjektive
+Modalverben, N-Deklination, Nominalstil, Genitiv-Präpositionen, Passiversatz,
+je…desto; B1 had Verben mit Präpositionen). Shipped: als-ob Vergleiche,
+Höflichkeits-KII, Futur II, Bekommen-Passiv, Korrelat-es, Konnektoren-Nuancen
+(auch wenn / es sei denn / vorausgesetzt / zumal — sofern & geschweige denn stay
+reserved for C2), erweiterte Attribute, Gerundiv, Relativsätze mit Präposition +
+was/wo, Verben mit Genitiv, Satzklammer & Ausklammerung, Appositionen.
+Mechanics: registered in `grammar/index.ts` LEVELS after B2 → ids `g-c1-01…`,
+order 51–62 (append-stable, A1–B2 ids/orders untouched); `grammarRepo`
+backfills by id, so existing devices get the topics on next launch.
+`relatedVocabTheme` must be null or a theme that exists in the vocab corpus
+(tests enforce). Drill mix per topic: cloze ×3–4 + choice + transform +
+translate_de_en + translate_en_de ± wordorder (only where the sentence needs no
+interior comma — the wordorder runner checks an exact token permutation of
+acceptedAnswers[0]).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

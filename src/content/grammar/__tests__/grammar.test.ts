@@ -5,12 +5,13 @@ import { SEED_VOCAB } from '../../vocab'
 import { drillInstruction, drillOptions, drillTokens, gradeDrill, needsGermanKeys } from '../../../engine/exerciseRunner'
 
 describe('seed grammar syllabus', () => {
-  it('covers 50 topics across A1–B2 (13/12/10/15)', () => {
-    expect(SEED_GRAMMAR_TOPICS.length).toBe(50)
+  it('covers 62 topics across A1–C1 (13/12/10/15/12)', () => {
+    expect(SEED_GRAMMAR_TOPICS.length).toBe(62)
     expect(SEED_GRAMMAR_COUNTS.A1).toBe(13)
     expect(SEED_GRAMMAR_COUNTS.A2).toBe(12)
     expect(SEED_GRAMMAR_COUNTS.B1).toBe(10)
     expect(SEED_GRAMMAR_COUNTS.B2).toBe(15)
+    expect(SEED_GRAMMAR_COUNTS.C1).toBe(12)
   })
 
   it('has unique topic ids, keys and strictly increasing order', () => {
@@ -18,7 +19,7 @@ describe('seed grammar syllabus', () => {
     expect(new Set(SEED_TOPIC_KEYS).size).toBe(SEED_TOPIC_KEYS.length)
     SEED_GRAMMAR_TOPICS.forEach((t, i) => {
       expect(t.order).toBe(i + 1)
-      expect(t.id).toMatch(/^g-[ab][12]-\d{2}$/)
+      expect(t.id).toMatch(/^g-[abc][12]-\d{2}$/)
     })
   })
 
