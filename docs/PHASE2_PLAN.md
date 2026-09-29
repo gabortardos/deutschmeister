@@ -357,6 +357,20 @@ options.
     abstrakte Verben …) — each word de/en + Beispiel + level-by-usefulness;
     vocab tests (uniqueness, required fields) extended; each batch ships
     behind the standard gate.
+  - **M12.3 vocab batch 1 — SHIPPED (v2.25.0, 2026-09-29)**: +559 words
+    (1,902 → 2,461; A2 +104 · B1 +229 · B2 +130 · C1 +96) over the first
+    four planned themes: Haushalt/Home, Essen gehen/Food, Gesundheit/Arzt/
+    Health, Arbeit/Bewerbung/Work. First C-level vocab band — new
+    `src/content/vocab/c1.ts` (`w-c1-…` ids, ranks continue after B2).
+    Rows appended at the end of each level file → ids append-stable;
+    `ensureVocabSeeded` bulkPuts the whole corpus, so new words AND the
+    refreshed frequencyRanks propagate on next launch. Candidates were
+    pre-de-duplicated against the existing 1,902 headwords with a
+    throwaway tuple-parser script (116+64+7 collisions dropped — much of
+    the "obvious" household/food/work vocab already existed; one manual
+    leak, Küche, was caught by the uniqueness test and removed). Vocab
+    tests extended for C1 counts + C2-zero guard. Remaining to 5,000:
+    +2,539 over batches 2–5 (~635/batch, themes per the list above).
   - **M12.8 A1–B2 grammar completeness audit**: diff the topic list
     against a standard curriculum (Goethe A1–B2 checklists); candidate
     gaps already spotted: full Präteritum (alle starken Verben +

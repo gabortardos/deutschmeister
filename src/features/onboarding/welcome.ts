@@ -36,9 +36,10 @@ export function resetWelcome(): void {
 }
 
 /**
- * Levels offered in the tour. Vocab tops out at B2 (grammar reaches A1–C2),
- * so the tour deliberately shows only levels the app can teach end to end;
- * revisit when the vocab corpus gains C-level bands.
+ * Levels offered in the tour. Vocab now reaches C1 (M12.3) and grammar A1–C2,
+ * but the tour deliberately stays A1–B2: C1 vocab is still one batch old and
+ * C2 vocab is empty — revisit once C-level coverage is broad enough to teach
+ * end to end.
  */
 export const WELCOME_LEVELS: readonly CefrLevel[] = ['A1', 'A2', 'B1', 'B2']
 

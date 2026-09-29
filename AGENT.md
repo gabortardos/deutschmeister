@@ -520,6 +520,34 @@ id regex `g-[abc][12]-\d{2}` already matched c2, only the counts row changed
 `src/features/onboarding/welcome.ts` — the tour itself stays A1–B2 while vocab
 tops out at B2 (grammar alone is not a level the app can teach end to end).
 
+## M12.3 vocab batch 1 (v2.25.0)
+
+First vocab-bank expansion (M12 plan): **+559 words, 1,902 → 2,461**, across
+the four usefulness-leading themes — Haushalt (Home), Essen gehen (Food),
+Gesundheit/Arzt (Health), Arbeit/Bewerbung (Work). Distribution by level of
+usefulness: A2 +104 · B1 +229 · B2 +130 · **C1 +96 — the first C-level vocab
+band**, shipped as a new `src/content/vocab/c1.ts` (`w-c1-0001…` ids;
+frequencyRanks continue after the B2 block).
+
+Key mechanics (mirror the grammar milestones):
+- **Append-stable ids**: new rows go at the END of each level file; existing
+  `w-a2-*`/`w-b1-*`/`w-b2-*` ids never move. `ensureVocabSeeded` bulkPuts
+  the full corpus each launch, so appended words seed AND shifted
+  frequencyRanks refresh on existing devices (unlike grammar's insert-only
+  backfill — vocab is an upsert by design).
+- **De-dup first, author second**: candidates were checked against the
+  1,902 existing headwords with a throwaway tuple-parser (`.tmp-vocab-recon.cjs`,
+  deleted). 116+64+7 collisions dropped — much obvious household/food/work
+  vocab already existed (Küche, Messer, Rechnung, Praxis, Termin, Gehalt …).
+  One leak (duplicate Küche) slipped into a2 and was caught by the uniqueness
+  test — the tests are the real gate, the script is the convenience.
+- **Test contract**: unique headwords (case-sensitive), unique ids, corpus
+  ranks = index+1, per-level counts (now incl. C1 + C2-zero guard), full
+  population of all fields, only nouns carry article/plural, noun base form
+  contained in the German example sentence (case-insensitive substring).
+- Word discovery stays frequency-rank driven (no CEFR filter), so the new
+  words surface naturally in "learn extra words" across all learner levels.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
