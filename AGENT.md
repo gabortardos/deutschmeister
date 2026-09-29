@@ -14,6 +14,9 @@ Deterministic core (vocab/grammar/SRS, offline, free) + optional LLM layer (BYO 
   `docs/PHASE2_PLAN.md`. The single-user/no-backend description applies through M6; from M7 a
   backend becomes OPTIONAL (guest/local-only mode stays forever).
 - Live: https://gabortardos.github.io/deutschmeister/ (auto-deploys on every push to `main`)
+  - SPA deep links work since 2026-09-29: deploy.yml copies `dist/index.html` →
+    `dist/404.html` (GitHub Pages serves it for unknown paths; status stays 404
+    but the browser gets the shell and client-side routing fixes the URL).
 - Repo: `gabortardos/deutschmeister` (public, GitHub Pages via Actions)
 - Stack: React 18 + Vite 5 + TypeScript strict (no `any`) + Tailwind + Zustand + Dexie +
   react-router (HashRouter) + zod + Vitest. Node 20+, npm.
