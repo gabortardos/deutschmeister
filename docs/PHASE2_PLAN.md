@@ -297,14 +297,22 @@ options.
   streak + Insights. Storage: Dexie v2 `writingPieces`, device-local — cloud
   sync needs migration `0005_writing_pieces.sql` + a sync adapter, deferred to
   the next owner-SQL batch.
-- **M11.10 Pro activation** (~€9.99/mo · €89.99/yr): streaming tutor replies
-  (Pro-first preview; roll out to everyone later if usage data allows),
-  full-rewrite writing grading, 🎲 LLM-generated writing prompts, 250-word
-  cap + 5 pieces/day (writing stays capped even on Pro — a 250-word graded
-  text ≈ 800–1,200 output tokens, unlimited would eat the budget), larger
-  voice allowance (~300k chars/mo). Owner action: create Pro products in
-  Paddle (sandbox first) → add to `PADDLE_PRICE_MAP` in both Paddle
-  functions → re-paste both.
+- **M11.10a Pro writing features — shipped v2.22.0, dormant**: ✨ AI writing
+  prompts (contract #9 `generateWritingPrompt`, never cached — variety is the
+  point) + full-rewrite grading (contract #10 `rewriteWriting`, cached like
+  gradeWriting), gated by `writingAiExtrasEnabled(route, plan)`: Pro on
+  platform, **always on for BYO** (live immediately — own key, own tokens).
+  Rewrite persists as `WritingPiece.rewrite?` (no Dexie bump). Pro plan copy
+  made real; Pro `ttsCharCap` aligned to 300k (`paddle-webhook` `PLANS.pro`
+  aligned in-repo — reaches production when the owner re-pastes in M11.10b).
+- **M11.10b Pro activation (owner-gated)**: create Pro products in Paddle
+  (sandbox first) → add to `PADDLE_PRICE_MAP` in both Paddle functions →
+  re-paste both (includes the 300k webhook alignment) → build streaming
+  tutor replies (Pro-first preview; roll out to everyone later if usage data
+  allows) → remove `hidden: true` from the Pro plan entry. 250-word cap + 5
+  pieces/day already wired since M11.9; writing stays capped even on Pro —
+  a 250-word graded text ≈ 800–1,200 output tokens, unlimited would eat the
+  budget.
 
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 

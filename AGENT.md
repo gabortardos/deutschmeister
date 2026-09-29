@@ -460,6 +460,28 @@ the profile level). Corrections are NOT auto-converted into drills in
 M11.9 — there is no practice surface for ownerless drills yet (M11.10
 candidate).
 
+## M11.10a Pro writing features (v2.22.0, dormant)
+
+All Pro-tier writing features that need NO owner work, shipped dormant-safe
+(M11.10b = the owner-gated activation). Two new LLM contracts in
+`llm/services.ts`: #9 `generateWritingPrompt` (maxTokens 300, temp 0.9,
+deliberately NOT cached — variety is the point; the system prompt embeds
+the CEFR level, up to 8 recent task texts to avoid repeating, and a
+per-click `newId()` seed) and #10 `rewriteWriting` (maxTokens 1200,
+temp 0.3, cached like gradeWriting by level+model+hash(prompt+text)).
+Gate: `writingAiExtrasEnabled(route, plan)` in `src/engine/writing.ts` —
+Pro on the platform route, ALWAYS on for BYO (own key, own tokens → live
+for BYO users immediately), off otherwise. Writing page: "✨ AI prompt"
+button (badge "AI ✨"; pieces store `promptId: 'ai'`; 🎲 / level change /
+submit reset it) and "Full rewrite ✨" on the feedback card → indigo card
+with the corrected text, persisted as `WritingPiece.rewrite?` (optional +
+non-indexed → NO Dexie schema bump; `savePiece` upsert is the piece's only
+later write). Ineligible users see dormant-safe hints, no upsell links
+while Pro is unpurchasable. `plans.ts`: Pro copy is now real (writing
+studio, streaming, ~300k voice chars) and `ttsCharCap` is 300k — the
+`paddle-webhook` `PLANS.pro` entry is aligned in-repo and reaches
+production when the owner re-pastes the function in M11.10b.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

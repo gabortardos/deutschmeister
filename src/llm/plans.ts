@@ -89,16 +89,19 @@ export const PLAN_CATALOG: readonly PlanCatalogEntry[] = [
   {
     id: 'pro',
     name: 'Pro',
-    tagline: 'For dedicated learners (coming with the M11 content expansion)',
+    tagline: 'For dedicated learners',
     monthlyEur: 9.99,
     annualEur: 89.99,
     allowanceUsdMicros: 8_000_000,
-    ttsCharCap: 400_000,
-    hidden: true, // dormant until M11 fills it — never sell promises
+    ttsCharCap: 300_000,
+    // Dormant until M11.10b: owner creates the Paddle products → PADDLE_PRICE_MAP
+    // in both Paddle functions → remove this flag. Selling promises = refunds.
+    hidden: true,
     features: [
       'Everything in Plus',
-      'Larger HD-voice allowance',
-      'Premium tutoring features (in development)',
+      'Writing studio: AI prompts + full-rewrite grading (250 words, 5 pieces/day)',
+      'Streaming tutor replies',
+      '~300k characters/month of platform HD voice',
       'Priority support',
     ],
   },

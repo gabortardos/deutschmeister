@@ -3,9 +3,11 @@ import {
   conversationTurn,
   explainMistake,
   generateScenario,
+  generateWritingPrompt,
   gradeWriting,
   mistakesToDrills,
   normalizeCategory,
+  rewriteWriting,
   shortHash,
   suggestReply,
   tutorChatTurn,
@@ -436,6 +438,72 @@ describe('gradeWriting (M11.9)', () => {
     const again = await gradeWriting(deps(cache), INPUT)
     expect(again).toEqual(first)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('generateWritingPrompt (M11.10a)', () => {
+  it('parses the task shape and tells the model the level + recent tasks to avoid', async () => {
+    fetchMock.mockResolvedValueOnce(
+      completions(JSON.stringify({ taskDe: 'Beschreibe dein Traumhaus.', taskEn: 'Describe your dream house.' })),
+    )
+    const res = await generateWritingPrompt(deps(), {
+      level: 'B1',
+      excludeDe: ['Was hast du am Wochenende gemacht?'],
+      seed: 'seed-1',
+    })
+    expect(res.taskDe).toContain('Traumhaus')
+    expect(res.taskEn).toContain('dream house')
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined
+    const body = JSON.parse(String(init?.body)) as { messages: { role: string; content: string }[] }
+    expect(body.messages[0]?.content).toContain('CEFR level B1')
+    expect(body.messages[0]?.content).toContain('Wochenende')
+    expect(body.messages[0]?.content).toContain('seed-1')
+    expect(body.messages[1]?.content).toContain('B1')
+  })
+
+  it('works with no recent tasks and is never cached — every click is a fresh call', async () => {
+    fetchMock.mockResolvedValue(
+      completions(JSON.stringify({ taskDe: 'Dein Tagesablauf.', taskEn: 'Your daily routine.' })),
+    )
+    await generateWritingPrompt(deps(), { level: 'A1', excludeDe: [], seed: 'a' })
+    await generateWritingPrompt(deps(), { level: 'A1', excludeDe: [], seed: 'b' })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('rewriteWriting (M11.10a)', () => {
+  const INPUT = {
+    level: 'A2' as const,
+    promptDe: 'Was hast du am Wochenende gemacht?',
+    text: 'Am Wochenende bin ich ins Kino gegangen ohne mein Freund.',
+  }
+
+  it('parses the rewrite and instructs same-level correction', async () => {
+    fetchMock.mockResolvedValueOnce(
+      completions(
+        JSON.stringify({ rewrite: 'Am Wochenende bin ich ohne meinen Freund ins Kino gegangen.' }),
+      ),
+    )
+    const res = await rewriteWriting(deps(), INPUT)
+    expect(res.rewrite).toContain('ohne meinen Freund')
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined
+    const body = JSON.parse(String(init?.body)) as { messages: { role: string; content: string }[] }
+    expect(body.messages).toHaveLength(2)
+    expect(body.messages[0]?.content).toContain('CEFR level A2')
+    expect(body.messages[0]?.content).toContain('Wochenende')
+    expect(body.messages[1]?.content).toContain('Kino')
+  })
+
+  it('caches identical pieces (one fetch) and re-fetches for a different text', async () => {
+    const cache = memoryCache()
+    fetchMock.mockResolvedValue(completions(JSON.stringify({ rewrite: 'Korrigierte Fassung.' })))
+    await rewriteWriting(deps(cache), INPUT)
+    await rewriteWriting(deps(cache), INPUT)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    await rewriteWriting(deps(cache), { ...INPUT, text: 'Gestern habe ich einen Film gesehen.' })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })
 

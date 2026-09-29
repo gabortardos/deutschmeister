@@ -806,6 +806,112 @@ export async function gradeWriting(deps: LlmServiceDeps, input: WritingGradeInpu
   )
 }
 
+// ---------------------------------------------------------------------------
+// 9. generateWritingPrompt — fresh AI writing task (M11.10a; Pro/own-key)
+// ---------------------------------------------------------------------------
+
+const WritingPromptGenSchema = z.object({
+  taskDe: z.string().min(1).max(400),
+  taskEn: z.string().min(1).max(400),
+})
+
+export interface WritingPromptGenInput {
+  level: CefrLevel
+  /** Recent task texts (German) to avoid — repeats are boring. */
+  excludeDe: readonly string[]
+  /** Variety seed — every click should be able to yield a new task. */
+  seed: string
+}
+
+export interface GeneratedWritingPrompt {
+  taskDe: string
+  taskEn: string
+}
+
+/**
+ * One fresh free-writing task at the learner's CEFR level (M11.10a).
+ * Deliberately NOT cached: variety is the point, and the call is tiny.
+ */
+export async function generateWritingPrompt(
+  deps: LlmServiceDeps,
+  input: WritingPromptGenInput,
+): Promise<GeneratedWritingPrompt> {
+  const exclude = input.excludeDe.slice(0, 8)
+  const system = [
+    `You create ONE free-writing task for a German learner at CEFR level ${input.level}.`,
+    '- "taskDe": the task in German — 1 to 2 sentences, concrete and every-day usable, so the learner can write ~120 words about it at that level.',
+    '- "taskEn": the same task in English.',
+    exclude.length > 0
+      ? `- Do NOT repeat or closely resemble any of these recent tasks: ${exclude.map((e) => `"${e}"`).join('; ')}.`
+      : '- Be original.',
+    `- Variety seed (just noise, ignore its meaning): ${input.seed}`,
+    'JSON shape: { "taskDe": "...", "taskEn": "..." }',
+    'Return ONLY raw JSON — no prose, no markdown fences.',
+  ].join('\n')
+  const parsed = await chatJSON(
+    deps.config,
+    [
+      { role: 'system', content: system },
+      { role: 'user', content: `Give me a new ${input.level} writing task.` },
+    ],
+    WritingPromptGenSchema,
+    { maxTokens: 300, temperature: 0.9 },
+  )
+  return { taskDe: parsed.taskDe.trim(), taskEn: parsed.taskEn.trim() }
+}
+
+// ---------------------------------------------------------------------------
+// 10. rewriteWriting — full corrected rewrite (M11.10a; Pro/own-key)
+// ---------------------------------------------------------------------------
+
+const WritingRewriteSchema = z.object({ rewrite: z.string().min(1) })
+
+export interface WritingRewriteInput {
+  level: CefrLevel
+  promptDe: string
+  text: string
+}
+
+function rewriteMessages(input: WritingRewriteInput): ChatMessage[] {
+  const system = [
+    `You are a German tutor rewriting a learner's free-writing text (CEFR level ${input.level}).`,
+    `The writing task was: "${input.promptDe}".`,
+    'Rules:',
+    "- Rewrite the learner's German with ALL errors corrected: grammar, spelling, word order, word choice.",
+    `- Keep it at CEFR level ${input.level} complexity — natural, idiomatic German for that level, not show-off C2 prose.`,
+    "- Preserve the learner's meaning, structure and voice — do not add ideas, do not noticeably lengthen or shorten.",
+    '- Keep the paragraph breaks as they are.',
+    'JSON shape: { "rewrite": "..." }',
+    'Return ONLY raw JSON — no prose, no markdown fences.',
+  ].join('\n')
+  return [
+    { role: 'system', content: system },
+    { role: 'user', content: input.text.trim() },
+  ]
+}
+
+/**
+ * The full corrected rewrite of one piece (M11.10a) — the expensive Pro
+ * companion to the free correction list. Cached like gradeWriting: identical
+ * level+model+prompt+text re-runs (retry, reload, archive replay) are free.
+ */
+export async function rewriteWriting(
+  deps: LlmServiceDeps,
+  input: WritingRewriteInput,
+): Promise<{ rewrite: string }> {
+  return withCache(
+    deps,
+    `writing-rewrite:${input.level}:${deps.config.model}:${shortHash(`${input.promptDe}\n\n${input.text.trim()}`)}`,
+    async () => {
+      const parsed = await chatJSON(deps.config, rewriteMessages(input), WritingRewriteSchema, {
+        maxTokens: 1200,
+        temperature: 0.3,
+      })
+      return { rewrite: parsed.rewrite.trim() }
+    },
+  )
+}
+
 
 
 

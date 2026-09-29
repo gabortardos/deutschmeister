@@ -50,7 +50,7 @@ const SIGNATURE_MAX_AGE_SEC = 300
 const PLANS: Record<string, { allowanceUsdMicros: number; ttsCharCap: number }> = {
   basic: { allowanceUsdMicros: 2_000_000, ttsCharCap: 0 },
   plus: { allowanceUsdMicros: 3_500_000, ttsCharCap: 150_000 },
-  pro: { allowanceUsdMicros: 8_000_000, ttsCharCap: 400_000 },
+  pro: { allowanceUsdMicros: 8_000_000, ttsCharCap: 300_000 },
   // M9.6 Supporter (owner decision 2026-09-21): yearly €11.99 for key-bringers —
   // zero platform allowances; the value is the system itself (chat AI + HD voice
   // run on the user's own keys). A Supporter row intentionally REPLACES any prior

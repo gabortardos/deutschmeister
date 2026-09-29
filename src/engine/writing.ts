@@ -53,6 +53,17 @@ export function writingWordCap(plan: string): number {
   return plan === 'pro' ? WRITING_PRO_CAP_WORDS : WRITING_SOFT_CAP_WORDS
 }
 
+/**
+ * M11.10a AI extras (LLM-generated prompts + full-rewrite grading): Pro on the
+ * platform route, always on for BYO (own key, own tokens), off otherwise.
+ * Dormant in practice until the Pro tier is purchasable (owner: Paddle
+ * products), but BYO users get it immediately.
+ */
+export function writingAiExtrasEnabled(route: WritingRoute, plan: string): boolean {
+  if (route === 'byo') return true
+  return route === 'platform' && plan === 'pro'
+}
+
 export interface WritingQuota {
   usedToday: number
   limit: number

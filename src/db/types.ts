@@ -134,6 +134,8 @@ export interface WritingPiece extends BaseEntity {
   feedback: string
   /** "strengths" phrases (English). */
   strengths: string[]
+  /** Full corrected rewrite (M11.10a, Pro/own-key) — null until requested. */
+  rewrite?: string | null
   /** Epoch ms — the activity signal for streaks/heatmap (statsRepo). */
   createdAt: number
 }

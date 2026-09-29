@@ -9,6 +9,7 @@ import {
   countWords,
   promptForDay,
   promptsForLevel,
+  writingAiExtrasEnabled,
   writingDailyLimit,
   writingQuota,
   writingWordCap,
@@ -111,5 +112,14 @@ describe('prompt bank', () => {
         }
       }
     }
+  })
+
+  it('AI extras (✨ AI prompts + full rewrite) are Pro on platform, always on for BYO, off without AI', () => {
+    expect(writingAiExtrasEnabled('platform', 'pro')).toBe(true)
+    expect(writingAiExtrasEnabled('platform', 'plus')).toBe(false)
+    expect(writingAiExtrasEnabled('platform', 'free')).toBe(false)
+    expect(writingAiExtrasEnabled('byo', 'free')).toBe(true)
+    expect(writingAiExtrasEnabled('byo', 'plus')).toBe(true)
+    expect(writingAiExtrasEnabled('none', 'pro')).toBe(false)
   })
 })

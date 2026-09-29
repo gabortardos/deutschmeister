@@ -7,6 +7,7 @@ import {
   WRITING_MIN_WORDS,
   countWords,
   promptForDay,
+  writingAiExtrasEnabled,
   writingQuota,
   writingWordCap,
 } from '../../engine/writing'
@@ -15,7 +16,12 @@ import { allPieces, savePiece } from '../../db/repositories/writingRepo'
 import { CEFR_LEVELS, type CefrLevel, type WritingPiece } from '../../db/types'
 import { hintForLlmError } from '../../llm/adapter'
 import { PlatformAiError } from '../../llm/platform'
-import { gradeWriting } from '../../llm/services'
+import {
+  generateWritingPrompt,
+  gradeWriting,
+  rewriteWriting,
+  type GeneratedWritingPrompt,
+} from '../../llm/services'
 import { newId } from '../../utils/id'
 import { useAppStore } from '../../state/store'
 import { useLlmDeps } from '../../state/useLlmDeps'
@@ -45,10 +51,19 @@ function PieceResult({
   piece,
   onDone,
   canWriteAnother,
+  extrasEnabled,
+  rewriteBusy,
+  rewriteError,
+  onRewrite,
 }: {
   piece: WritingPiece
   onDone: () => void
   canWriteAnother: boolean
+  /** M11.10a extras: AI prompts + full rewrite — Pro on platform, always on for BYO. */
+  extrasEnabled: boolean
+  rewriteBusy: boolean
+  rewriteError: { message: string; hint?: string } | null
+  onRewrite: (piece: WritingPiece) => void
 }) {
   const mistakes = piece.mistakes ?? []
   return (
@@ -100,6 +115,30 @@ function PieceResult({
         </p>
       </div>
 
+      {piece.rewrite ? (
+        <div className="mt-4 rounded-lg border border-indigo-200 bg-indigo-50/60 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Full rewrite ✨</p>
+          <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{piece.rewrite}</p>
+        </div>
+      ) : extrasEnabled ? (
+        <div className="mt-4">
+          <Button onClick={() => onRewrite(piece)} disabled={rewriteBusy}>
+            {rewriteBusy ? 'Rewriting…' : 'Full rewrite ✨'}
+          </Button>
+          {rewriteError && (
+            <p className="mt-2 text-xs text-red-600">
+              {rewriteError.message}
+              {rewriteError.hint ? ` — ${rewriteError.hint}` : ''}
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="mt-4 text-xs text-slate-400">
+          ✨ Want the whole text corrected in one go? Full rewrite is a Pro feature — or use your own API key
+          (Settings → AI Model).
+        </p>
+      )}
+
       <div className="mt-4 flex flex-wrap gap-2">
         {canWriteAnother && (
           <Button variant="primary" onClick={onDone}>
@@ -131,6 +170,11 @@ export default function WritingPage() {
   const [error, setError] = useState<{ message: string; hint?: string } | null>(null)
   const [pieces, setPieces] = useState<WritingPiece[]>([])
   const [viewing, setViewing] = useState<WritingPiece | null>(null)
+  const [aiPrompt, setAiPrompt] = useState<GeneratedWritingPrompt | null>(null)
+  const [promptBusy, setPromptBusy] = useState(false)
+  const [promptError, setPromptError] = useState<{ message: string; hint?: string } | null>(null)
+  const [rewriteBusy, setRewriteBusy] = useState(false)
+  const [rewriteError, setRewriteError] = useState<{ message: string; hint?: string } | null>(null)
 
   const { deps, route } = useLlmDeps('writing')
   const plan = usePlatformStore((s) => s.plan)
@@ -154,11 +198,56 @@ export default function WritingPage() {
   const prompt = promptForDay(level, dayKey, shuffle)
   const quota = writingQuota(pieces, route, plan, Date.now())
   const cap = writingWordCap(plan)
+  /** M11.10a extras (✨ AI prompts + full rewrite): Pro on platform, always on for BYO. */
+  const extrasEnabled = writingAiExtrasEnabled(route, plan)
+  const activeTaskDe = aiPrompt?.taskDe ?? prompt.taskDe
+  const activeTaskEn = aiPrompt?.taskEn ?? prompt.taskEn
   const words = countWords(text)
   const overCap = words > cap
   const tooLong = words > WRITING_MAX_WORDS
   const tooShort = words > 0 && words < WRITING_MIN_WORDS
   const canSubmit = aiReady && !busy && quota.left > 0 && words >= WRITING_MIN_WORDS && !tooLong
+
+  /** ✨ M11.10a: one fresh AI-written task (Pro on platform / own key). */
+  async function genPrompt(): Promise<void> {
+    if (!deps || promptBusy) return
+    setPromptError(null)
+    setPromptBusy(true)
+    try {
+      const excludeDe = [
+        prompt.taskDe,
+        ...(aiPrompt ? [aiPrompt.taskDe] : []),
+        ...pieces.slice(0, 5).map((p) => p.promptDe),
+      ]
+      setAiPrompt(await generateWritingPrompt(deps, { level, excludeDe, seed: newId() }))
+    } catch (e) {
+      setPromptError(toError(e))
+    } finally {
+      setPromptBusy(false)
+    }
+  }
+
+  /** ✨ M11.10a: full corrected rewrite of a saved piece — persisted on the piece. */
+  async function runRewrite(piece: WritingPiece): Promise<void> {
+    if (!deps || rewriteBusy || piece.rewrite) return
+    setRewriteError(null)
+    setRewriteBusy(true)
+    try {
+      const { rewrite } = await rewriteWriting(deps, {
+        level: piece.cefr,
+        promptDe: piece.promptDe,
+        text: piece.text,
+      })
+      const updated = { ...piece, rewrite }
+      await savePiece(updated)
+      await refreshPieces()
+      setViewing((v) => (v && v.id === piece.id ? updated : v))
+    } catch (e) {
+      setRewriteError(toError(e))
+    } finally {
+      setRewriteBusy(false)
+    }
+  }
 
   async function submit(): Promise<void> {
     const trimmed = text.trim()
@@ -168,8 +257,8 @@ export default function WritingPage() {
     try {
       const grade = await gradeWriting(deps, {
         level,
-        promptDe: prompt.taskDe,
-        promptEn: prompt.taskEn,
+        promptDe: activeTaskDe,
+        promptEn: activeTaskEn,
         text: trimmed,
       })
       const now = Date.now()
@@ -178,9 +267,9 @@ export default function WritingPage() {
         updatedAt: now,
         createdAt: now,
         cefr: level,
-        promptId: prompt.id,
-        promptDe: prompt.taskDe,
-        promptEn: prompt.taskEn,
+        promptId: aiPrompt ? 'ai' : prompt.id,
+        promptDe: activeTaskDe,
+        promptEn: activeTaskEn,
         text: trimmed,
         wordCount: countWords(trimmed),
         mistakes: grade.mistakes,
@@ -191,6 +280,7 @@ export default function WritingPage() {
       setViewing(piece)
       setText('')
       setShuffle(0)
+      setAiPrompt(null)
       await refreshPieces()
     } catch (e) {
       setError(toError(e))
@@ -233,6 +323,8 @@ export default function WritingPage() {
               setShuffle(0)
               setText('')
               setViewing(null)
+              setAiPrompt(null)
+              setPromptError(null)
             }}
           >
             {CEFR_LEVELS.map((l) => (
@@ -254,6 +346,10 @@ export default function WritingPage() {
         <PieceResult
           piece={viewing}
           canWriteAnother={aiReady && quota.left > 0}
+          extrasEnabled={extrasEnabled}
+          rewriteBusy={rewriteBusy}
+          rewriteError={rewriteError}
+          onRewrite={(p) => void runRewrite(p)}
           onDone={() => setViewing(null)}
         />
       ) : aiReady && quota.left === 0 ? (
@@ -277,11 +373,38 @@ export default function WritingPage() {
           title={`Today's prompt — ${level}`}
           description={`Aim for ~${cap} words. The grader quotes every real mistake — it never rewrites your text.`}
         >
-          <p className="text-base font-medium text-slate-900">{prompt.taskDe}</p>
-          <p className="mt-1 text-sm text-slate-500">{prompt.taskEn}</p>
-          <div className="mt-2">
-            <Button onClick={() => setShuffle((s) => s + 1)}>🎲 Another prompt</Button>
+          <p className="text-base font-medium text-slate-900">
+            {aiPrompt && (
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-indigo-600">AI ✨</span>
+            )}
+            {activeTaskDe}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">{activeTaskEn}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => {
+                setShuffle((s) => s + 1)
+                setAiPrompt(null)
+                setPromptError(null)
+              }}
+            >
+              🎲 Another prompt
+            </Button>
+            {aiReady && extrasEnabled && (
+              <Button onClick={() => void genPrompt()} disabled={promptBusy}>
+                {promptBusy ? 'Thinking…' : '✨ AI prompt'}
+              </Button>
+            )}
+            {aiReady && !extrasEnabled && (
+              <span className="text-xs text-slate-400">✨ AI prompts: Pro feature — or your own API key</span>
+            )}
           </div>
+          {promptError && (
+            <p className="mt-2 text-xs text-red-600">
+              {promptError.message}
+              {promptError.hint ? ` — ${promptError.hint}` : ''}
+            </p>
+          )}
 
           <form
             className="mt-4 space-y-2"

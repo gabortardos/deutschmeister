@@ -8,7 +8,7 @@ import type { WritingPiece } from '../types'
  * ROADMAP M11.9. Pages never touch Dexie directly; this is the seam.
  */
 
-/** Upsert — pieces are immutable after grading, so put() is enough. */
+/** Upsert — grading writes once; the only later update is the M11.10a rewrite. */
 export async function savePiece(piece: WritingPiece): Promise<void> {
   await db.writingPieces.put(piece)
 }
