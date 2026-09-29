@@ -12,6 +12,7 @@ import type {
   UserProfile,
   VocabCard,
   VocabWord,
+  WritingPiece,
 } from './types'
 
 export class DeutschMeisterDB extends Dexie {
@@ -27,6 +28,7 @@ export class DeutschMeisterDB extends Dexie {
   scenarios!: Table<Scenario, string>
   settings!: Table<AppSettings, string>
   llmCache!: Table<LlmCacheEntry, string>
+  writingPieces!: Table<WritingPiece, string>
 
   constructor() {
     super('deutschmeister')
@@ -43,6 +45,11 @@ export class DeutschMeisterDB extends Dexie {
       scenarios: 'id, cefr, custom',
       settings: 'id',
       llmCache: 'key, createdAt',
+    })
+    // M11.9 free writing: additive v2. Only the NEW store is listed — Dexie
+    // merges the v1 definitions, existing installs upgrade to an empty table.
+    this.version(2).stores({
+      writingPieces: 'id, createdAt, cefr',
     })
   }
 }

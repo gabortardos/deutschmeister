@@ -737,6 +737,75 @@ export async function tutorChatTurn(
   }
 }
 
+// ---------------------------------------------------------------------------
+// 8. gradeWriting — free-writing correction list (M11.9)
+// ---------------------------------------------------------------------------
+
+const WritingFeedbackSchema = z.object({
+  overall: z.string().min(1),
+  strengths: z.array(z.string().min(1)).max(5).default([]),
+  mistakes: z.array(MistakeSchema).max(15).default([]),
+})
+
+export interface WritingGrade {
+  /** 2–3 English sentences: what was good + one concrete next step. */
+  overall: string
+  /** Up to 3 short English phrases. */
+  strengths: string[]
+  /** Correction list — same shape as conversation mistakes, so the Mistake
+   *  bank, MistakeExplainer and Insights consume it unchanged. */
+  mistakes: ConversationMistakeShape[]
+}
+
+export interface WritingGradeInput {
+  level: CefrLevel
+  promptDe: string
+  promptEn: string
+  text: string
+}
+
+function writingMessages(input: WritingGradeInput): ChatMessage[] {
+  const system = [
+    `You are a German tutor grading a short piece of free writing by a learner at CEFR level ${input.level}.`,
+    `The writing task was (German): "${input.promptDe}" (${input.promptEn}).`,
+    'Rules:',
+    '- "overall": 2-3 sentences in ENGLISH — what the learner did well and ONE concrete next step.',
+    '- "strengths": up to 3 short phrases in English (vocabulary, structure, ideas…).',
+    '- In "mistakes": quote the learner\'s German EXACTLY as written (the shortest fragment that carries the error), give the minimal correction, and pick the closest type.',
+    '- mistake "type" must be one of: gender, case, word-order, vocab, verb-form, other.',
+    '- At most 15 mistakes, in order of appearance; only real mistakes — never rewrite the whole text and never invent text that is not there.',
+    'JSON shape: { "overall": "...", "strengths": ["..."], "mistakes": [ { "said": "...", "corrected": "...", "type": "..." } ] }',
+    'Return ONLY raw JSON — every key above, no prose, no markdown fences.',
+  ].join('\n')
+  return [
+    { role: 'system', content: system },
+    { role: 'user', content: input.text.trim() },
+  ]
+}
+
+/**
+ * Grades one free-writing piece (M11.9). Cached: the key covers level, model
+ * and a hash of prompt+text, so re-grading an identical submission (retry,
+ * reload) is free — deliberate, grading is the priciest per-call contract.
+ */
+export async function gradeWriting(deps: LlmServiceDeps, input: WritingGradeInput): Promise<WritingGrade> {
+  return withCache(
+    deps,
+    `writing-grade:${input.level}:${deps.config.model}:${shortHash(`${input.promptDe}\n\n${input.text.trim()}`)}`,
+    async () => {
+      const parsed = await chatJSON(deps.config, writingMessages(input), WritingFeedbackSchema, {
+        maxTokens: 1000,
+        temperature: 0.3,
+      })
+      return {
+        overall: parsed.overall.trim(),
+        strengths: parsed.strengths.map((s) => s.trim()),
+        mistakes: parsed.mistakes,
+      }
+    },
+  )
+}
+
 
 
 

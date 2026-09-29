@@ -3,6 +3,7 @@ import {
   conversationTurn,
   explainMistake,
   generateScenario,
+  gradeWriting,
   mistakesToDrills,
   normalizeCategory,
   shortHash,
@@ -390,6 +391,51 @@ describe('tutorChatTurn (M11.8)', () => {
     const body = lastBody()
     expect(body.messages[0]?.content).toContain('ABOUT the German language')
     expect(body.messages[2]?.content).toBe('Why is it "zu Hause"?')
+  })
+})
+
+describe('gradeWriting (M11.9)', () => {
+  const INPUT = {
+    level: 'A2' as const,
+    promptDe: 'Was hast du am Wochenende gemacht?',
+    promptEn: 'What did you do at the weekend?',
+    text: 'Am Wochenende bin ich ins Kino gegangen ohne mein Freund.',
+  }
+
+  it('parses the correction-list shape and quotes the text as the user message', async () => {
+    fetchMock.mockResolvedValueOnce(
+      completions(
+        JSON.stringify({
+          overall: 'A lively weekend story with good Perfekt forms. Next: watch the accusative after ohne.',
+          strengths: ['varied vocabulary', 'clear structure'],
+          mistakes: [{ said: 'ohne mein Freund', corrected: 'ohne meinen Freund', type: 'case' }],
+        }),
+      ),
+    )
+    const res = await gradeWriting(deps(), INPUT)
+    expect(res.overall).toContain('accusative')
+    expect(res.strengths).toEqual(['varied vocabulary', 'clear structure'])
+    expect(res.mistakes).toEqual([{ said: 'ohne mein Freund', corrected: 'ohne meinen Freund', type: 'case' }])
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined
+    const body = JSON.parse(String(init?.body)) as { messages: { role: string; content: string }[] }
+    expect(body.messages).toHaveLength(2)
+    expect(body.messages[0]?.role).toBe('system')
+    expect(body.messages[0]?.content).toContain('CEFR level A2')
+    expect(body.messages[1]?.content).toContain('Kino')
+  })
+
+  it('defaults empty strengths/mistakes and caches identical submissions (one fetch)', async () => {
+    const cache = memoryCache()
+    fetchMock.mockResolvedValueOnce(
+      completions(JSON.stringify({ overall: 'Great work — no corrections needed.', strengths: [], mistakes: [] })),
+    )
+    const first = await gradeWriting(deps(cache), INPUT)
+    expect(first.strengths).toEqual([])
+    expect(first.mistakes).toEqual([])
+    const again = await gradeWriting(deps(cache), INPUT)
+    expect(again).toEqual(first)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
 

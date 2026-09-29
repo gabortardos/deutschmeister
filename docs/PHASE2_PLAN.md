@@ -290,10 +290,13 @@ options.
 
 - **M11.8 tutor chat — shipped v2.20.0** as the default version for ALL tiers
   within their existing metered budgets (no plan changes, no streaming).
-- **M11.9 free writing — next**: static per-CEFR prompt bank + correction list
-  grading (`MistakeSchema` + existing Explain ✨ buttons, NOT a full rewrite),
-  ~120-word soft cap, 1 piece/day free · 3/day Basic/Plus; counts toward
-  streak + Insights.
+- **M11.9 free writing — shipped v2.21.0**: static per-CEFR prompt bank (8
+  tasks/level) + correction list grading (`MistakeSchema` + existing Explain ✨
+  buttons, NOT a full rewrite), ~120-word soft cap (400 hard block), 1 piece/day
+  free · 3/day Basic/Plus · 10/day BYO (own key, own tokens); counts toward
+  streak + Insights. Storage: Dexie v2 `writingPieces`, device-local — cloud
+  sync needs migration `0005_writing_pieces.sql` + a sync adapter, deferred to
+  the next owner-SQL batch.
 - **M11.10 Pro activation** (~€9.99/mo · €89.99/yr): streaming tutor replies
   (Pro-first preview; roll out to everyone later if usage data allows),
   full-rewrite writing grading, 🎲 LLM-generated writing prompts, 250-word

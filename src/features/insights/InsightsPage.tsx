@@ -35,7 +35,7 @@ export default function InsightsPage() {
   }, [])
 
   async function load(): Promise<void> {
-    const [attempts, items, cards, words, turns, sessions, days] = await Promise.all([
+    const [attempts, items, cards, words, turns, sessions, days, pieces] = await Promise.all([
       db.drillAttempts.toArray(),
       db.drillItems.toArray(),
       db.vocabCards.toArray(),
@@ -43,15 +43,17 @@ export default function InsightsPage() {
       db.conversationTurns.toArray(),
       db.conversationSessions.toArray(),
       activityDays(),
+      db.writingPieces.toArray(),
     ])
     const insights = computeInsights({
       attempts,
       items,
       cards,
       words,
-      // Only learner turns carry corrections.
-      turns: turns.filter((t) => t.role === 'user'),
+      // Only learner turns carry corrections; writing pieces join as pseudo-turns (M11.9).
+      turns: [...pieces, ...turns.filter((t) => t.role === 'user')],
       conversations: sessions.length,
+      writing: pieces.length,
     })
     const streak = computeStreaks(
       days.filter((d) => isActiveDay(d)).map((d) => d.date),
@@ -80,6 +82,7 @@ export default function InsightsPage() {
             {totals.drills} drills · {totals.drillAccuracy}% correct
           </Badge>
           <Badge tone="ok">{totals.conversations} conversations</Badge>
+          <Badge tone="ok">✍️ {totals.writing} writing {totals.writing === 1 ? 'piece' : 'pieces'}</Badge>
           <Badge tone="warn">{totals.corrections} corrections received</Badge>
         </div>
       </Card>
@@ -151,7 +154,7 @@ export default function InsightsPage() {
         </ul>
       </Card>
 
-      <Card title="Most-corrected in conversation" description="What the tutor fixes most often in your replies.">
+      <Card title="Most-corrected in conversation" description="What the tutor fixes most often in your chats and free writing.">
         {insights.mistakeTypes.length === 0 ? (
           <p className="text-sm text-slate-500">No conversations yet — corrections will show up here.</p>
         ) : (

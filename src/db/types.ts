@@ -115,6 +115,29 @@ export interface ConversationTurn extends BaseEntity {
   assisted?: boolean
 }
 
+/**
+ * M11.9 free writing: one graded text against a prompt from the static bank.
+ * Corrections reuse the ConversationMistake shape so the Mistake bank and
+ * Insights consume them through the existing pipeline (pseudo-turn mapping).
+ */
+export interface WritingPiece extends BaseEntity {
+  cefr: CefrLevel
+  promptId: string
+  promptDe: string
+  promptEn: string
+  /** The learner's text exactly as submitted (trimmed). */
+  text: string
+  wordCount: number
+  /** Correction list from the gradeWriting contract; always set once saved. */
+  mistakes: ConversationMistake[] | null
+  /** "overall" feedback paragraph (English). */
+  feedback: string
+  /** "strengths" phrases (English). */
+  strengths: string[]
+  /** Epoch ms — the activity signal for streaks/heatmap (statsRepo). */
+  createdAt: number
+}
+
 export interface LessonLog extends BaseEntity {
   date: string // YYYY-MM-DD
   newWordIds: string[]

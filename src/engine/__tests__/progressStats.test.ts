@@ -48,6 +48,11 @@ describe('dayActions / isActiveDay', () => {
     expect(isActiveDay(day('2026-01-01', { newWords: 5 }))).toBe(false)
     expect(isActiveDay(day('2026-01-01', { drills: 1 }))).toBe(true)
   })
+
+  it('counts writing pieces (M11.9) — optional field, pre-M11.9 rows tolerated', () => {
+    expect(dayActions(day('2026-01-01', { writing: 2 }))).toBe(2)
+    expect(dayActions(day('2026-01-01', { reviews: 1, drills: 1, conversations: 1, writing: 1 }))).toBe(4)
+  })
 })
 
 describe('computeStreaks', () => {

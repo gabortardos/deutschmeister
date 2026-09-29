@@ -98,6 +98,7 @@ describe('computeInsights', () => {
       drillAccuracy: 50,
       conversations: 3,
       corrections: 1,
+      writing: 0,
     })
     expect(insights.accuracyByType).toHaveLength(1) // orphan skipped here
     expect(insights.vocabCoverage).toEqual([{ cefr: 'A1', introduced: 1, total: 2 }])
@@ -111,5 +112,21 @@ describe('computeInsights', () => {
     expect(insights.accuracyByCefr).toEqual([])
     expect(insights.vocabCoverage).toEqual([])
     expect(insights.mistakeTypes).toEqual([])
+  })
+
+  it('counts graded writing pieces (M11.9); writing corrections count as corrections', () => {
+    const insights = computeInsights({
+      attempts: [],
+      items: [],
+      cards: [],
+      words: [],
+      // A writing piece riding the turns list (pseudo-turn mapping).
+      turns: [{ mistakes: [{ type: 'case' }] }],
+      conversations: 0,
+      writing: 4,
+    })
+    expect(insights.totals.writing).toBe(4)
+    expect(insights.totals.corrections).toBe(1)
+    expect(insights.mistakeTypes[0]).toMatchObject({ key: 'case', count: 1 })
   })
 })

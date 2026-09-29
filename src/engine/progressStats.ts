@@ -12,7 +12,8 @@ import { DAY_MS, dateKey, startOfDay } from './text'
 /** One local calendar day of genuine learner activity (LessonLogs are NOT used:
  *  their newWordIds/grammarTopicId are stamped when the plan is CREATED on app
  *  open, not when the learner actually studies). Sources: drillAttempts.at,
- *  vocabCards.updatedAt (every review touches it), conversationSessions.startedAt. */
+ *  vocabCards.updatedAt (every review touches it), conversationSessions.startedAt,
+ *  writingPieces.createdAt (M11.9 graded free-writing pieces). */
 export interface ActivityDay {
   /** YYYY-MM-DD, local timezone. */
   date: string
@@ -24,11 +25,14 @@ export interface ActivityDay {
   drills: number
   /** Conversation sessions started that day. */
   conversations: number
+  /** Free-writing pieces graded that day (M11.9). Optional: pre-M11.9 rows
+   *  and hand-built test fixtures predate the field. */
+  writing?: number
 }
 
 export interface HeatCell {
   date: string
-  /** reviews + drills + conversations that day (newWords already included via reviews). */
+  /** reviews + drills + conversations + writing that day (newWords already included via reviews). */
   actions: number
   /** 0 = inactive, 1–4 = relative intensity quartile. */
   level: 0 | 1 | 2 | 3 | 4
@@ -76,9 +80,9 @@ export function addDays(date: string, n: number): string {
   return dateKey(shifted)
 }
 
-/** Total learner actions on a day (drills + reviews + conversations). */
+/** Total learner actions on a day (drills + reviews + conversations + writing). */
 export function dayActions(day: ActivityDay): number {
-  return day.reviews + day.drills + day.conversations
+  return day.reviews + day.drills + day.conversations + (day.writing ?? 0)
 }
 
 export function isActiveDay(day: ActivityDay): boolean {

@@ -215,7 +215,7 @@ export default function MistakeBankPage() {
 
       <Card
         title={`Conversation corrections (${convRows.length})`}
-        description="What your tutor corrected in recent chats — newest first."
+        description="What your tutor corrected in recent chats and free writing — newest first."
       >
         {convRows.length === 0 ? (
           <p className="text-sm text-slate-500">No corrections yet — start a conversation and let the coach nitpick. 💬</p>

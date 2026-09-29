@@ -27,18 +27,29 @@ export interface MistakeBank {
  * lapses — those words stay listed until redesigned on purpose).
  */
 export async function loadMistakeBank(): Promise<MistakeBank> {
-  const [attempts, items, topics, cards, words, turns] = await Promise.all([
+  const [attempts, items, topics, cards, words, turns, pieces] = await Promise.all([
     db.drillAttempts.toArray(),
     db.drillItems.toArray(),
     db.grammarTopics.toArray(),
     db.vocabCards.toArray(),
     db.vocabWords.toArray(),
     db.conversationTurns.toArray(),
+    db.writingPieces.toArray(),
   ])
+  // M11.9: graded free-writing pieces ride the conversation-corrections
+  // pipeline as pseudo-turns — same { said, corrected, type } shape, so the
+  // bank needs zero new rendering. The 'writing' sessionId is a display key
+  // only; the bank never deep-links it to a conversation route.
+  const pieceTurns = pieces.map((p) => ({
+    id: p.id,
+    sessionId: 'writing',
+    updatedAt: p.updatedAt,
+    mistakes: p.mistakes,
+  }))
   return {
     drills: collectDrillMistakes(attempts, items, topics),
     words: collectTroubleWords(cards, words),
-    conversations: collectConversationMistakes(turns, 20),
+    conversations: collectConversationMistakes([...pieceTurns, ...turns], 20),
     items,
     bank: words,
   }

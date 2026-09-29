@@ -11,19 +11,21 @@ import { db } from '../dexie'
  *                               original timestamps, so cloud pulls don't inflate)
  *  - vocabCards.introducedDate (first touch of a word)
  *  - conversationSessions.startedAt
+ *  - writingPieces.createdAt     (M11.9 graded free-writing pieces)
  */
 export async function activityDays(): Promise<ActivityDay[]> {
-  const [attempts, cards, sessions] = await Promise.all([
+  const [attempts, cards, sessions, pieces] = await Promise.all([
     db.drillAttempts.toArray(),
     db.vocabCards.toArray(),
     db.conversationSessions.toArray(),
+    db.writingPieces.toArray(),
   ])
 
   const byDate = new Map<string, ActivityDay>()
   const cell = (date: string): ActivityDay => {
     let row = byDate.get(date)
     if (!row) {
-      row = { date, newWords: 0, reviews: 0, drills: 0, conversations: 0 }
+      row = { date, newWords: 0, reviews: 0, drills: 0, conversations: 0, writing: 0 }
       byDate.set(date, row)
     }
     return row
@@ -35,6 +37,11 @@ export async function activityDays(): Promise<ActivityDay[]> {
   }
   for (const attempt of attempts) cell(keyOfDay(attempt.at)).drills += 1
   for (const session of sessions) cell(keyOfDay(session.startedAt)).conversations += 1
+  // M11.9: every graded free-writing piece counts as genuine activity (streak + heatmap).
+  for (const piece of pieces) {
+    const row = cell(keyOfDay(piece.createdAt))
+    row.writing = (row.writing ?? 0) + 1
+  }
 
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
 }

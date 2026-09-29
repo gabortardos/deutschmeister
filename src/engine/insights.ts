@@ -67,7 +67,10 @@ export interface Insights {
     /** Integer 0–100, 0 when there are no attempts. */
     drillAccuracy: number
     conversations: number
+    /** Conversation + free-writing corrections received (M11.9 pieces included). */
     corrections: number
+    /** M11.9: graded free-writing pieces. */
+    writing: number
   }
   /** Only drill types with ≥1 attempt, worst accuracy first (then most attempts). */
   accuracyByType: AccuracyRow[]
@@ -171,9 +174,12 @@ export function computeInsights(input: {
   items: readonly DrillItemLike[]
   cards: readonly { wordId: string }[]
   words: readonly { id: string; cefr: CefrLevel }[]
-  /** User turns only — tutor turns carry no mistakes. */
+  /** User turns only — tutor turns carry no mistakes. Writing pieces join
+   *  this list (M11.9): their correction lists count as corrections too. */
   turns: readonly TurnLike[]
   conversations: number
+  /** M11.9: graded free-writing pieces (optional so older callers stay valid). */
+  writing?: number
 }): Insights {
   const drills = input.attempts.length
   const drillCorrect = input.attempts.filter((a) => a.correct).length
@@ -184,6 +190,7 @@ export function computeInsights(input: {
       drillAccuracy: pct(drillCorrect, drills),
       conversations: input.conversations,
       corrections: input.turns.reduce((sum, t) => sum + (t.mistakes?.length ?? 0), 0),
+      writing: input.writing ?? 0,
     },
     accuracyByType: accuracyByType(input.attempts, input.items),
     accuracyByCefr: accuracyByCefr(input.attempts, input.items),

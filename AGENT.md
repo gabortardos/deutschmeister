@@ -428,6 +428,38 @@ Billing unchanged (BYO unmetered; platform teaser→credits→allowance).
 Note: `vite preview` serves under the `/deutschmeister/` base path —
 smoke-test `/deutschmeister/tutor`, not `/tutor`.
 
+## M11.9 Free writing (v2.21.0)
+
+New `/#writing` route ("Writing" in the desktop nav, ✍️ Free writing in the
+mobile More sheet). Homework-style free writing: a static bilingual prompt
+bank (`src/content/writing/prompts.ts`, 8 tasks per CEFR level, 48 total —
+A1 everyday texts → C2 stylistic play), a deterministic daily pick
+(`promptForDay` in the pure `src/engine/writing.ts` — the 🎲 button just
+advances a salt), and grading via LLM contract #8 `gradeWriting`
+(`llm/services.ts`, maxTokens 1000, temp 0.3, cached by
+level+model+hash(prompt+text) so re-grading an identical submission is
+free): 2–3 English "overall" sentences, ≤3 strengths, ≤15 corrections
+reusing MistakeSchema — corrections render as MistakeExplainer rows (Explain
+✨ per correction) and flow into the Mistake bank + Insights through the
+conversation-mistake pipeline (mistakeRepo maps pieces to pseudo-turns;
+sessionId 'writing' is a display key only, never deep-linked). Caps and day
+limits (all in engine/writing.ts): min 15 words, soft cap 120 (amber,
+still submittable), hard block 400; 1 piece/day free · 3 Basic/Plus · 5 Pro
+(dormant until M11.10) · 10 on a BYO key (own tokens, anti-runaway only);
+quota counts local calendar days (keyOfDay) off stored pieces. Storage:
+Dexie version(2) `writingPieces` (additive — existing installs upgrade to
+an empty table); `writingRepo` is the seam. NOT cloud-synced yet on
+purpose: syncEngine has no per-adapter failure isolation, so shipping an
+adapter before the owner runs `0005_writing_pieces.sql` would break sync
+for everyone — migration + adapter land with the next owner-SQL batch.
+Streak/heatmap: `ActivityDay.writing?` (optional field) counted by
+dayActions; statsRepo buckets `writingPieces.createdAt`. Insights:
+`totals.writing` + ✍️ badge; writing corrections join mistakeTypes and the
+corrections total. Level select persists to `dm-writing-level` (defaults to
+the profile level). Corrections are NOT auto-converted into drills in
+M11.9 — there is no practice surface for ownerless drills yet (M11.10
+candidate).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
