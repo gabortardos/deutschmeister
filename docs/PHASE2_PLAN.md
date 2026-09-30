@@ -387,6 +387,20 @@ options.
     to 5,000: +1,424 over batches 4–5 (~712/batch — the themes this batch
     drew from were already half-covered, so batches 4–5 carry a slightly
     larger share of the 5,000 target).
+  - **M12.6 vocab batch 4 — SHIPPED (v2.28.0, 2026-09-29)**: +712 words
+    (3,576 → 4,288; A2 +88 · B1 +137 · B2 +386 · C1 +101) over Natur (Nature),
+    Umwelt (Environment, new theme) and Gesellschaft (Society). B2 nature
+    covers landscape/weather/animals/plants/processes/outdoor; environment
+    covers Nachhaltigkeit/energy/waste/water/climate plus an adjective band
+    (umweltbewusst, erneuerbar…); C1 adds abstract register (Kipppunkt,
+    Renaturierung, Narrativ, Vergangenheitsbewältigung, Schuldenbremse…);
+    B2 society spans politics/state, welfare/demographics, values/culture,
+    change/finances/religion. Candidates pre-de-duplicated against the
+    pre-session headword dump (54 collisions dropped); a throwaway
+    vite-node checker enforced row shape (leading null article on
+    verbs/adjectives), global headword uniqueness, sentence containment and
+    plural-only-on-nouns before the suite ran green. Remaining to 5,000:
+    +712 over batch 5.
   - **M12.8 A1–B2 grammar completeness audit**: diff the topic list
     against a standard curriculum (Goethe A1–B2 checklists); candidate
     gaps already spotted: full Präteritum (alle starken Verben +
