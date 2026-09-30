@@ -555,6 +555,23 @@ anywhere, grep for hardcoded level lists (`'A1', 'A2', 'B1', 'B2'`) — the
 canonical source is `CEFR_LEVELS` in `src/db/types.ts`. Known remaining
 intentional cap: `PLACEMENT_LEVELS` (B2 — placement bank has no C items).
 
+## M12.4 vocab batch 2 (v2.26.0)
+
+Second vocab expansion: **+634 words, 2,461 → 3,095** over Reisen/Verkehr
+(Travel 218 · Transport 129) and Behörden/Ämter/Recht (Authorities 149 ·
+Law 109); A2 +120 · B1 +226 · B2 +224 · C1 +64 — the C1 additions are pure
+legal/administrative register. Same mechanics as M12.3 (append-stable ids at
+the end of each level file; `ensureVocabSeeded` bulkPuts the whole corpus so
+appended words + refreshed ranks propagate on next launch). ~68 pool words
+intentionally skipped (proper nouns, archaic/niche terms, near-duplicates).
+
+**Ops lesson**: after this batch the deployed app still showed 2,461 — the
+words existed only in the working tree. GitHub Pages deploys from pushed
+commits via `.github/workflows/deploy.yml`; a local `dist/` rebuild never
+reaches production. When a deployed count looks stale, check `git status`
++ Actions FIRST, then the service worker (network-first shell means one
+extra reload at most).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

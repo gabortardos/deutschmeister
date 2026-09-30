@@ -371,6 +371,13 @@ options.
     leak, Küche, was caught by the uniqueness test and removed). Vocab
     tests extended for C1 counts + C2-zero guard. Remaining to 5,000:
     +2,539 over batches 2–5 (~635/batch, themes per the list above).
+  - **M12.4 vocab batch 2 — SHIPPED (v2.26.0, 2026-09-29)**: +634 words
+    (2,461 → 3,095; A2 +120 · B1 +226 · B2 +224 · C1 +64) over
+    Reisen/Verkehr (Travel + Transport) and Behörden/Ämter/Recht
+    (Authorities + Law); the C1 band is legal/administrative register.
+    Append-stable rows; all corpus invariants hold via the existing
+    test contract (counts derive from the row arrays). Remaining to
+    5,000: +1,905 over batches 3–5 (~635/batch).
   - **M12.8 A1–B2 grammar completeness audit**: diff the topic list
     against a standard curriculum (Goethe A1–B2 checklists); candidate
     gaps already spotted: full Präteritum (alle starken Verben +
