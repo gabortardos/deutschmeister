@@ -378,6 +378,15 @@ options.
     Append-stable rows; all corpus invariants hold via the existing
     test contract (counts derive from the row arrays). Remaining to
     5,000: +1,905 over batches 3–5 (~635/batch).
+  - **M12.5 vocab batch 3 — SHIPPED (v2.27.0, 2026-09-29)**: +481 words
+    (3,095 → 3,576; A2 +72 · B1 +238 · B2 +99 · C1 +72) over
+    Gefühle/Charakter (Emotions +142, new Character theme +108) and
+    Medien/Technik (Media +137 · Technology +94); the C1 band adds
+    psyche/character depth, media critique and AI register. Append-stable
+    rows; corpus invariants hold via the existing test contract. Remaining
+    to 5,000: +1,424 over batches 4–5 (~712/batch — the themes this batch
+    drew from were already half-covered, so batches 4–5 carry a slightly
+    larger share of the 5,000 target).
   - **M12.8 A1–B2 grammar completeness audit**: diff the topic list
     against a standard curriculum (Goethe A1–B2 checklists); candidate
     gaps already spotted: full Präteritum (alle starken Verben +

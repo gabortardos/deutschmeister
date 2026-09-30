@@ -572,6 +572,23 @@ reaches production. When a deployed count looks stale, check `git status`
 + Actions FIRST, then the service worker (network-first shell means one
 extra reload at most).
 
+## M12.5 vocab batch 3 (v2.27.0)
+
+Third vocab expansion: **+481 words, 3,095 → 3,576** over Gefühle/Charakter
+(Emotions +142; new `Character` theme +108) and Medien/Technik (Media +137 ·
+Technology +94); A2 +72 · B1 +238 · B2 +99 · C1 +72. Reuses the existing
+theme labels (Emotions/Media/Technology) plus one new Character label so the
+Vocab-page theme filter stays clean. Same append-stable mechanics as
+M12.3/M12.4. Remaining to 5,000: +1,424 over batches 4–5 (~712/batch).
+
+**Dedup lesson**: the candidate pool was checked in-process (import
+SEED_VOCAB, Map over trimmed headwords — mirrors the case-sensitive
+uniqueness test). A second shell-side check (`comm` against a grep-extracted
+headword list) silently under-reported because vite-node spinner output
+pollutes the dumped file — Heimweh and Verlangen slipped through, were caught
+by the in-process dup scan and replaced with Nostalgie/Leidenschaft. Never
+trust a text-file pipeline for corpus checks; always import the corpus.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.
