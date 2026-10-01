@@ -77,6 +77,13 @@ describe('sortVoiceInfos', () => {
       FALLBACK_HD_VOICES.map((v) => v.id),
     )
   })
+
+  it('M13.3: fallback list is exactly one female + one male', () => {
+    expect(FALLBACK_HD_VOICES).toEqual([
+      { id: 'de-DE-Neural2-A', gender: 'FEMALE' },
+      { id: 'de-DE-Neural2-B', gender: 'MALE' },
+    ])
+  })
 })
 
 describe('platform HD voice (M8)', () => {

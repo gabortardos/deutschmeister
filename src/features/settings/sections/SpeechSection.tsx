@@ -30,7 +30,7 @@ export default function SpeechSection() {
   const handleHdActive = useCallback((a: boolean) => setHdActive(a), [])
 
   useEffect(() => {
-    const refresh = (): void => setVoices(tts.germanVoices())
+    const refresh = (): void => setVoices(tts.pickableGermanVoices())
     refresh()
     const off = tts.onVoicesChanged(refresh)
     return off
@@ -91,7 +91,7 @@ export default function SpeechSection() {
           hint={
             hdActive
               ? 'HD cloud voice is active — this list is the offline fallback only (greyed). Turn HD off below to pick a browser voice.'
-              : `${voices.length} German voice(s) found — ranked by expected quality, best first. ▶ previews and selects.`
+              : `${voices.length} voice(s) offered — broken/robotic device voices are hidden. ▶ previews and selects.`
           }
         >
           <div
@@ -173,6 +173,12 @@ function HdVoiceCard(props: {
   const [previewError, setPreviewError] = useState<string | null>(null)
 
   const active = cfg.enabled && (key.trim().length > 0 || platformAvailable)
+  // M13.3: the checkbox may only be tickable when HD can actually speak —
+  // own key pasted OR the included voice is in the plan. Otherwise the option
+  // "selected itself" on accounts without an included voice (Supporter) and
+  // the browser list never greyed out. The key field below stays visible so
+  // key-bringing accounts can still paste their key to enable HD.
+  const canEnable = key.trim().length > 0 || platformAvailable
   useEffect(() => {
     onActiveChange(active)
   }, [active, onActiveChange])
@@ -210,11 +216,12 @@ function HdVoiceCard(props: {
   return (
     <div className="mt-6 border-t border-slate-200 pt-4">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <label className={`flex items-center gap-2 text-sm font-semibold text-slate-800 ${canEnable ? '' : 'cursor-not-allowed opacity-60'}`}>
           <input
             type="checkbox"
             className="h-4 w-4 rounded border-slate-300"
-            checked={cfg.enabled}
+            disabled={!canEnable}
+            checked={cfg.enabled && canEnable}
             onChange={(e) => setCfg(setHdConfig({ enabled: e.target.checked }))}
           />
           HD cloud voice (optional)
@@ -225,37 +232,38 @@ function HdVoiceCard(props: {
           ) : (
             <Badge tone="ok">active — included with your plan</Badge>
           ))}
-        {cfg.enabled && !key.trim() && !platformAvailable && (
+        {!canEnable && (
           <Badge tone="warn">
-            {signedIn ? 'HD voice is a Plus feature' : 'sign in to use the included HD voice'}
+            {signedIn ? 'needs your Google key below (Supporter plan)' : 'sign in for the included voice — or paste a key'}
           </Badge>
         )}
       </div>
       <p className="mt-1 text-xs text-slate-500">
         Crystal-clear neural voices from Google Cloud. Signed-in users get an included German set
-        (bigger on paid plans) with no setup; your own Google key unlocks every German voice. All
-        app speech routes through HD with automatic fallback to the browser voice. Key + voice are
-        stored only in this browser (localStorage) — never in app data exports.
+        with no setup; on key-bringing plans (and for every German voice Google offers) paste your
+        own Google key below. All app speech routes through HD with automatic fallback to the
+        browser voice. Key + voice are stored only in this browser (localStorage) — never in app
+        data exports.
       </p>
 
-      {cfg.enabled && (
-        <div className="mt-3 grid gap-3">
-          <Field
-            label="Google Cloud API key (optional)"
-            hint="Your own key unlocks ALL German voices incl. premium families. Google Cloud Console → APIs & Services → Credentials (Cloud Text-to-Speech API must be enabled)."
-          >
-            <input
-              type="password"
-              className={inputClass}
-              placeholder={platformAvailable ? 'empty = included plan voice' : 'AIza…'}
-              value={key}
-              onChange={(e) => {
-                setKey(e.target.value)
-                setGoogleTtsKey(e.target.value)
-              }}
-              autoComplete="off"
-            />
-          </Field>
+      <div className="mt-3 grid gap-3">
+        <Field
+          label="Google Cloud API key (optional)"
+          hint="Your own key unlocks ALL German voices incl. premium families. Google Cloud Console → APIs & Services → Credentials (Cloud Text-to-Speech API must be enabled)."
+        >
+          <input
+            type="password"
+            className={inputClass}
+            placeholder={platformAvailable ? 'empty = included plan voice' : 'AIza…'}
+            value={key}
+            onChange={(e) => {
+              setKey(e.target.value)
+              setGoogleTtsKey(e.target.value)
+            }}
+            autoComplete="off"
+          />
+        </Field>
+        {cfg.enabled && (
           <Field
             label="HD voice"
             hint={
@@ -263,7 +271,7 @@ function HdVoiceCard(props: {
                 ? `Could not load the voice list (${voiceListError}) — showing defaults.`
                 : key.trim()
                   ? `${hdVoices.length} German voice(s) on your key — Neural2 first.`
-                  : `${hdVoices.length} included German voice(s) — Neural2 first, then Wavenet.`
+                  : 'Included German voices — one female, one male (Neural2).'
             }
           >
             <div className="flex gap-2">
@@ -287,9 +295,9 @@ function HdVoiceCard(props: {
               </button>
             </div>
           </Field>
-          {previewError && <p className="text-xs text-red-600">{previewError}</p>}
-        </div>
-      )}
+        )}
+        {previewError && <p className="text-xs text-red-600">{previewError}</p>}
+      </div>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
 import { getSupabase } from './supabaseClient'
-import { syncNow } from './syncEngine'
+import { clearLocalSyncData, shouldResetLocalData, syncNow } from './syncEngine'
 
 export interface AuthUser {
   id: string
@@ -28,6 +28,25 @@ export const useAuthStore = create<AuthState>(() => ({
 
 let initialized = false
 
+/** localStorage key holding the uid that OWNS the local Dexie data (M13.3). */
+const LOCAL_OWNER_KEY = 'dm-local-owner'
+
+function readLocalOwner(): string | null {
+  try {
+    return localStorage.getItem(LOCAL_OWNER_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writeLocalOwner(uid: string): void {
+  try {
+    localStorage.setItem(LOCAL_OWNER_KEY, uid)
+  } catch {
+    /* private mode — account switching then falls back to plain merge */
+  }
+}
+
 /**
  * Idempotent; called once from the app root (Layout). Creating the client early matters:
  * `detectSessionInUrl` then parses the OAuth / email-confirmation / recovery redirect on
@@ -43,14 +62,28 @@ export async function initAuth(): Promise<void> {
   }
   useAuthStore.setState({ configured: true })
   const { data } = await sb.auth.getSession()
-  applySession(data.session)
+  void handleSession(data.session, true)
   sb.auth.onAuthStateChange((event, session) => {
     useAuthStore.setState({ recovery: event === 'PASSWORD_RECOVERY' })
-    applySession(session)
-    if (event === 'SIGNED_IN') void syncNow('merge')
+    void handleSession(session, event === 'SIGNED_IN')
   })
   useAuthStore.setState({ ready: true })
-  if (data.session) void syncNow('merge')
+}
+
+/**
+ * M13.3 account switch: apply the session, and when a DIFFERENT account signs
+ * in on this browser, wipe the previous account's local rows BEFORE the first
+ * sync — otherwise the old account's learning levels would both stay visible
+ * and get pushed into the new account's cloud. After the wipe, `syncNow`
+ * pulls the signed-in account's own data down.
+ */
+async function handleSession(session: Session | null, sync: boolean): Promise<void> {
+  applySession(session)
+  const uid = session?.user?.id ?? null
+  const owner = readLocalOwner()
+  if (shouldResetLocalData(owner, uid)) await clearLocalSyncData()
+  if (uid) writeLocalOwner(uid)
+  if (sync && uid) void syncNow('merge')
 }
 
 function applySession(session: Session | null): void {

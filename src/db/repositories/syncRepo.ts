@@ -28,6 +28,8 @@ export interface SyncAdapter {
   save: (rows: BaseEntity[]) => Promise<void>
   /** Push-side predicate: limits what this device uploads (pull always takes everything). */
   pushFilter?: (row: BaseEntity) => boolean
+  /** M13.3 account switch: wipe this table's LOCAL rows (cloud is untouched). */
+  clear: () => Promise<void>
 }
 
 export const syncAdapters: readonly SyncAdapter[] = [
@@ -37,6 +39,7 @@ export const syncAdapters: readonly SyncAdapter[] = [
     save: async (rows) => {
       await db.userProfiles.bulkPut(rows as UserProfile[])
     },
+    clear: () => db.userProfiles.clear(),
   },
   {
     pgTable: 'app_settings',
@@ -44,6 +47,7 @@ export const syncAdapters: readonly SyncAdapter[] = [
     save: async (rows) => {
       await db.settings.bulkPut(rows as AppSettings[])
     },
+    clear: () => db.settings.clear(),
   },
   {
     pgTable: 'vocab_words',
@@ -53,6 +57,7 @@ export const syncAdapters: readonly SyncAdapter[] = [
     },
     // Only the user's own words — seed vocabulary ships with the app bundle.
     pushFilter: (row) => (row as VocabWord).custom === true,
+    clear: () => db.vocabWords.clear(),
   },
   {
     pgTable: 'vocab_cards',
@@ -60,6 +65,7 @@ export const syncAdapters: readonly SyncAdapter[] = [
     save: async (rows) => {
       await db.vocabCards.bulkPut(rows as VocabCard[])
     },
+    clear: () => db.vocabCards.clear(),
   },
   {
     pgTable: 'drill_items',
@@ -69,6 +75,7 @@ export const syncAdapters: readonly SyncAdapter[] = [
     },
     // Only AI-generated drills — seed drills ship with the app bundle.
     pushFilter: (row) => (row as DrillItem).source === 'llm',
+    clear: () => db.drillItems.clear(),
   },
   {
     pgTable: 'drill_attempts',
@@ -76,6 +83,7 @@ export const syncAdapters: readonly SyncAdapter[] = [
     save: async (rows) => {
       await db.drillAttempts.bulkPut(rows as DrillAttempt[])
     },
+    clear: () => db.drillAttempts.clear(),
   },
   {
     pgTable: 'conversation_sessions',
@@ -83,6 +91,7 @@ export const syncAdapters: readonly SyncAdapter[] = [
     save: async (rows) => {
       await db.conversationSessions.bulkPut(rows as ConversationSession[])
     },
+    clear: () => db.conversationSessions.clear(),
   },
   {
     pgTable: 'conversation_turns',
@@ -90,6 +99,7 @@ export const syncAdapters: readonly SyncAdapter[] = [
     save: async (rows) => {
       await db.conversationTurns.bulkPut(rows as ConversationTurn[])
     },
+    clear: () => db.conversationTurns.clear(),
   },
   {
     pgTable: 'lesson_logs',
@@ -97,6 +107,7 @@ export const syncAdapters: readonly SyncAdapter[] = [
     save: async (rows) => {
       await db.lessonLogs.bulkPut(rows as LessonLog[])
     },
+    clear: () => db.lessonLogs.clear(),
   },
   {
     pgTable: 'scenarios',
@@ -106,5 +117,6 @@ export const syncAdapters: readonly SyncAdapter[] = [
     },
     // Only user-created scenarios — the 20 seed scenarios ship with the app bundle.
     pushFilter: (row) => (row as Scenario).custom === true,
+    clear: () => db.scenarios.clear(),
   },
 ]

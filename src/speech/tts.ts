@@ -1,4 +1,4 @@
-import { rankGermanVoices } from '../engine/voiceRanking'
+import { pickableVoices, rankGermanVoices } from '../engine/voiceRanking'
 import { hdTts } from './hdTts'
 
 export interface SpeakOptions {
@@ -68,6 +68,17 @@ export const tts = {
     if (!this.supported) return []
     if (germanVoiceCache.length === 0) refreshVoiceCache()
     return [...germanVoiceCache]
+  },
+
+  /**
+   * M13.3: what Settings offers as manual picks — network voices only (the
+   * on-device extras are mostly broken/robotic; see voiceRanking.pickableVoices).
+   * Falls back to the full ranked list when a device has no network voices.
+   */
+  pickableGermanVoices(): SpeechSynthesisVoice[] {
+    if (!this.supported) return []
+    if (germanVoiceCache.length === 0) refreshVoiceCache()
+    return pickableVoices(germanVoiceCache)
   },
 
   onVoicesChanged(cb: () => void): () => void {

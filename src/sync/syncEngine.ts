@@ -45,6 +45,29 @@ export interface SyncOutcome {
   error?: string
 }
 
+/**
+ * M13.3 account switch: decide whether the LOCAL Dexie data belongs to a
+ * previous account and must be wiped before the first sync of `uid`.
+ * - stored owner missing → first sign-in on this browser (or guest history) → keep
+ * - stored owner === uid → same account back → keep (normal LWW merge)
+ * - stored owner !== uid → DIFFERENT account: local rows are the previous
+ *   user's memory — wipe, then pull this account's cloud data.
+ */
+export function shouldResetLocalData(storedOwnerUid: string | null, uid: string | null): boolean {
+  return uid != null && storedOwnerUid != null && storedOwnerUid !== uid
+}
+
+/**
+ * M13.3: wipe every locally synced table (cloud rows are never touched) and
+ * re-hydrate app state so the UI immediately reflects the now-empty local data.
+ * Call BEFORE the first syncNow of the new account so the previous account's
+ * rows can never be pushed into the new user's cloud.
+ */
+export async function clearLocalSyncData(): Promise<void> {
+  for (const adapter of syncAdapters) await adapter.clear()
+  await useAppStore.getState().hydrate()
+}
+
 const PAGE = 500 // PostgREST max rows per request window; also our upsert chunk size
 
 let inFlight: Promise<SyncOutcome> | null = null

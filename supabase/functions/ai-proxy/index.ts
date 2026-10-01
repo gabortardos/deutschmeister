@@ -84,6 +84,12 @@ const DEFAULT_TTS_VOICE = 'de-DE-Neural2-A'
 // outside this set silently falls back to the default.
 const INCLUDED_VOICE_RE = /^de-DE-(Neural2|Wavenet)-[A-Z]$/
 
+// M13.3 owner report: the ~4-entry included picker (Neural2 + Wavenet) sounded
+// like ONE male + ONE female — the families are near-identical pairs. The
+// included LIST is now exactly one female (Neural2-A) + one male (Neural2-B);
+// the synthesize whitelist above stays broad (same price tier either way).
+const INCLUDED_LIST_RE = /^de-DE-Neural2-[AB]$/
+
 // The same list as {id, gender} objects for type=ttsVoices, cached 1h — Google's
 // list rarely changes and this caps upstream calls at one per hour per isolate.
 let voiceListCache: { at: number; list: { id: string; gender: string }[] } | null = null
@@ -97,7 +103,7 @@ async function includedGermanVoices(): Promise<Array<{ id: string; gender: strin
   if (!res.ok) throw new Error(`voices list ${res.status}: ${raw.slice(0, 180)}`)
   const data = JSON.parse(raw) as { voices?: Array<{ name: string; ssmlGender?: string }> }
   const list = (data.voices ?? [])
-    .filter((v) => INCLUDED_VOICE_RE.test(v.name))
+    .filter((v) => INCLUDED_LIST_RE.test(v.name))
     .map((v) => ({ id: v.name, gender: v.ssmlGender ?? '—' }))
     .sort((a, b) => a.id.localeCompare(b.id))
   voiceListCache = { at: Date.now(), list }

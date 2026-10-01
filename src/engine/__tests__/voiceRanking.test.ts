@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { germanVoiceScore, rankGermanVoices, voiceQuality, type VoiceLike } from '../voiceRanking'
+import {
+  germanVoiceScore,
+  pickableVoices,
+  rankGermanVoices,
+  voiceQuality,
+  type VoiceLike,
+} from '../voiceRanking'
 
 const voice = (name: string, lang: string, extra: Partial<VoiceLike> = {}): VoiceLike => ({
   name,
@@ -79,5 +85,26 @@ describe('voiceQuality', () => {
     expect(voiceQuality(voice('Anna', 'de-DE'))).toBe('good')
     expect(voiceQuality(voice('Microsoft Steffi', 'de-DE'))).toBe('basic')
     expect(voiceQuality(voice('German (eSpeak)', 'de'))).toBe('basic')
+  })
+})
+
+describe('pickableVoices (M13.3 picker filter)', () => {
+  it('offers network voices only when any exist', () => {
+    const picked = pickableVoices([
+      voice('Google Deutsch', 'de-DE', { localService: false }),
+      voice('Anna', 'de-DE', { localService: true }),
+      voice('German (eSpeak)', 'de', { localService: true }),
+    ])
+    expect(picked.map((v) => v.name)).toEqual(['Google Deutsch'])
+  })
+
+  it('keeps the full ranked list when the device has no network voices', () => {
+    const all = [voice('Anna', 'de-DE', { localService: true }), voice('Markus', 'de-DE', { localService: true })]
+    expect(pickableVoices(all)).toHaveLength(2)
+  })
+
+  it('treats voices with unknown localService as local (not pickable when network exists)', () => {
+    const picked = pickableVoices([voice('Google Deutsch', 'de-DE', { localService: false }), voice('Plain', 'de-DE')])
+    expect(picked.map((v) => v.name)).toEqual(['Google Deutsch'])
   })
 })

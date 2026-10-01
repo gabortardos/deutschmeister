@@ -82,6 +82,32 @@ Which backend is live: Settings → AI Model shows the active model after the me
 refreshes — `glm-4.6` = z.ai (ZAI_PLATFORM_KEY set), `gpt-5-mini` = OpenAI fallback.
 To switch: add/delete the `ZAI_PLATFORM_KEY` secret on `ai-proxy` and re-paste it.
 
+## 4c. Sandbox purchase didn't flip the badge? (M13.3)
+
+If a sandbox payment succeeded in Paddle but the app still shows the old plan: the
+purchase event was processed while the webhook still had the OLD single-account
+allowlist, so it was recorded in `billing_events` with outcome `sandbox-blocked` —
+and idempotency (same event id) makes Paddle "Resend" skip it forever. Fix (after
+the new webhook + allowlist are in place):
+
+1. Supabase → SQL Editor → run:
+
+```sql
+delete from billing_events where outcome = 'sandbox-blocked';
+```
+
+2. Paddle sandbox dashboard → Developer Tools → Webhooks → your `paddle-webhook`
+   endpoint → find the latest `subscription.*` / `transaction.*` event for the
+   purchase → **Resend**.
+3. Reload the app as that account within ~10 s — the badge/plan flips.
+
+## 4d. Included HD voice list is now 2 voices (M13.3 — re-paste ai-proxy)
+
+`ai-proxy` type=ttsVoices now serves exactly `de-DE-Neural2-A` (female) +
+`de-DE-Neural2-B` (male). The wider Neural2+Wavenet set sounded like two identical
+pairs. Re-paste **ai-proxy** from the repo to serve the trimmed list (the curated
+in-app fallback already matches).
+
 ## 5. Sandbox → live go-live (locked decision: when real users may pay)
 
 1. Paddle: verify business + switch account to live → recreate products/prices →

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { planMerge, type SyncRow } from '../syncEngine'
+import { planMerge, shouldResetLocalData, type SyncRow } from '../syncEngine'
 import { mapSyncError } from '../syncErrors'
 import { syncAdapters } from '../../db/repositories/syncRepo'
 
@@ -39,6 +39,20 @@ describe('planMerge (last-write-wins)', () => {
     )
     expect(plan.toPull.map((r) => r.id).sort()).toEqual(['new-remote', 'take-remote'])
     expect(plan.toPush.map((r) => r.id).sort()).toEqual(['keep-local', 'new-local'])
+  })
+})
+
+describe('shouldResetLocalData (M13.3 account switch)', () => {
+  it('resets when a different account owned the local data', () => {
+    expect(shouldResetLocalData('uid-a', 'uid-b')).toBe(true)
+  })
+  it('keeps data for the same account and for first sign-in', () => {
+    expect(shouldResetLocalData('uid-a', 'uid-a')).toBe(false)
+    expect(shouldResetLocalData(null, 'uid-a')).toBe(false)
+  })
+  it('never resets for signed-out sessions', () => {
+    expect(shouldResetLocalData('uid-a', null)).toBe(false)
+    expect(shouldResetLocalData(null, null)).toBe(false)
   })
 })
 

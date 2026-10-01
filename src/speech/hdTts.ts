@@ -69,12 +69,14 @@ export interface HdVoiceInfo {
 }
 
 /** Fallback list when the voices endpoint can't be reached (kept to free-tier Neural2 voices). */
+/**
+ * Curated offline fallback (M13.3): exactly one female + one male — the wider
+ * Neural2/Wavenet set contained near-identical pairs, so users only ever heard
+ * two distinct voices anyway.
+ */
 export const FALLBACK_HD_VOICES: readonly HdVoiceInfo[] = [
   { id: 'de-DE-Neural2-A', gender: 'FEMALE' },
   { id: 'de-DE-Neural2-B', gender: 'MALE' },
-  { id: 'de-DE-Neural2-C', gender: 'FEMALE' },
-  { id: 'de-DE-Neural2-D', gender: 'FEMALE' },
-  { id: 'de-DE-Neural2-F', gender: 'MALE' },
 ]
 
 /** Simple LRU with dispose hook — testable without the browser. */

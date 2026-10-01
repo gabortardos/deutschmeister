@@ -67,3 +67,17 @@ export function voiceQuality(v: VoiceLike): VoiceQuality {
   if (score >= GOOD_LIMIT) return 'good'
   return 'basic'
 }
+
+/**
+ * M13.3: what the Settings picker OFFERS. On-device voice lists are full of
+ * broken/robotic legacy engines (owner report: everything except Chrome's
+ * network "Google Deutsch" sounded like a machine). Network voices
+ * (localService === false) are modern remote engines → offer only those;
+ * devices that expose none (some Safari/Firefox setups) keep the full ranked
+ * list so a working picker still exists. "Automatic" keeps using the ranked
+ * list either way, so auto-pick behavior never regresses.
+ */
+export function pickableVoices<T extends VoiceLike>(voices: readonly T[]): T[] {
+  const network = voices.filter((v) => v.localService === false)
+  return network.length > 0 ? network : [...voices]
+}
