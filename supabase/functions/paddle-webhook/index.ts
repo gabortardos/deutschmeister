@@ -124,15 +124,29 @@ async function hmacSha256Hex(secret: string, payload: string): Promise<string> {
   return hex
 }
 
-async function signatureValid(header: string | null, rawBody: string): Promise<boolean> {
+/** M13.3: distinguish WHY verification failed — Paddle's notification log shows
+ *  the response body, so "invalid signature" alone can't be debugged remotely. */
+async function signatureCheck(
+  header: string | null,
+  rawBody: string,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  if (!header) return { ok: false, reason: 'missing Paddle-Signature header' }
   const parts = parsePaddleSignature(header)
-  if (!parts || !WEBHOOK_SECRET) return false
+  if (!parts) return { ok: false, reason: 'malformed Paddle-Signature header (need ts=…;h1=…)' }
   const ts = Number(parts.ts)
   const now = Math.floor(Date.now() / 1000)
-  if (!Number.isFinite(ts) || ts <= 0) return false
-  if (ts > now + SIGNATURE_MAX_AGE_SEC || now - ts > SIGNATURE_MAX_AGE_SEC) return false
+  if (!Number.isFinite(ts) || ts <= 0) return { ok: false, reason: 'bad ts value in signature' }
+  const age = now - ts
+  if (ts > now + SIGNATURE_MAX_AGE_SEC) return { ok: false, reason: `signature ts is ${-age}s in the future (clock skew?)` }
+  if (age > SIGNATURE_MAX_AGE_SEC) return { ok: false, reason: `signature ts is ${age}s old (max ${SIGNATURE_MAX_AGE_SEC}s — replayed event?)` }
   const expected = await hmacSha256Hex(WEBHOOK_SECRET, `${parts.ts}:${rawBody}`)
-  return timingSafeEqualHex(expected, parts.h1.toLowerCase())
+  if (!timingSafeEqualHex(expected, parts.h1.toLowerCase())) {
+    return {
+      ok: false,
+      reason: 'hmac mismatch — PADDLE_WEBHOOK_SECRET is not the signing secret of the destination that delivered this event',
+    }
+  }
+  return { ok: true }
 }
 
 
@@ -267,8 +281,10 @@ Deno.serve(async (req: Request) => {
   // 1) verify Paddle's signature over the RAW body (must read text before JSON).
   const rawBody = await req.text()
   if (!WEBHOOK_SECRET) return new Response('not configured', { status: 503 })
-  if (!(await signatureValid(req.headers.get('paddle-signature'), rawBody))) {
-    return new Response('invalid signature', { status: 401 })
+  const sig = await signatureCheck(req.headers.get('paddle-signature'), rawBody)
+  if (!sig.ok) {
+    console.warn('paddle-webhook signature rejected:', sig.reason)
+    return new Response(`invalid signature: ${sig.reason}`, { status: 401 })
   }
 
   let event: {

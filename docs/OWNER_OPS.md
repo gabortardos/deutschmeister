@@ -108,6 +108,32 @@ delete from billing_events where outcome = 'sandbox-blocked';
 pairs. Re-paste **ai-proxy** from the repo to serve the trimmed list (the curated
 in-app fallback already matches).
 
+## 4e. Webhook log says "invalid signature" (M13.3)
+
+The function REJECTS the event before any DB write (no `billing_events` row, no
+idempotency marker), so once the signature passes, a plain Paddle **Resend** works —
+no SQL cleanup needed. "invalid signature" always means: the
+`PADDLE_WEBHOOK_SECRET` on the Supabase function ≠ the **signing secret of the
+Paddle destination that delivered the event**. Fix:
+
+1. Paddle (sandbox) → Developer tools → **Notifications** → open the FAILED
+   delivery in the log → note WHICH destination delivered it.
+2. Open that destination → copy its **signing secret** (the destination page's
+   "Signing secret" — NOT the API key `…apikey…`, NOT the client-side token
+   `test_…`). If more than one destination exists, either use this one's secret or
+   delete the duplicates and keep exactly one pointing at the function URL
+   (`https://<project>.supabase.co/functions/v1/paddle-webhook`).
+3. Supabase → Edge Functions → `paddle-webhook` → Secrets → set
+   `PADDLE_WEBHOOK_SECRET` to the copied value (paste plain — no quotes/spaces),
+   and re-check `PADDLE_SANDBOX_TEST_USER` still holds both test uuids (recreating
+   a function wipes its secrets).
+4. Validate WITHOUT a purchase: destination page → **Send test notification** →
+   the log should show **200** (`{"ok":true,…}` or a *reason* now — the M13.3
+   webhook says exactly which check failed: missing header / stale ts / hmac
+   mismatch).
+5. Resend the latest `subscription.*`/`transaction.completed` from the log →
+   reload the app as that account → badge flips.
+
 ## 5. Sandbox → live go-live (locked decision: when real users may pay)
 
 1. Paddle: verify business + switch account to live → recreate products/prices →
