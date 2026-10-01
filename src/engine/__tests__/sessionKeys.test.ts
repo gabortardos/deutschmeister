@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { choiceKeyIndex, introKeyAction, resultKeyAction } from '../sessionKeys'
+import { choiceKeyIndex, introKeyAction, resultKeyAction, skipKeyAction } from '../sessionKeys'
 
 describe('introKeyAction', () => {
   it('reveals on Space before the meaning is shown', () => {
@@ -52,5 +52,20 @@ describe('resultKeyAction', () => {
   it('ignores other keys', () => {
     expect(resultKeyAction('n')).toBeNull()
     expect(resultKeyAction('Escape')).toBeNull()
+  })
+})
+
+describe('skipKeyAction (M12.9)', () => {
+  it('maps s and S to skip', () => {
+    expect(skipKeyAction('s')).toBe('skip')
+    expect(skipKeyAction('S')).toBe('skip')
+  })
+
+  it('ignores everything else — including keys containing an s', () => {
+    expect(skipKeyAction('a')).toBeNull()
+    expect(skipKeyAction('Enter')).toBeNull()
+    expect(skipKeyAction('Shift')).toBeNull()
+    expect(skipKeyAction('Escape')).toBeNull()
+    expect(skipKeyAction('')).toBeNull()
   })
 })

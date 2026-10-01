@@ -1,13 +1,27 @@
 import { Link } from 'react-router-dom'
-import { Button, Card, Field, inputClass } from '../../../components/ui'
+import { Badge, Button, Card, Field, inputClass } from '../../../components/ui'
 import { CEFR_LEVELS, type CefrLevel } from '../../../db/types'
 import { useAppStore } from '../../../state/store'
 
 export default function LearningSection() {
   const profile = useAppStore((s) => s.profile)
+  const settings = useAppStore((s) => s.settings)
   const patchProfile = useAppStore((s) => s.patchProfile)
 
   if (!profile) return null
+
+  // M12.9: read-only mirror of the word focus — the full picker lives on the
+  // Vocab page (levels × themes chips with live counts).
+  const scope = settings?.vocabScope ?? null
+  const scopeSummary =
+    !scope || (scope.levels.length === 0 && scope.themes.length === 0)
+      ? 'All words'
+      : [
+          scope.levels.length > 0 ? `levels ${scope.levels.join(' · ')}` : null,
+          scope.themes.length > 0 ? `themes ${scope.themes.join(' · ')}` : null,
+        ]
+          .filter(Boolean)
+          .join(' + ')
 
   return (
     <Card title="Learning" description="Your daily rhythm and starting level.">
@@ -47,6 +61,19 @@ export default function LearningSection() {
               void patchProfile({ dailyWordGoal: clamped })
             }}
           />
+        </Field>
+      </div>
+
+      <div className="mt-4">
+        <Field label="Word focus" hint="Which slice of the corpus new words come from.">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={scopeSummary === 'All words' ? 'ok' : 'warn'}>
+              {scopeSummary === 'All words' ? '🎯 All words' : `🎯 ${scopeSummary}`}
+            </Badge>
+            <Link to="/vocab">
+              <Button>Change on the Vocab page →</Button>
+            </Link>
+          </div>
         </Field>
       </div>
 

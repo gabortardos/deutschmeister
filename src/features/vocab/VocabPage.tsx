@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '../../components/ui'
 import {
@@ -9,8 +9,9 @@ import {
   nextUnseenWords,
   reviewWord,
 } from '../../db/repositories/vocabRepo'
-import type { VocabWord } from '../../db/types'
+import { CEFR_LEVELS, type CefrLevel, type VocabScope, type VocabWord } from '../../db/types'
 import { clozeItems, type ClozeItem } from '../../engine/clozeReviews'
+import { applyVocabScope, toggleScopeValue, vocabScopeIsEmpty } from '../../engine/vocabScope'
 import { useAppStore } from '../../state/store'
 import { ClozeSession } from './ClozeSession'
 import { StudySession } from './StudySession'
@@ -20,6 +21,15 @@ const PRACTICE_SIZE = 10
 /** Sentences per cloze review (M11.6). */
 const CLOZE_SIZE = 8
 const EXTRA_CHOICES = [5, 10, 15, 20] as const
+
+/** M12.9: shared chip styling for the word-focus picker. */
+function scopeChipClass(active: boolean): string {
+  return `rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+    active
+      ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+      : 'border-slate-200 bg-surface text-slate-500 hover:border-slate-300 hover:text-slate-700'
+  }`
+}
 
 function shuffle<T>(items: readonly T[]): T[] {
   const out = [...items]
@@ -40,8 +50,9 @@ interface ActiveSession {
 }
 
 export default function VocabPage() {
-  const { hydrated, profile, todayLog, stats, refreshToday, bumpDrills } = useAppStore()
+  const { hydrated, profile, todayLog, stats, settings, refreshToday, bumpDrills, patchSettings } = useAppStore()
   const [bank, setBank] = useState<VocabWord[]>([])
+  const [learned, setLearned] = useState<VocabWord[]>([])
   const [session, setSession] = useState<ActiveSession | null>(null)
   const [introToday, setIntroToday] = useState(0)
   const [extraCount, setExtraCount] = useState<number>(10)
@@ -51,6 +62,12 @@ export default function VocabPage() {
     void getAllWords().then(setBank)
   }, [refreshToday])
 
+  // M12.9: learned words for the scope-aware unseen count; reloaded whenever
+  // stats change, so finishing a session updates "left in focus" immediately.
+  useEffect(() => {
+    void introducedWords().then(setLearned)
+  }, [stats])
+
   useEffect(() => {
     if (!todayLog || todayLog.newWordIds.length === 0) {
       setIntroToday(0)
@@ -58,6 +75,24 @@ export default function VocabPage() {
     }
     void getCards(todayLog.newWordIds).then((cards) => setIntroToday(cards.length))
   }, [todayLog])
+
+  // M12.9 word focus: which slice of the corpus new words are drawn from.
+  const scope = settings?.vocabScope ?? null
+  const scopeActive = !vocabScopeIsEmpty(scope)
+  const scopedCount = applyVocabScope(bank, scope).length
+  const scopeLevels = useMemo(() => {
+    const present = new Set(bank.map((w) => w.cefr))
+    return CEFR_LEVELS.filter((level) => present.has(level))
+  }, [bank])
+  const themeCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const w of bank) counts.set(w.theme, (counts.get(w.theme) ?? 0) + 1)
+    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0], 'de'))
+  }, [bank])
+
+  function updateScope(next: VocabScope): void {
+    void patchSettings({ vocabScope: vocabScopeIsEmpty(next) ? null : next })
+  }
 
   async function startSession(): Promise<void> {
     if (!todayLog) return
@@ -76,7 +111,7 @@ export default function VocabPage() {
 
   /** Anytime recap of already-learned words — every answer feeds SM-2. */
   async function startPractice(): Promise<void> {
-    const words = shuffle(await introducedWords()).slice(0, PRACTICE_SIZE)
+    const words = shuffle(applyVocabScope(await introducedWords(), scope)).slice(0, PRACTICE_SIZE)
     setSession({
       kind: 'study',
       title: 'Practice — learned words',
@@ -87,7 +122,7 @@ export default function VocabPage() {
 
   /** Learn more new words beyond the daily goal, as many as you like. */
   async function startExtra(): Promise<void> {
-    const words = await nextUnseenWords(extraCount)
+    const words = await nextUnseenWords(extraCount, scope)
     setSession({
       kind: 'study',
       title: `Extra new words (+${words.length})`,
@@ -98,7 +133,7 @@ export default function VocabPage() {
 
   /** M11.6: cloze review — fill the gap in example sentences of learned words. */
   async function startCloze(): Promise<void> {
-    const words = shuffle(await introducedWords())
+    const words = shuffle(applyVocabScope(await introducedWords(), scope))
     const items = clozeItems(words, bank, CLOZE_SIZE)
     setSession({
       kind: 'cloze',
@@ -155,7 +190,7 @@ export default function VocabPage() {
   const done = Math.min(introToday, goal)
   const pct = goal === 0 ? 100 : Math.round((done / goal) * 100)
   const introduced = stats?.introduced ?? 0
-  const unseenLeft = stats ? Math.max(0, stats.totalWords - introduced) : 0
+  const unseenLeft = Math.max(0, scopedCount - applyVocabScope(learned, scope).length)
 
   return (
     <div className="space-y-6">
@@ -178,6 +213,64 @@ export default function VocabPage() {
               <Button>Review {stats.dueNow} due</Button>
             </Link>
           )}
+        </div>
+      </Card>
+
+      <Card
+        title="Word focus"
+        description="Choose which slice of the corpus new words come from — CEFR levels and themes. Vocab batches ship as themes, so the theme chips double as the batch picker."
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Levels</span>
+          {scopeLevels.map((level) => {
+            const active = scope?.levels.includes(level) ?? false
+            return (
+              <button
+                key={level}
+                type="button"
+                className={scopeChipClass(active)}
+                onClick={() =>
+                  updateScope({
+                    levels: toggleScopeValue(scope?.levels ?? [], level) as CefrLevel[],
+                    themes: scope?.themes ?? [],
+                  })
+                }
+              >
+                {level}
+              </button>
+            )
+          })}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Themes</span>
+          {themeCounts.map(([theme, count]) => {
+            const active = scope?.themes.includes(theme) ?? false
+            return (
+              <button
+                key={theme}
+                type="button"
+                className={scopeChipClass(active)}
+                onClick={() =>
+                  updateScope({
+                    levels: scope?.levels ?? [],
+                    themes: toggleScopeValue(scope?.themes ?? [], theme),
+                  })
+                }
+              >
+                {theme} <span className="opacity-60">{count}</span>
+              </button>
+            )
+          })}
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-slate-400">
+            {scopeActive
+              ? `${scopedCount.toLocaleString('en-US')} of ${bank.length.toLocaleString('en-US')} words in focus — applies to extra words, practice, cloze and tomorrow’s daily plan. Learned words outside the focus still come up for review.`
+              : `No focus — all ${bank.length.toLocaleString('en-US')} words are in play. Pick levels or themes to concentrate new words.`}
+          </p>
+          <Button disabled={!scopeActive} onClick={() => updateScope({ levels: [], themes: [] })}>
+            Clear focus
+          </Button>
         </div>
       </Card>
 
@@ -217,7 +310,7 @@ export default function VocabPage() {
         <p className="mt-3 text-xs text-slate-400">
           {introduced === 0
             ? 'Practice unlocks after your first study session.'
-            : `${unseenLeft} unseen word(s) left in the corpus. Extra words count as introduced immediately — tomorrow's plan skips them.`}
+            : `${unseenLeft} unseen word(s) left ${scopeActive ? 'in your word focus' : 'in the corpus'}. Extra words count as introduced immediately — tomorrow's plan skips them.`}
         </p>
       </Card>
 

@@ -1,5 +1,6 @@
-import type { VocabWord } from '../db/types'
+import type { VocabScope, VocabWord } from '../db/types'
 import { dateKey } from './text'
+import { wordInScope } from './vocabScope'
 
 export interface LessonPlanInput {
   date?: string // YYYY-MM-DD (defaults to today)
@@ -9,6 +10,8 @@ export interface LessonPlanInput {
   introducedWordIds: ReadonlySet<string>
   /** Theme of the current grammar topic — matching words are preferred. */
   themeBias?: string | null
+  /** M12.9 word focus — null/empty = whole corpus (see engine/vocabScope). */
+  scope?: VocabScope | null
 }
 
 export interface LessonPlan {
@@ -26,7 +29,9 @@ export function buildLessonPlan(input: LessonPlanInput): LessonPlan {
   const date = input.date ?? dateKey()
   const goal = Math.max(1, Math.min(10, Math.round(input.dailyWordGoal)))
 
-  const fresh = input.words.filter((w) => !input.introducedWordIds.has(w.id))
+  const fresh = input.words.filter(
+    (w) => !input.introducedWordIds.has(w.id) && wordInScope(w, input.scope),
+  )
   fresh.sort((a, b) => a.frequencyRank - b.frequencyRank || a.german.localeCompare(b.german, 'de'))
 
   const bias = input.themeBias?.trim() ?? ''

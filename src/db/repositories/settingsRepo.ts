@@ -2,6 +2,7 @@ import { db } from '../dexie'
 import type { AppSettings } from '../types'
 import { getProvider, PROVIDERS } from '../../llm/providers'
 import { getApiKey, setApiKey } from '../../llm/keyStore'
+import { normalizeVocabScope, vocabScopeIsEmpty } from '../../engine/vocabScope'
 
 const SETTINGS_ID = 'app' as const
 
@@ -19,6 +20,7 @@ function defaultSettings(): AppSettings {
     ttsRate: 0.9,
     sttEnabled: true,
     byoKeyFirstSeenAt: null,
+    vocabScope: null,
   }
 }
 
@@ -26,10 +28,14 @@ function normalize(row: AppSettings): AppSettings {
   const providerValid = PROVIDERS.some((p) => p.id === row.provider)
   // Pre-M9.6 rows lack byoKeyFirstSeenAt — coerce to null so the trial clock only
   // starts when a key is actually saved, never from a merely missing field.
+  // M12.9: vocabScope is defensively re-parsed (garbage → null = whole corpus)
+  // and an effectively-empty scope is stored as null to keep rows canonical.
+  const scope = normalizeVocabScope(row.vocabScope)
   return {
     ...row,
     provider: providerValid ? row.provider : 'glm',
     byoKeyFirstSeenAt: row.byoKeyFirstSeenAt ?? null,
+    vocabScope: vocabScopeIsEmpty(scope) ? null : scope,
   }
 }
 

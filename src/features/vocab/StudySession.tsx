@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge, Button, Card, inputClass, Kbd } from '../../components/ui'
 import type { VocabWord } from '../../db/types'
 import { gradeAnswer } from '../../engine/grader'
-import { choiceKeyIndex, introKeyAction, resultKeyAction } from '../../engine/sessionKeys'
+import { choiceKeyIndex, introKeyAction, resultKeyAction, skipKeyAction } from '../../engine/sessionKeys'
 import { exampleSentences, type ExampleSentence } from '../../llm/services'
 import { useAppStore } from '../../state/store'
 import { useLlmDeps } from '../../state/useLlmDeps'
@@ -48,7 +48,7 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
   const [choicePick, setChoicePick] = useState<string | null>(null)
   const [typed, setTyped] = useState('')
   const [typeResult, setTypeResult] = useState<{ correct: boolean; matched: string | null } | null>(null)
-  const [score, setScore] = useState({ introduced: 0, correct: 0, wrong: 0 })
+  const [score, setScore] = useState({ introduced: 0, correct: 0, wrong: 0, skipped: 0 })
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   /** M10.5: guards double completion (focused button Enter + key handler). */
@@ -72,6 +72,14 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
     function onKey(e: KeyboardEvent): void {
       if (!word || busy || aiBusy || completingRef.current) return
       if (phase === 'type' && typeResult === null) return
+      // M12.9: S = "Known — skip" (perfect SM-2 review) at any point before
+      // completion. The guard above means a live typing input never reaches
+      // here, so typing 's' stays in the answer where it belongs.
+      if (skipKeyAction(e.key)) {
+        e.preventDefault()
+        void skipKnown()
+        return
+      }
       if (phase === 'intro') {
         const action = introKeyAction(e.key, revealed)
         if (!action) return
@@ -161,7 +169,29 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
         introduced: s.introduced + 1,
         correct: s.correct + (quality >= 4 ? 1 : 0),
         wrong: s.wrong + (quality < 4 ? 1 : 0),
+        skipped: s.skipped,
       }))
+      resetWordState()
+      setPhase('intro')
+      setIndex((i) => i + 1)
+    } finally {
+      setBusy(false)
+      completingRef.current = false
+    }
+  }
+
+  /**
+   * M12.9 "Known — skip": the learner already knows this word, so it gets a
+   * perfect SM-2 review (quality 5, same as markWordKnown) and the session
+   * advances past the remaining drill steps. Not counted as a drill.
+   */
+  async function skipKnown(): Promise<void> {
+    if (!word || busy || completingRef.current) return
+    completingRef.current = true
+    setBusy(true)
+    try {
+      await onWordReviewed(word.id, 5)
+      setScore((s) => ({ introduced: s.introduced + 1, correct: s.correct, wrong: s.wrong, skipped: s.skipped + 1 }))
       resetWordState()
       setPhase('intro')
       setIndex((i) => i + 1)
@@ -184,7 +214,8 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
       <Card title="Session complete 🎉">
         <p className="text-sm text-slate-600">
           You introduced <span className="font-semibold text-indigo-700">{score.introduced}</span> new words
-          ({score.correct} typed correctly, {score.wrong} to relearn).
+          ({score.correct} typed correctly, {score.wrong} to relearn
+          {score.skipped > 0 ? `, ${score.skipped} skipped as known` : ''}).
         </p>
         <p className="mt-2 text-sm text-slate-500">
           SM-2 scheduled the first reviews — come back tomorrow and check <span className="font-medium">Review</span>.
@@ -209,9 +240,17 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
           <span>
             Word {index + 1} / {words.length} · {phaseLabel}
           </span>
-          <button type="button" className="text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline" onClick={() => void completeWord(2)}>
-            skip
-          </button>
+          <span className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled={busy}
+              className="text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline disabled:opacity-50"
+              onClick={() => void skipKnown()}
+            >
+              Known — skip
+            </button>
+            <Kbd>S</Kbd>
+          </span>
         </div>
         <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200">
           <div className="h-full rounded-full bg-indigo-600 transition-all" style={{ width: `${progress}%` }} />

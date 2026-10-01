@@ -8,6 +8,7 @@ import {
   reviewWord,
 } from '../../db/repositories/vocabRepo'
 import type { VocabCard, VocabWord } from '../../db/types'
+import { vocabScopeIsEmpty, wordInScope } from '../../engine/vocabScope'
 import { useAppStore } from '../../state/store'
 import { StudySession } from './StudySession'
 import { ARTICLE_CLASS, WordFormsPanel } from './WordForms'
@@ -50,6 +51,7 @@ function dueLabel(dueDate: number, now: number): string {
 
 export default function WordBankPage() {
   const { hydrated, bumpDrills, refreshToday } = useAppStore()
+  const settings = useAppStore((s) => s.settings)
   const [learned, setLearned] = useState<VocabWord[] | null>(null)
   const [bank, setBank] = useState<VocabWord[]>([])
   const [cards, setCards] = useState<Map<string, VocabCard>>(new Map())
@@ -59,6 +61,11 @@ export default function WordBankPage() {
   const [sort, setSort] = useState<SortKey>('rank')
   const [openId, setOpenId] = useState<string | null>(null)
   const [session, setSession] = useState<ActiveSession | null>(null)
+  // M12.9: optional quick filter constrained to the word focus set on the
+  // Vocab page (levels × themes; custom words always pass).
+  const [scopeOnly, setScopeOnly] = useState(false)
+  const activeScope = settings?.vocabScope ?? null
+  const scopeAvailable = !vocabScopeIsEmpty(activeScope)
 
   async function load(): Promise<void> {
     const words = await introducedWords()
@@ -84,6 +91,7 @@ export default function WordBankPage() {
     if (!learned) return []
     const q = fold(query.trim())
     const matches = learned.filter((w) => {
+      if (scopeOnly && !wordInScope(w, activeScope)) return false
       if (theme !== 'all' && w.theme !== theme) return false
       if (cefr !== 'all' && w.cefr !== cefr) return false
       return q.length === 0 || fold(`${w.german} ${w.english}`).includes(q)
@@ -96,7 +104,7 @@ export default function WordBankPage() {
         (cards.get(b.id)?.dueDate ?? Number.MAX_SAFE_INTEGER),
     }
     return [...matches].sort(comparers[sort])
-  }, [learned, query, theme, cefr, sort, cards])
+  }, [learned, query, theme, cefr, sort, cards, scopeOnly, activeScope])
 
   function startPractice(): void {
     const picked = shuffle(filtered).slice(0, PRACTICE_SIZE)
@@ -202,6 +210,20 @@ export default function WordBankPage() {
             <option value="az">Sort: A–Z</option>
             <option value="due">Sort: next review</option>
           </select>
+          {scopeAvailable && (
+            <button
+              type="button"
+              className={`rounded-md border px-2.5 py-1.5 text-sm font-medium transition-colors ${
+                scopeOnly
+                  ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                  : 'border-slate-300 bg-surface text-slate-600 hover:bg-slate-50'
+              }`}
+              onClick={() => setScopeOnly((v) => !v)}
+              title="Show only words inside your word focus (set on the Vocab page)"
+            >
+              🎯 Focus scope
+            </button>
+          )}
           <Button variant="primary" disabled={filtered.length === 0} onClick={startPractice}>
             🔁 Practice these words
           </Button>

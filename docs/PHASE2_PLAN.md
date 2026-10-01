@@ -444,6 +444,17 @@ options.
     2.30.0 (grammar releases bump the visible version; vocab batches
     M12.4–7 had not).
   - **M12.9 vocab scope picker + session skip (owner request 2026-10-01)**:
+    **SHIPPED 2026-10-01, v2.31.0 (tag `m12.9`)** — built as specced, plus:
+    custom words always pass the scope (deliberate user additions);
+    `skipKeyAction` added to sessionKeys so the `S` key is pure and tested
+    (StudySession skips at any pre-completion phase — the live typing input
+    is guarded so 's' stays in the answer; ReviewPage '⚡ Known' is
+    input-focus-guarded the same way); a scope change re-plans today ONLY
+    when today's plan came out empty (`resetTodayLog`); `normalizeVocabScope`
+    garbage-guards the persisted value (the field rides the existing
+    `app_settings` sync row); WordBankPage got a 🎯 "Focus scope" toggle
+    chip and Settings→Learning a read-only mirror + link. Gate 419/419
+    (+20 tests). Original spec below.
     two learning-flow upgrades over the 5,000-word corpus.
     (a) **Word-focus filter** — users choose which slice of the corpus to
     learn: new persisted setting `vocabScope` (levels: CefrLevel[] +

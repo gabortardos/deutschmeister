@@ -1,7 +1,7 @@
 import { buildLessonPlan } from '../../engine/lessonPlanner'
 import { dateKey } from '../../engine/text'
 import { db } from '../dexie'
-import type { LessonLog, UserProfile } from '../types'
+import type { LessonLog, UserProfile, VocabScope } from '../types'
 import { ensureGrammarSeeded } from './grammarRepo'
 import { ensureVocabSeeded } from './vocabRepo'
 
@@ -14,10 +14,14 @@ async function themeBiasFor(profile: UserProfile): Promise<string | null> {
 /**
  * Returns today's LessonLog, creating it exactly once per calendar date:
  * the plan holds `dailyWordGoal` unseen words, frequency-ordered and biased
- * toward the current grammar topic's theme. An existing log is returned untouched,
+ * toward the current grammar topic's theme. `scope` (M12.9 word focus)
+ * restricts the pool of new words. An existing log is returned untouched,
  * so refreshing the page or restarting the app never reshuffles the day.
  */
-export async function getOrCreateTodayLog(profile: UserProfile): Promise<LessonLog> {
+export async function getOrCreateTodayLog(
+  profile: UserProfile,
+  scope?: VocabScope | null,
+): Promise<LessonLog> {
   await Promise.all([ensureVocabSeeded(), ensureGrammarSeeded()])
   const date = dateKey()
   const id = `lesson-${date}`
@@ -34,6 +38,7 @@ export async function getOrCreateTodayLog(profile: UserProfile): Promise<LessonL
     words,
     introducedWordIds: new Set(cards.map((c) => c.wordId)),
     themeBias,
+    scope,
   })
   const log: LessonLog = {
     id,
@@ -49,6 +54,15 @@ export async function getOrCreateTodayLog(profile: UserProfile): Promise<LessonL
 
 export async function getLog(date: string): Promise<LessonLog | undefined> {
   return db.lessonLogs.get(`lesson-${date}`)
+}
+
+/**
+ * M12.9: deletes today's log so the next `getOrCreateTodayLog` re-plans with
+ * the current word focus. Only called when today's plan came out EMPTY —
+ * a plan that already served words stays untouched (per-date immutability).
+ */
+export async function resetTodayLog(): Promise<void> {
+  await db.lessonLogs.delete(`lesson-${dateKey()}`)
 }
 
 /** Increments the drill counter after a completed drill. */

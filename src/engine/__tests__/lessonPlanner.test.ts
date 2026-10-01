@@ -64,4 +64,49 @@ describe('buildLessonPlan', () => {
     expect(plan.wordIds.length).toBe(5) // limited by bank, goal clamped to 10
     expect(plan.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
+
+  it('M12.9: a scope restricts the fresh pool (both dimensions AND)', () => {
+    const scoped = [
+      ...words,
+      { ...word('b1a', 3, 'Food'), cefr: 'B1' as const },
+      { ...word('b1b', 4, 'Law'), cefr: 'B1' as const },
+      { ...word('a1x', 5, 'Food'), cefr: 'A1' as const },
+    ]
+    const plan = buildLessonPlan({
+      dailyWordGoal: 10,
+      words: scoped,
+      introducedWordIds: new Set(),
+      scope: { levels: ['B1'], themes: ['Food'] },
+    })
+    expect(plan.wordIds).toEqual(['b1a'])
+  })
+
+  it('M12.9: custom words survive an excluding scope', () => {
+    const scoped = [
+      ...words,
+      { ...word('mine', 999, 'Custom'), custom: true },
+    ]
+    const plan = buildLessonPlan({
+      dailyWordGoal: 10,
+      words: scoped,
+      introducedWordIds: new Set(),
+      scope: { levels: ['C1'], themes: ['Science'] },
+    })
+    expect(plan.wordIds).toEqual(['mine'])
+  })
+
+  it('M12.9: theme bias still orders inside a scoped pool', () => {
+    const scoped = [
+      ...words,
+      { ...word('b1travel', 6, 'Travel'), cefr: 'B1' as const },
+    ]
+    const plan = buildLessonPlan({
+      dailyWordGoal: 10,
+      words: scoped,
+      introducedWordIds: new Set(),
+      themeBias: 'Travel',
+      scope: { levels: ['B1'], themes: [] },
+    })
+    expect(plan.wordIds).toEqual(['b1travel'])
+  })
 })

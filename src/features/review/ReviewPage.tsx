@@ -4,7 +4,7 @@ import { Badge, Button, Card, inputClass, Kbd } from '../../components/ui'
 import { dueCards, getWords, reviewWord } from '../../db/repositories/vocabRepo'
 import type { VocabCard, VocabWord } from '../../db/types'
 import { gradeAnswer } from '../../engine/grader'
-import { resultKeyAction } from '../../engine/sessionKeys'
+import { resultKeyAction, skipKeyAction } from '../../engine/sessionKeys'
 import { useAppStore } from '../../state/store'
 import { tts } from '../../speech/tts'
 
@@ -42,8 +42,17 @@ export default function ReviewPage() {
 
   // M10.5: Enter/Space advances to the next card once a result is shown;
   // while typing, Enter stays with the native form submit.
+  // M12.9: S = "⚡ Known" (easy: SM-2 quality 5) without typing — but never
+  // while the answer input has focus, since typing 's' belongs to the answer.
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
+      if (!busy && result === null && !(e.target instanceof HTMLInputElement)) {
+        if (skipKeyAction(e.key)) {
+          e.preventDefault()
+          void skipKnown()
+          return
+        }
+      }
       if (busy || result === null) return
       if (resultKeyAction(e.key)) {
         e.preventDefault()
@@ -80,6 +89,24 @@ export default function ReviewPage() {
     setAnswer('')
     setResult(null)
     setIndex((i) => i + 1)
+  }
+
+  /**
+   * M12.9: instant "I know this one" — counts as a correct, easy review
+   * (SM-2 quality 5, the interval grows accordingly) and shows the result
+   * row so Enter advances as usual.
+   */
+  async function skipKnown(): Promise<void> {
+    if (!item || result !== null || busy) return
+    setBusy(true)
+    try {
+      setResult(true)
+      setScore((s) => ({ ...s, ok: s.ok + 1 }))
+      await reviewWord(item.word.id, 5)
+      tts.speak(item.word.german, { rate: speechSettings?.ttsRate, voiceURI: speechSettings?.ttsVoice })
+    } finally {
+      setBusy(false)
+    }
   }
 
   function restart(): void {
@@ -202,7 +229,7 @@ export default function ReviewPage() {
             </div>
           )}
           {result === null && (
-            <div className="flex justify-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <Button variant="primary" type="submit" disabled={answer.trim().length === 0}>
                 Check
               </Button>
@@ -210,6 +237,10 @@ export default function ReviewPage() {
               <Button type="button" disabled={busy} onClick={() => void submit(true)}>
                 I don&apos;t know
               </Button>
+              <Button type="button" disabled={busy} onClick={() => void skipKnown()}>
+                ⚡ Known
+              </Button>
+              <Kbd>S</Kbd>
             </div>
           )}
         </form>

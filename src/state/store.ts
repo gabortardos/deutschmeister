@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { getProfile, updateProfile } from '../db/repositories/profileRepo'
 import { getSettings, updateSettings } from '../db/repositories/settingsRepo'
-import { getOrCreateTodayLog, recordDrill } from '../db/repositories/lessonRepo'
+import { getOrCreateTodayLog, recordDrill, resetTodayLog } from '../db/repositories/lessonRepo'
 import { dueCards, vocabStats, type VocabStats } from '../db/repositories/vocabRepo'
 import type { AppSettings, LessonLog, UserProfile } from '../db/types'
 import { getApiKey, setApiKey } from '../llm/keyStore'
@@ -46,6 +46,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
   patchSettings: async (patch) => {
     const settings = await updateSettings(patch)
     set({ settings })
+    // M12.9: a word-focus change re-plans today ONLY when today's plan came
+    // out empty (e.g. a too-narrow scope starved it). A plan that already
+    // served words keeps them — reshuffling mid-day would double-serve.
+    if (patch.vocabScope !== undefined) {
+      const { todayLog } = get()
+      if (todayLog && todayLog.newWordIds.length === 0) {
+        await resetTodayLog()
+        await get().refreshToday()
+      }
+    }
   },
   patchApiKey: (key) => {
     setApiKey(key)
@@ -61,9 +71,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
   refreshToday: async () => {
-    const { profile } = get()
+    const { profile, settings } = get()
     if (!profile) return
-    const [todayLog, due, stats] = await Promise.all([getOrCreateTodayLog(profile), dueCards(), vocabStats()])
+    const [todayLog, due, stats] = await Promise.all([
+      getOrCreateTodayLog(profile, settings?.vocabScope ?? null),
+      dueCards(),
+      vocabStats(),
+    ])
     set({ todayLog, dueCount: due.length, stats })
   },
   bumpDrills: async () => {

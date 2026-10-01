@@ -157,6 +157,18 @@ export interface Scenario extends BaseEntity {
   custom: boolean
 }
 
+/**
+ * M12.9 word-focus scope: which slice of the corpus the learner wants to draw
+ * new words from. Empty arrays mean "no restriction" (all levels / all themes);
+ * a word passes when it matches BOTH active dimensions. Custom words always
+ * pass — the learner added them deliberately. Pure helpers live in
+ * `src/engine/vocabScope.ts`.
+ */
+export interface VocabScope {
+  levels: CefrLevel[]
+  themes: string[]
+}
+
 export interface AppSettings {
   id: 'app'
   updatedAt: number
@@ -168,6 +180,8 @@ export interface AppSettings {
   sttEnabled: boolean
   /** M9.6 Supporter gate: epoch ms when the user FIRST saved a BYO key (trial clock). */
   byoKeyFirstSeenAt: number | null
+  /** M12.9 word focus — null = whole corpus. */
+  vocabScope?: VocabScope | null
 }
 
 export interface LlmCacheEntry {

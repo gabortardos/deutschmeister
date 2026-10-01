@@ -1,7 +1,8 @@
 import { SEED_VOCAB } from '../../content/vocab'
 import { isDue, newCard, reviewCard } from '../../engine/srs'
+import { wordInScope } from '../../engine/vocabScope'
 import { db } from '../dexie'
-import type { VocabCard, VocabWord } from '../types'
+import type { VocabCard, VocabScope, VocabWord } from '../types'
 
 export interface VocabStats {
   totalWords: number
@@ -44,13 +45,17 @@ export async function introducedWords(): Promise<VocabWord[]> {
 
 /**
  * The next unseen words in frequency order — powers "learn extra words today".
- * Custom words (rank 999999) come last, after the seed corpus.
+ * Custom words (rank 999999) come last, after the seed corpus. `scope` (M12.9)
+ * restricts the pool to the learner's word focus; null/empty = whole corpus.
  */
-export async function nextUnseenWords(count: number): Promise<VocabWord[]> {
+export async function nextUnseenWords(
+  count: number,
+  scope?: VocabScope | null,
+): Promise<VocabWord[]> {
   const [cards, all] = await Promise.all([db.vocabCards.toArray(), db.vocabWords.toArray()])
   const introduced = new Set(cards.map((c) => c.wordId))
   return all
-    .filter((w) => !introduced.has(w.id))
+    .filter((w) => !introduced.has(w.id) && wordInScope(w, scope))
     .sort((a, b) => a.frequencyRank - b.frequencyRank)
     .slice(0, Math.max(1, Math.round(count)))
 }

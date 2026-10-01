@@ -29,3 +29,12 @@ export function choiceKeyIndex(key: string, optionCount: number): number | null 
 export function resultKeyAction(key: string): 'next' | null {
   return key === ' ' || key === 'Enter' ? 'next' : null
 }
+
+/**
+ * M12.9: S marks the current word as already known ("Known — skip": SM-2
+ * quality 5, advance immediately). Components must NOT invoke this while a
+ * typing input is active — typing 's' belongs to the answer.
+ */
+export function skipKeyAction(key: string): 'skip' | null {
+  return key.toLowerCase() === 's' ? 'skip' : null
+}
