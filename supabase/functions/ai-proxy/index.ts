@@ -9,6 +9,11 @@
 //       which only counts while now < valid_until. Spend = SUM(ai_usage.cost_usd_micros):
 //       lifetime total + this calendar month's slice (mirror of
 //       lifetimePoolsRemaining/remainingBudgetWithMonthly in src/llm/entitlement.ts).
+//     - Chat cost (M13 audit): meters the provider's OWN reported `usage` tokens
+//       (prompt+completion) × the published per-1M prices — never reserved
+//       max_tokens. If a 200 reply carries no usage block, a conservative
+//       chars/3.5 estimate is billed instead of $0, so the books can never
+//       silently under-count.
 //     - type=tts → Google Cloud TTS on PLATFORM_TTS_KEY (optional); meters chars
 //       ($0 while Google's Neural2 free tier covers it) against the PER-PLAN
 //       monthly cap (ai_entitlements.tts_char_cap; default free taste 20k, Basic 0
@@ -515,14 +520,25 @@ Deno.serve(async (req: Request) => {
       }
       let tokensIn = 0
       let tokensOut = 0
+      // M13 metering honesty: bill the provider's OWN usage numbers when present;
+      // if a 200 reply carries no usage block (or is non-JSON), estimate from
+      // chars (German ≈ 3.5 chars/token) instead of billing $0 — silent
+      // under-counting would make the owner's cost/profit ledger lie.
+      const requestChars = messages.reduce((n, m) => n + m.content.length, 0)
       try {
         const parsed = JSON.parse(raw) as {
           usage?: { prompt_tokens?: number; completion_tokens?: number }
+          choices?: { message?: { content?: unknown } }[]
         }
-        tokensIn = parsed.usage?.prompt_tokens ?? 0
-        tokensOut = parsed.usage?.completion_tokens ?? 0
+        tokensIn = Number(parsed.usage?.prompt_tokens ?? 0)
+        tokensOut = Number(parsed.usage?.completion_tokens ?? 0)
+        if (tokensIn + tokensOut <= 0) {
+          const reply = parsed.choices?.[0]?.message?.content
+          tokensIn = Math.round(requestChars / 3.5)
+          tokensOut = typeof reply === 'string' ? Math.round(reply.length / 3.5) : 0
+        }
       } catch {
-        // provider returned non-JSON despite 200 — respond verbatim below, cost 0
+        tokensIn = Math.round(requestChars / 3.5)
       }
       const cost = chatCostUsdMicros(tokensIn, tokensOut)
       await meter(userId, {

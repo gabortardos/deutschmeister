@@ -36,8 +36,17 @@
 // Go-live = set live secret values + PADDLE_ENV=live + recreate price IDs in the
 // map → redeploy. No code change.
 //
-// PLANS below mirror membership v3 (2026-09-21): allowances are the gpt-5-mini
-// backend numbers ($2 / $3.5); a coding-plan-backend swap = edit these two rows.
+// PLANS below mirror membership v3 (2026-09-21) with the M13 allowance retune
+// (owner-approved 2026-10-01): chat allowances are FAIR-USE ABUSE GUARDS, not
+// quotas a learner can reach — Basic $10 / Plus $20 / Pro $40 per month, metered
+// at nominal glm-4.6 list prices ($0.6/$2.2 per 1M tokens). Rationale: platform
+// chat runs on the owner's flat-rate GLM Coding Plan key (marginal cost ≈ $0
+// within its quota), so the only true per-user variable cost is HD voice —
+// tts_char_cap below, UNCHANGED, the real tier differentiator. A normal learning
+// month meters ≈ $1.5–2 nominal, a heavy one ≈ $4–6 → Basic's $10 keeps 2–6×
+// headroom while still capping scripted abuse. Existing ai_entitlements rows
+// keep their old values until the next webhook event — run the one-time SQL
+// bump in docs/OWNER_OPS.md §4 after re-pasting this function.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -48,9 +57,9 @@ const SIGNATURE_MAX_AGE_SEC = 300
 
 /** Fair-use monthly AI budget + HD-voice chars per plan (gpt-5-mini backend). */
 const PLANS: Record<string, { allowanceUsdMicros: number; ttsCharCap: number }> = {
-  basic: { allowanceUsdMicros: 2_000_000, ttsCharCap: 0 },
-  plus: { allowanceUsdMicros: 3_500_000, ttsCharCap: 150_000 },
-  pro: { allowanceUsdMicros: 8_000_000, ttsCharCap: 300_000 },
+  basic: { allowanceUsdMicros: 10_000_000, ttsCharCap: 0 },
+  plus: { allowanceUsdMicros: 20_000_000, ttsCharCap: 150_000 },
+  pro: { allowanceUsdMicros: 40_000_000, ttsCharCap: 300_000 },
   // M9.6 Supporter (owner decision 2026-09-21): yearly €11.99 for key-bringers —
   // zero platform allowances; the value is the system itself (chat AI + HD voice
   // run on the user's own keys). A Supporter row intentionally REPLACES any prior

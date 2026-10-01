@@ -518,6 +518,24 @@ OpenAI dashboard actuals → meter on real usage; single price source of truth; 
 (Supabase Google provider + SMTP, Paddle products incl. dormant Pro, price-map pastes,
 sandbox→live decision) — one click-by-click doc, prompted by the agent at that point.
 
+**Shipped as v2.32.0 (2026-10-01).** Audit result: chat metering already bills the
+provider's OWN `usage` tokens (never reserved/max tokens) and the price table matches
+z.ai list prices ($0.6/$2.2 per 1M for glm-4.6 — re-verified on docs.z.ai). The burn
+was REAL usage × under-sized allowances: $2/$3.5 were sized on gpt-5-mini input prices
+and predate conversation practice (a 12-turn context turn ≈ $0.0027; a daily 15-turn
+session ≈ $1.6/mo normal, heavy multi-session ≈ $4–6) → Basic broke at NORMAL use.
+Fix (owner-approved same day): allowances retuned to fair-use guards — Basic $10 /
+Plus $20 / Pro $40 (2–6× a heavy month); HD-voice caps UNCHANGED (the real per-user
+cost + tier differentiator: Google TTS beyond the 1M-char free tier at $16/1M chars);
+a missing-usage fallback now estimates chars/3.5 instead of billing $0 (books can
+never silently under-count); Billing copy says "fair-use guard — normal learning
+never reaches it". Cost basis for the profit model: platform chat runs on the owner's
+flat GLM Coding Plan key → marginal $0 within its quota (capacity limit = prompts
+per rolling 5-hour window, shared — watch 429s); profit table + the one-time
+entitlement-row SQL bump + the consolidated runbook live in `docs/OWNER_OPS.md` (the
+M13 deliverable). Owner deployment: re-paste paddle-webhook + ai-proxy, then run
+OWNER_OPS §4 SQL once.
+
 ### Quick win — conversation role-drift fix (Phase 2, owner-approved pull-forward)
 
 Bug: after several conversation turns the AI took over the user's role (AI became the

@@ -51,10 +51,11 @@ describe('plan catalog (M9, membership v3)', () => {
     expect(planById('plus')?.ttsCharCap).toBe(150_000)
   })
 
-  it('only Plus gets bigger budgets than Basic (fair-use ceilings)', () => {
+  it('allowances are M13 fair-use guards: $10 / $20 / $40, strictly increasing', () => {
     expect(planById('free')?.allowanceUsdMicros).toBe(0)
-    expect(planById('basic')?.allowanceUsdMicros).toBe(2_000_000)
-    expect(planById('plus')?.allowanceUsdMicros).toBe(3_500_000)
+    expect(planById('basic')?.allowanceUsdMicros).toBe(10_000_000)
+    expect(planById('plus')?.allowanceUsdMicros).toBe(20_000_000)
+    expect(planById('pro')?.allowanceUsdMicros).toBe(40_000_000)
     expect((planById('plus')?.allowanceUsdMicros ?? 0)).toBeGreaterThan(
       planById('basic')?.allowanceUsdMicros ?? 0,
     )
@@ -81,5 +82,17 @@ describe('M9.8 credit packs', () => {
     expect(packForCredit(3_000_000)?.id).toBe('small')
     expect(packForCredit(7_000_000)?.id).toBe('big')
     expect(packForCredit(123)).toBeUndefined()
+  })
+})
+
+describe('M13 allowance retune (2026-10-01) — honesty copy', () => {
+  it('never shows stale dollar-allowance copy (the old "$2/mo budget" story)', () => {
+    const plans = [...visiblePlans(), planById('pro')!]
+    for (const plan of plans) {
+      for (const feature of plan.features) {
+        expect(feature).not.toMatch(/\$\d+(\.\d+)?\/mo/)
+        expect(feature).not.toMatch(/fair-use \w+ budget/i)
+      }
+    }
   })
 })

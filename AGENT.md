@@ -102,7 +102,11 @@ pointing at the newest verified commit. Update `ROADMAP.md` in the same commit.
     priceId→{plan,kind,interval,creditUsdMicros}), PADDLE_SANDBOX_TEST_USER. Paddle-side
     too: default payment link = app URL (Checkout → Checkout settings), or every
     transaction-create 400s (sandbox: any URL, no approval; live: reviewed).
-    Plan allowances (gpt-5-mini backend: Basic $2 / Plus $3.5) live in paddle-webhook's PLANS.
+    Plan allowances live in paddle-webhook's PLANS — M13 retune (2026-10-01):
+    Basic $10 / Plus $20 / Pro $40 fair-use guards at nominal glm-4.6 prices
+    (chat's real cost = the owner's flat Coding Plan key → marginal $0; a heavy
+    learning month meters ≈ $4–6). Existing ai_entitlements rows need the
+    one-time SQL bump in docs/OWNER_OPS.md §4.
   - Client: plan catalog `src/llm/plans.ts` (v3: Basic €3.99·€29.99, Plus €5.99·€49.99 ⭐,
     Pro dormant/hidden), Settings → Account & Billing (`BillingSection.tsx`: usage bars,
     pricing cards, checkout/manage redirects, ?billing=success return handling). v2.4.1:

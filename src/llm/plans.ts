@@ -24,9 +24,11 @@ export interface PlanCatalogEntry {
   annualEur: number | null
   features: string[]
   /**
-   * Fair-use monthly platform-AI budget. Values below are for the ACTIVE
-   * gpt-5-mini backend ($2 Basic / $3.5 Plus); the coding-plan backend would be
-   * $3 / $5 — the webhook's PLANS table is the authority either way.
+   * Fair-use monthly platform-AI budget (M13 retune, owner-approved 2026-10-01:
+   * $10 / $20 / $40). These are ABUSE GUARDS sized 2–6× above a heavy learning
+   * month (≈ $1.5–2 normal, ≈ $4–6 heavy at nominal glm-4.6 prices) — a human
+   * learner never reaches them; tiers really differ by HD voice. The webhook's
+   * PLANS table is the authority either way.
    */
   allowanceUsdMicros: number
   /** Monthly platform HD-voice chars included in the plan. */
@@ -61,11 +63,11 @@ export const PLAN_CATALOG: readonly PlanCatalogEntry[] = [
     tagline: 'The managed AI tutor',
     monthlyEur: 3.99,
     annualEur: 29.99,
-    allowanceUsdMicros: 2_000_000,
+    allowanceUsdMicros: 10_000_000,
     ttsCharCap: 0,
     features: [
       'Everything in Free',
-      'Managed AI tutor — no API key needed ($2/mo fair-use budget)',
+      'Managed AI tutor — no API key needed (generous fair use — normal learning never hits the cap)',
       'Browser voices stay free & unlimited (no platform HD voice)',
       'Progress sync across devices',
     ],
@@ -76,13 +78,13 @@ export const PLAN_CATALOG: readonly PlanCatalogEntry[] = [
     tagline: 'AI tutor + HD voice',
     monthlyEur: 5.99,
     annualEur: 49.99,
-    allowanceUsdMicros: 3_500_000,
+    allowanceUsdMicros: 20_000_000,
     ttsCharCap: 150_000,
     badge: 'Most popular',
     features: [
       'Everything in Basic',
       'Platform HD voice — ~150k characters/month',
-      'Bigger fair-use AI budget ($3.5/mo)',
+      'Larger fair-use headroom for heavy practice days',
       'Priority email support',
     ],
   },
@@ -92,7 +94,7 @@ export const PLAN_CATALOG: readonly PlanCatalogEntry[] = [
     tagline: 'For dedicated learners',
     monthlyEur: 9.99,
     annualEur: 89.99,
-    allowanceUsdMicros: 8_000_000,
+    allowanceUsdMicros: 40_000_000,
     ttsCharCap: 300_000,
     // Dormant until M11.10b: owner creates the Paddle products → PADDLE_PRICE_MAP
     // in both Paddle functions → remove this flag. Selling promises = refunds.

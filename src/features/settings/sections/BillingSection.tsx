@@ -306,6 +306,12 @@ export default function BillingSection() {
               cap={meter.capUsdMicros}
               label={'Managed AI budget — ' + formatUsdMicros(remaining) + ' left'}
             />
+            {meter.plan !== 'free' && (
+              <p className="text-xs text-slate-500">
+                Fair-use guard, not a tight quota — normal learning never reaches it (we meter
+                exact usage to keep the service sustainable).
+              </p>
+            )}
             {meter.packsUsdMicros > 0 && (
               <p className="text-xs text-slate-500">
                 Includes {formatUsdMicros(meter.packsUsdMicros)} of credit-pack credit
