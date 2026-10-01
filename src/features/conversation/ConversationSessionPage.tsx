@@ -70,6 +70,8 @@ export default function ConversationSessionPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const sessionRef = useRef<string | null>(null)
   const openerDone = useRef(false)
+  /** True while the current input came from the mic (M13.1 dictated-turn flag). */
+  const spokeRef = useRef(false)
 
   // M8: BYO key → the user's provider as before; signed-in keyless → free $1
   // platform teaser (metered by the ai-proxy Edge Function). No AI at all → hint UI.
@@ -159,9 +161,11 @@ export default function ConversationSessionPage() {
     const text = input.trim()
     if (!text) return
     const wasAssisted = assistedNext
+    const wasSpoken = spokeRef.current
+    spokeRef.current = false
     setAssistedNext(false)
     setInput('')
-    const reply = await sendText(text, wasAssisted)
+    const reply = await sendText(text, wasAssisted, wasSpoken)
     if (reply === null) setInput(text) // let the learner retry the same message
   }
 
@@ -169,7 +173,7 @@ export default function ConversationSessionPage() {
    * Shared pipeline for typed and spoken turns (also drives hands-free). Resolves the tutor
    * reply text, or null when the turn was skipped or failed (the error card shows why).
    */
-  async function sendText(text: string, wasAssisted: boolean): Promise<string | null> {
+  async function sendText(text: string, wasAssisted: boolean, spoken = false): Promise<string | null> {
     if (!text.trim() || !deps || !scenario || busy || feedback) return null
     setHint(null)
     setError(null)
@@ -185,7 +189,7 @@ export default function ConversationSessionPage() {
     setBusy(true)
     try {
       const history = [...turns, userTurn].map((t) => ({ role: t.role, text: t.text }))
-      const res = await conversationTurn(deps, { scenario, level, history, userText: text })
+      const res = await conversationTurn(deps, { scenario, level, history, userText: text, spoken })
       if (sessionRef.current) {
         await addTurn(sessionRef.current, {
           role: 'user',
@@ -221,7 +225,7 @@ export default function ConversationSessionPage() {
 
   // Hands-free voice loop (M6.3): mic → silence commit → sendText → auto-speak reply → listen again.
   const handsFree = useHandsFree({
-    sendUserText: (text) => sendText(text, false),
+    sendUserText: (text) => sendText(text, false, true),
     speakReply: (text, notifyDone) => {
       const started = tts.speak(text, {
         rate: settings?.ttsRate,
@@ -239,6 +243,7 @@ export default function ConversationSessionPage() {
     try {
       const res = await stt.listenOnce('de-DE')
       setInput((prev) => (prev.trim().length === 0 ? res.transcript : `${prev.trim()} ${res.transcript}`))
+      spokeRef.current = true
     } catch (e) {
       setSttError(e instanceof Error ? e.message : String(e))
     } finally {

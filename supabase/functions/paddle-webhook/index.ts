@@ -23,7 +23,8 @@
 //   • Idempotency: unique billing_events.paddle_event_id — replays (Paddle
 //     retries up to 3 days) are logged and skipped.
 //   • SANDBOX GUARD (locked decision): while PADDLE_ENV != 'live', events only
-//     grant entitlements to PADDLE_SANDBOX_TEST_USER (the owner's uuid). Any
+//     grant entitlements to the uuids in PADDLE_SANDBOX_TEST_USER (owner +
+//     extra test accounts, comma-separated — M13.1). Any
 //     other target user_id is logged to billing_events with outcome
 //     'sandbox-blocked' and never written — a sandbox checkout link can never
 //     mint real entitlements for real users.
@@ -32,14 +33,15 @@
 //   PADDLE_WEBHOOK_SECRET      the notification destination's secret key
 //   PADDLE_PRICE_MAP           JSON {priceId: {plan, kind, interval, creditUsdMicros}}
 //   PADDLE_ENV                 'sandbox' (default) | 'live'
-//   PADDLE_SANDBOX_TEST_USER   owner's auth.users uuid (sandbox guard allowlist)
+//   PADDLE_SANDBOX_TEST_USER   sandbox allowlist: one or more test-account uuids, comma-separated
 // Go-live = set live secret values + PADDLE_ENV=live + recreate price IDs in the
 // map → redeploy. No code change.
 //
 // PLANS below mirror membership v3 (2026-09-21) with the M13 allowance retune
 // (owner-approved 2026-10-01): chat allowances are FAIR-USE ABUSE GUARDS, not
 // quotas a learner can reach — Basic $10 / Plus $20 / Pro $40 per month, metered
-// at nominal glm-4.6 list prices ($0.6/$2.2 per 1M tokens). Rationale: platform
+// at the active chat target's published prices (glm-4.6 $0.6/$2.2 or gpt-5-mini
+// $0.25/$2 per 1M tokens — see ai-proxy CHAT_TARGET). Rationale: platform
 // chat runs on the owner's flat-rate GLM Coding Plan key (marginal cost ≈ $0
 // within its quota), so the only true per-user variable cost is HD voice —
 // tts_char_cap below, UNCHANGED, the real tier differentiator. A normal learning
@@ -52,10 +54,15 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const WEBHOOK_SECRET = Deno.env.get('PADDLE_WEBHOOK_SECRET') ?? ''
 const PADDLE_ENV = (Deno.env.get('PADDLE_ENV') ?? 'sandbox').toLowerCase()
-const SANDBOX_TEST_USER = Deno.env.get('PADDLE_SANDBOX_TEST_USER') ?? ''
+// M13.1: one uuid or several, comma-separated — extra sandbox test accounts
+// (e.g. a second Google login for payment testing) join by updating the secret.
+const SANDBOX_TEST_USERS = (Deno.env.get('PADDLE_SANDBOX_TEST_USER') ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter((s) => s.length > 0)
 const SIGNATURE_MAX_AGE_SEC = 300
 
-/** Fair-use monthly AI budget + HD-voice chars per plan (gpt-5-mini backend). */
+/** Fair-use monthly AI budget + HD-voice chars per plan (metered at the active target's prices). */
 const PLANS: Record<string, { allowanceUsdMicros: number; ttsCharCap: number }> = {
   basic: { allowanceUsdMicros: 10_000_000, ttsCharCap: 0 },
   plus: { allowanceUsdMicros: 20_000_000, ttsCharCap: 150_000 },
@@ -292,7 +299,7 @@ Deno.serve(async (req: Request) => {
   }
 
   // 3) SANDBOX GUARD: sandbox events may only touch the owner's test account.
-  if (PADDLE_ENV !== 'live' && SANDBOX_TEST_USER && userId !== SANDBOX_TEST_USER) {
+  if (PADDLE_ENV !== 'live' && SANDBOX_TEST_USERS.length > 0 && !SANDBOX_TEST_USERS.includes(userId)) {
     await markEventSeen(eventId, eventType, userId, 'sandbox-blocked')
     return Response.json({ ok: true, skipped: 'sandbox-guard' })
   }

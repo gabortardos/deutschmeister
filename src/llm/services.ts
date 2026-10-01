@@ -102,6 +102,12 @@ export interface ConversationTurnInput {
   history: HistoryTurn[]
   /** The learner's latest German message; null = ask the tutor to open the scene. */
   userText: string | null
+  /**
+   * True when userText came from speech recognition (mic / hands-free).
+   * Dictated German has no capitals or punctuation — the tutor is told not to
+   * report those as mistakes (M13.1).
+   */
+  spoken?: boolean
 }
 
 export interface ConversationTurnResult {
@@ -109,6 +115,30 @@ export interface ConversationTurnResult {
   mistakes: ConversationMistakeShape[]
   replyTranslationEn: string
   tutorQuestion: string
+}
+
+/**
+ * M13.1 anti role-drift: as a chat grows, the opening system prompt drifts out
+ * of the model's attention and corrections quietly stop ("stops correcting
+ * after a couple of rounds"). A short system note re-injected right before the
+ * learner's LATEST message keeps the correction duty alive — and, for dictated
+ * turns, tells the tutor that raw STT transcripts carry no capitals/punctuation
+ * (Google-style dictation auto-formats; ours must simply not flag them).
+ */
+function preTurnReminder(opts: { spoken: boolean; replyRule: string }): ChatMessage {
+  return {
+    role: 'system',
+    content: [
+      "REMINDER for the learner's next message below:",
+      `- ${opts.replyRule}`,
+      "- Check the learner's LATEST message carefully and report EVERY real mistake in \"mistakes\" (small ones too); return an empty array only if it is truly flawless. Never repeat mistakes from earlier messages.",
+      opts.spoken
+        ? "- The learner's message was DICTATED BY VOICE (speech recognition): it contains no capitalization or punctuation. Do NOT report missing capitals, commas or periods as mistakes — judge only word choice, word order and grammar forms."
+        : '',
+    ]
+      .filter((line) => line.length > 0)
+      .join('\n'),
+  }
 }
 
 function conversationMessages(input: ConversationTurnInput): ChatMessage[] {
@@ -139,7 +169,18 @@ function conversationMessages(input: ConversationTurnInput): ChatMessage[] {
     input.userText === null
       ? { role: 'user', content: '(Start the role-play now: greet in character and ask your first question.)' }
       : { role: 'user', content: input.userText }
-  return [{ role: 'system', content: system }, ...history, last]
+  // Anti-drift reminder on real turns only — the opener has nothing to correct.
+  return input.userText === null
+    ? [{ role: 'system', content: system }, ...history, last]
+    : [
+        { role: 'system', content: system },
+        ...history,
+        preTurnReminder({
+          spoken: input.spoken === true,
+          replyRule: 'Stay in character, answer in German, end with a question.',
+        }),
+        last,
+      ]
 }
 
 export async function conversationTurn(
@@ -717,6 +758,13 @@ function tutorChatMessages(input: TutorChatTurnInput): ChatMessage[] {
   return [
     { role: 'system', content: system },
     ...history,
+    preTurnReminder({
+      spoken: false, // the tutor page has no microphone — typed input only
+      replyRule:
+        input.mode === 'chat'
+          ? "Keep chatting in German at the learner's level and end with a question."
+          : "Answer the learner's question in English per the rules above.",
+    }),
     { role: 'user', content: input.userText },
   ]
 }

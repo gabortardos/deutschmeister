@@ -103,6 +103,84 @@ describe('conversationTurn', () => {
     ).rejects.toThrow(/Schema validation failed/)
     expect(fetchMock).toHaveBeenCalledTimes(3) // 1 + 2 retries
   })
+
+  // M13.1 — anti role-drift + dictated-turn handling -----------------------------------
+
+  it('re-injects the correction reminder right before the latest message (typed turns)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      completions(
+        '{"reply":"Gut!","mistakes":[],"replyTranslationEn":"Good!","tutorQuestion":"Und du?"}',
+      ),
+    )
+    await conversationTurn(deps(), {
+      scenario: SCENARIO,
+      level: 'A2',
+      history: [{ role: 'tutor', text: 'Hallo!' }],
+      userText: 'ich gehe zu gym',
+    })
+    const body = JSON.parse((fetchMock.mock.calls[0]?.[1] as { body: string }).body) as {
+      messages: { role: string; content: string }[]
+    }
+    const last = body.messages[body.messages.length - 1]
+    expect(last.role).toBe('user')
+    expect(last.content).toBe('ich gehe zu gym')
+    const reminder = body.messages[body.messages.length - 2]
+    expect(reminder.role).toBe('system')
+    expect(reminder.content).toContain('report EVERY real mistake')
+    expect(reminder.content).not.toContain('DICTATED BY VOICE') // typed turns get no STT note
+  })
+
+  it('tells the tutor that dictated input has no capitals or punctuation', async () => {
+    fetchMock.mockResolvedValueOnce(
+      completions(
+        '{"reply":"Gut!","mistakes":[],"replyTranslationEn":"Good!","tutorQuestion":"Und du?"}',
+      ),
+    )
+    await conversationTurn(deps(), {
+      scenario: SCENARIO,
+      level: 'A2',
+      history: [],
+      userText: 'ich gehe zu gym',
+      spoken: true,
+    })
+    const body = JSON.parse((fetchMock.mock.calls[0]?.[1] as { body: string }).body) as {
+      messages: { role: string; content: string }[]
+    }
+    const reminder = body.messages[body.messages.length - 2]
+    expect(reminder.role).toBe('system')
+    expect(reminder.content).toContain('DICTATED BY VOICE')
+    expect(reminder.content).toContain('Do NOT report missing capitals')
+  })
+
+  it('keeps the opener turn clean (no reminder before the scene opener)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      completions(
+        '{"reply":"Hallo!","mistakes":[],"replyTranslationEn":"Hi!","tutorQuestion":"Wie heißt du?"}',
+      ),
+    )
+    await conversationTurn(deps(), { scenario: SCENARIO, level: 'A1', history: [], userText: null })
+    const body = JSON.parse((fetchMock.mock.calls[0]?.[1] as { body: string }).body) as {
+      messages: { role: string; content: string }[]
+    }
+    expect(body.messages[body.messages.length - 1].content).toContain('Start the role-play')
+    expect(body.messages).toHaveLength(2) // system + opener, no injected reminder
+  })
+
+  it('tutorChatTurn also gets the reminder (chat mode)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      completions(
+        '{"reply":"Sehr gut!","mistakes":[],"replyTranslationEn":"Very good!","tutorQuestion":"Und du?"}',
+      ),
+    )
+    await tutorChatTurn(deps(), { mode: 'chat', level: 'A2', history: [], userText: 'hallo' })
+    const body = JSON.parse((fetchMock.mock.calls[0]?.[1] as { body: string }).body) as {
+      messages: { role: string; content: string }[]
+    }
+    const reminder = body.messages[body.messages.length - 2]
+    expect(reminder.role).toBe('system')
+    expect(reminder.content).toContain('report EVERY real mistake')
+    expect(reminder.content).toContain('Keep chatting in German')
+  })
 })
 
 describe('suggestReply', () => {
@@ -360,13 +438,15 @@ describe('tutorChatTurn (M11.8)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     const body = lastBody()
-    // system + last 12 turns + the new message = 14 messages total
-    expect(body.messages).toHaveLength(14)
+    // system + last 12 turns + M13.1 reminder + the new message = 15 messages total
+    expect(body.messages).toHaveLength(15)
     expect(body.messages[0]?.role).toBe('system')
     expect(body.messages[0]?.content).toContain('NO role-play scenario')
     expect(body.messages[1]?.content).toBe('Nachricht 2') // oldest two dropped
-    expect(body.messages[13]?.role).toBe('user')
-    expect(body.messages[13]?.content).toBe('Hallo!')
+    expect(body.messages[13]?.role).toBe('system') // anti-drift reminder (M13.1)
+    expect(body.messages[13]?.content).toContain('report EVERY real mistake')
+    expect(body.messages[14]?.role).toBe('user')
+    expect(body.messages[14]?.content).toBe('Hallo!')
   })
 
   it('ask mode: answers about the language (English system prompt), defaults empty meta fields', async () => {
@@ -392,7 +472,10 @@ describe('tutorChatTurn (M11.8)', () => {
 
     const body = lastBody()
     expect(body.messages[0]?.content).toContain('ABOUT the German language')
-    expect(body.messages[2]?.content).toBe('Why is it "zu Hause"?')
+    // M13.1: an anti-drift reminder now sits between the history and the question
+    expect(body.messages[2]?.role).toBe('system')
+    expect(body.messages[2]?.content).toContain('report EVERY real mistake')
+    expect(body.messages[3]?.content).toBe('Why is it "zu Hause"?')
   })
 })
 

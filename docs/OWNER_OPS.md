@@ -1,4 +1,4 @@
-# Owner Ops Runbook — one doc, click by click (M13 deliverable, v2.32.0)
+# Owner Ops Runbook — one doc, click by click (M13.1, v2.33.0)
 
 Everything the owner (Gábor) needs to operate the backend by hand. No code knowledge
 required — each step names the exact dashboard, menu and value. The agent keeps this
@@ -30,7 +30,7 @@ file in sync; if reality and this doc disagree, trust reality and tell the agent
 | --- | --- | --- |
 | `ai-proxy` | **ON** | `ZAI_PLATFORM_KEY` (chat; wins if set) · `OPENAI_PLATFORM_KEY` (fallback chat) · `PLATFORM_TTS_KEY` (HD voice) |
 | `paddle-checkout` | **ON** | `PADDLE_API_KEY` · `PADDLE_CLIENT_TOKEN` · `PADDLE_PRICE_MAP` |
-| `paddle-webhook` | **OFF** (Paddle sends no Supabase JWT) | `PADDLE_WEBHOOK_SECRET` · `PADDLE_PRICE_MAP` · `PADDLE_ENV` (`sandbox`\|`live`) · `PADDLE_SANDBOX_TEST_USER` (owner uuid) |
+| `paddle-webhook` | **OFF** (Paddle sends no Supabase JWT) | `PADDLE_WEBHOOK_SECRET` · `PADDLE_PRICE_MAP` · `PADDLE_ENV` (`sandbox`\|`live`) · `PADDLE_SANDBOX_TEST_USER` (one or more test-account uuids, comma-separated) |
 
 `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` are injected automatically — never set
 them by hand, never paste the service key anywhere else.
@@ -65,6 +65,22 @@ update ai_entitlements set monthly_allowance_usd_micros = 40000000 where plan = 
 
 Verify: sign in as the Plus test account → Settings → Account & Billing → the
 "Managed AI budget" bar should show ≈ $21+ ($1 teaser + $20 allowance minus spend).
+
+## 4b. Adding a second sandbox test account (M13.1)
+
+The webhook's sandbox guard blocks events for anyone not on the allowlist. To add
+`gardianofthedigitalworld@gmail.com` (or any extra tester):
+
+1. Have the new account sign in to the app once (Google) — this creates its
+   `auth.users` row.
+2. Supabase → Authentication → Users → find the new user → copy its **UID** (uuid).
+3. Edge Functions → `paddle-webhook` → Secrets → `PADDLE_SANDBOX_TEST_USER` → set to
+   `<existing-owner-uuid>,<new-uid>` (comma-separated, no spaces needed).
+4. No re-paste needed — secrets are read per request.
+
+Which backend is live: Settings → AI Model shows the active model after the meter
+refreshes — `glm-4.6` = z.ai (ZAI_PLATFORM_KEY set), `gpt-5-mini` = OpenAI fallback.
+To switch: add/delete the `ZAI_PLATFORM_KEY` secret on `ai-proxy` and re-paste it.
 
 ## 5. Sandbox → live go-live (locked decision: when real users may pay)
 

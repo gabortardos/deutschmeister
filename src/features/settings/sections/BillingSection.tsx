@@ -301,12 +301,19 @@ export default function BillingSection() {
             )}
           </div>
           <div className="mt-3 space-y-3">
-            <UsageBar
-              used={meter.spendUsdMicros}
-              cap={meter.capUsdMicros}
-              label={'Managed AI budget — ' + formatUsdMicros(remaining) + ' left'}
-            />
-            {meter.plan !== 'free' && (
+            {meter.plan === 'byo-supporter' ? (
+              <p className="text-xs text-slate-500">
+                Supporter membership: your AI chat and HD voice run on your own keys — nothing is
+                metered or capped here.
+              </p>
+            ) : (
+              <UsageBar
+                used={meter.spendUsdMicros}
+                cap={meter.capUsdMicros}
+                label={'Managed AI budget — ' + formatUsdMicros(remaining) + ' left'}
+              />
+            )}
+            {meter.plan !== 'free' && meter.plan !== 'byo-supporter' && (
               <p className="text-xs text-slate-500">
                 Fair-use guard, not a tight quota — normal learning never reaches it (we meter
                 exact usage to keep the service sustainable).
@@ -332,6 +339,10 @@ export default function BillingSection() {
                 cap={meter.ttsCharCap}
                 label="HD voice characters (this month)"
               />
+            ) : meter.plan === 'byo-supporter' ? (
+              <p className="text-sm text-slate-500">
+                HD cloud voice runs on your own Google key (Settings → Speech) — unmetered.
+              </p>
             ) : (
               <p className="text-sm text-slate-500">
                 HD cloud voice: not in this plan — browser voices keep working free (Plus adds it).

@@ -74,6 +74,12 @@ export function ClozeSession({ items, onWordReviewed, onDrillDone, onFinish }: C
     }
   }
 
+  // M13.1 fix: next() latches the guard when it shows the done screen; re-arm
+  // it once that screen renders so "Back to overview" (button + Enter) works.
+  useEffect(() => {
+    if (done) completingRef.current = false
+  }, [done])
+
   function finish(): void {
     if (completingRef.current) return
     completingRef.current = true
