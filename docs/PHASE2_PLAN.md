@@ -401,6 +401,25 @@ options.
     verbs/adjectives), global headword uniqueness, sentence containment and
     plural-only-on-nouns before the suite ran green. Remaining to 5,000:
     +712 over batch 5.
+  - **M12.7 vocab batch 5 — SHIPPED (v2.29.0, 2026-10-01)**: +712 words
+    (4,288 → 5,000 — corpus target REACHED; A2 +88 · B1 +140 · B2 +330 ·
+    C1 +154) over Wirtschaft (Economy: banking/shopping basics →
+    trade/companies/jobs → markets, macro, finance, corporate → C1
+    state-finance register: Anleihe, Leitzins, Schuldenkrise,
+    Steuergerechtigkeit, Einkommensschere …), Wissenschaft (Science:
+    school/study basics → university + methods → disciplines, physics/
+    chemistry/biology, space, studies → C1 abstract register:
+    Reproduzierbarkeit, Paradigma, Peer-Review, Evidenz,
+    Relativitätstheorie …) and abstrakte Verben (~120 verbs/phrases from
+    B2 verwirklichen / in Kauf nehmen / Rechnung tragen up to C1
+    gewähren / entkräften / konterkarieren / verharmlosen). New rows
+    reuse the existing Economy/Science/Abstract theme labels. Candidates
+    were verified against the 4,288-word baseline in-process (throwaway
+    vite-node checker: shape, uniqueness, noun-in-sentence,
+    plural-only-on-nouns, apostrophe scan of the new sections);
+    55 collisions surfaced across 10 verification rounds and were
+    swapped for verified-free words; the total lands exactly on 5,000
+    with counts derived from the row arrays (no test edits needed).
   - **M12.8 A1–B2 grammar completeness audit**: diff the topic list
     against a standard curriculum (Goethe A1–B2 checklists); candidate
     gaps already spotted: full Präteritum (alle starken Verben +
