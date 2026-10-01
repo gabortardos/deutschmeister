@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { getProfile, updateProfile } from '../db/repositories/profileRepo'
 import { getSettings, updateSettings } from '../db/repositories/settingsRepo'
-import { getOrCreateTodayLog, recordDrill, resetTodayLog } from '../db/repositories/lessonRepo'
+import { getOrCreateTodayLog, recordDrill, replanTodayLog } from '../db/repositories/lessonRepo'
 import { dueCards, vocabStats, type VocabStats } from '../db/repositories/vocabRepo'
 import type { AppSettings, LessonLog, UserProfile } from '../db/types'
 import { getApiKey, setApiKey } from '../llm/keyStore'
@@ -46,14 +46,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
   patchSettings: async (patch) => {
     const settings = await updateSettings(patch)
     set({ settings })
-    // M12.9: a word-focus change re-plans today ONLY when today's plan came
-    // out empty (e.g. a too-narrow scope starved it). A plan that already
-    // served words keeps them — reshuffling mid-day would double-serve.
+    // M12.9.1: a word-focus change is authoritative immediately — today's
+    // queue is rebuilt in-scope (words already studied today stay counted,
+    // the unstudied tail is replaced; studied words keep their SRS card so
+    // they are never re-served).
     if (patch.vocabScope !== undefined) {
-      const { todayLog } = get()
-      if (todayLog && todayLog.newWordIds.length === 0) {
-        await resetTodayLog()
-        await get().refreshToday()
+      const { profile } = get()
+      if (profile) {
+        const todayLog = await replanTodayLog(profile, settings.vocabScope ?? null)
+        set({ todayLog })
       }
     }
   },

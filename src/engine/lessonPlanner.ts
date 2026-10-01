@@ -42,3 +42,26 @@ export function buildLessonPlan(input: LessonPlanInput): LessonPlan {
 
   return { date, wordIds: ordered.slice(0, goal).map((w) => w.id) }
 }
+
+export interface ReplanInput extends LessonPlanInput {
+  /** Today's queue before the word-focus change (M12.9.1). */
+  previousQueueIds: readonly string[]
+}
+
+/**
+ * M12.9.1: rebuild of TODAY's queue after a word-focus change — the filter is
+ * authoritative immediately, not from tomorrow. Words from the old queue that
+ * were already studied today (they have a card) stay in the queue and keep
+ * counting toward the daily goal; only the remaining slots are topped up with
+ * fresh in-scope words. Studied words are skipped by the session runner, so
+ * nothing is ever double-served.
+ */
+export function replanTodayQueue(input: ReplanInput): LessonPlan {
+  const date = input.date ?? dateKey()
+  const goal = Math.max(1, Math.min(10, Math.round(input.dailyWordGoal)))
+  const studied = input.previousQueueIds.filter((id) => input.introducedWordIds.has(id))
+  const remaining = goal - studied.length
+  const fresh =
+    remaining > 0 ? buildLessonPlan({ ...input, date, dailyWordGoal: remaining }).wordIds : []
+  return { date, wordIds: [...studied, ...fresh] }
+}

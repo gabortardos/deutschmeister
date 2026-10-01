@@ -1,4 +1,4 @@
-import { buildLessonPlan } from '../../engine/lessonPlanner'
+import { buildLessonPlan, replanTodayQueue } from '../../engine/lessonPlanner'
 import { dateKey } from '../../engine/text'
 import { db } from '../dexie'
 import type { LessonLog, UserProfile, VocabScope } from '../types'
@@ -57,12 +57,45 @@ export async function getLog(date: string): Promise<LessonLog | undefined> {
 }
 
 /**
- * M12.9: deletes today's log so the next `getOrCreateTodayLog` re-plans with
- * the current word focus. Only called when today's plan came out EMPTY —
- * a plan that already served words stays untouched (per-date immutability).
+ * M12.9.1: rebuilds TODAY's queue after a word-focus change — the filter is
+ * authoritative immediately, not from tomorrow. Words already studied today
+ * keep their slot (they still count toward the goal) and `drillsDone` is
+ * preserved; only the not-yet-studied tail of the queue is replaced with
+ * in-scope words. No double-serve: studied words carry an SRS card and are
+ * skipped by the session runner.
  */
-export async function resetTodayLog(): Promise<void> {
-  await db.lessonLogs.delete(`lesson-${dateKey()}`)
+export async function replanTodayLog(
+  profile: UserProfile,
+  scope?: VocabScope | null,
+): Promise<LessonLog> {
+  const date = dateKey()
+  const id = `lesson-${date}`
+  const existing = await db.lessonLogs.get(id)
+  if (!existing) return getOrCreateTodayLog(profile, scope)
+
+  const [words, cards, themeBias] = await Promise.all([
+    db.vocabWords.toArray(),
+    db.vocabCards.toArray(),
+    themeBiasFor(profile),
+  ])
+  const plan = replanTodayQueue({
+    dailyWordGoal: profile.dailyWordGoal,
+    words,
+    introducedWordIds: new Set(cards.map((c) => c.wordId)),
+    previousQueueIds: existing.newWordIds,
+    themeBias,
+    scope,
+  })
+  const log: LessonLog = {
+    id,
+    updatedAt: Date.now(),
+    date,
+    newWordIds: plan.wordIds,
+    grammarTopicId: profile.currentGrammarTopicId,
+    drillsDone: existing.drillsDone,
+  }
+  await db.lessonLogs.put(log)
+  return log
 }
 
 /** Increments the drill counter after a completed drill. */

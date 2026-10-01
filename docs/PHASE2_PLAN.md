@@ -449,12 +449,20 @@ options.
     `skipKeyAction` added to sessionKeys so the `S` key is pure and tested
     (StudySession skips at any pre-completion phase — the live typing input
     is guarded so 's' stays in the answer; ReviewPage '⚡ Known' is
-    input-focus-guarded the same way); a scope change re-plans today ONLY
-    when today's plan came out empty (`resetTodayLog`); `normalizeVocabScope`
+    input-focus-guarded the same way); `normalizeVocabScope`
     garbage-guards the persisted value (the field rides the existing
     `app_settings` sync row); WordBankPage got a 🎯 "Focus scope" toggle
     chip and Settings→Learning a read-only mirror + link. Gate 419/419
     (+20 tests). Original spec below.
+    **v2.31.1 fix (owner bug report: "click C1, still get A1 words")** —
+    the empty-plan-only re-plan rule made the filter decorative whenever a
+    plan was already built at startup. A scope change now rebuilds TODAY's
+    queue immediately: new pure `replanTodayQueue` (lessonPlanner) keeps
+    words already studied today in the queue (they still count toward the
+    goal; the session runner skips them — no double-serve) and tops up the
+    remaining slots with fresh in-scope words; `replanTodayLog` (lessonRepo)
+    preserves `drillsDone`; store.patchSettings runs it on every vocabScope
+    patch. +4 tests → 423/423.
     two learning-flow upgrades over the 5,000-word corpus.
     (a) **Word-focus filter** — users choose which slice of the corpus to
     learn: new persisted setting `vocabScope` (levels: CefrLevel[] +

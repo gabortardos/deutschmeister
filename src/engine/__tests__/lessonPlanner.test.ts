@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VocabWord } from '../../db/types'
-import { buildLessonPlan } from '../lessonPlanner'
+import { buildLessonPlan, replanTodayQueue } from '../lessonPlanner'
 
 function word(id: string, rank: number, theme: string): VocabWord {
   return {
@@ -108,5 +108,56 @@ describe('buildLessonPlan', () => {
       scope: { levels: ['B1'], themes: [] },
     })
     expect(plan.wordIds).toEqual(['b1travel'])
+  })
+})
+
+describe('replanTodayQueue', () => {
+  it('M12.9.1: keeps studied words and tops up the rest in-scope only', () => {
+    const scoped = [
+      ...words,
+      { ...word('c1a', 1, 'Science'), cefr: 'C1' as const },
+      { ...word('c1b', 2, 'Law'), cefr: 'C1' as const },
+    ]
+    const plan = replanTodayQueue({
+      dailyWordGoal: 3,
+      words: scoped,
+      introducedWordIds: new Set(['w4']), // studied today from the old queue
+      previousQueueIds: ['w4', 'w2', 'w1'], // old all-corpus queue
+      scope: { levels: ['C1'], themes: [] },
+    })
+    // A1 tail dropped; the two remaining slots fill with in-scope C1 words.
+    expect(plan.wordIds).toEqual(['w4', 'c1a', 'c1b'])
+  })
+
+  it('M12.9.1: no top-up past the goal when it is already met', () => {
+    const plan = replanTodayQueue({
+      dailyWordGoal: 2,
+      words,
+      introducedWordIds: new Set(['w4', 'w2']),
+      previousQueueIds: ['w4', 'w2', 'w1'],
+      scope: { levels: ['C1'], themes: [] },
+    })
+    expect(plan.wordIds).toEqual(['w4', 'w2'])
+  })
+
+  it('M12.9.1: empty previous queue behaves like a fresh in-scope plan', () => {
+    const plan = replanTodayQueue({
+      dailyWordGoal: 2,
+      words: [...words, { ...word('c1a', 1, 'Science'), cefr: 'C1' as const }],
+      introducedWordIds: new Set(),
+      previousQueueIds: [],
+      scope: { levels: ['C1'], themes: [] },
+    })
+    expect(plan.wordIds).toEqual(['c1a'])
+  })
+
+  it('M12.9.1: clearing the scope re-queues from the whole corpus', () => {
+    const plan = replanTodayQueue({
+      dailyWordGoal: 3,
+      words,
+      introducedWordIds: new Set(['w4']),
+      previousQueueIds: ['w4'],
+    })
+    expect(plan.wordIds).toEqual(['w4', 'w2', 'w1'])
   })
 })

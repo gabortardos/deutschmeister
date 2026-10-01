@@ -265,7 +265,7 @@ export default function VocabPage() {
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-slate-400">
             {scopeActive
-              ? `${scopedCount.toLocaleString('en-US')} of ${bank.length.toLocaleString('en-US')} words in focus — applies to extra words, practice, cloze and tomorrow’s daily plan. Learned words outside the focus still come up for review.`
+              ? `${scopedCount.toLocaleString('en-US')} of ${bank.length.toLocaleString('en-US')} words in focus — applies to today’s plan (immediately), extra words, practice and cloze. Learned words outside the focus still come up for review.`
               : `No focus — all ${bank.length.toLocaleString('en-US')} words are in play. Pick levels or themes to concentrate new words.`}
           </p>
           <Button disabled={!scopeActive} onClick={() => updateScope({ levels: [], themes: [] })}>
