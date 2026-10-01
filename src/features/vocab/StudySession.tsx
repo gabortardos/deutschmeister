@@ -326,7 +326,7 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
 
       {phase === 'choice' && (
         <Card>
-          <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400">What does it mean?</p>
+          <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400">🇩🇪 → 🇬🇧 What does it mean? Pick the English</p>
           <p className="mt-2 text-center text-3xl font-bold text-slate-900">{full}</p>
           <div className="mt-3 flex justify-center">
             <Button onClick={speakWord}>🔊 Listen</Button>
@@ -378,7 +378,7 @@ export function StudySession({ words, bank, onWordReviewed, onDrillDone, onFinis
       )}
       {phase === 'type' && (
         <Card>
-          <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400">Type it in German</p>
+          <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400">🇬🇧 → 🇩🇪 Translate it — type it in German</p>
           <p className="mt-2 text-center text-3xl font-bold text-slate-900">{word.english}</p>
           {word.exampleSentenceEn && (
             <p className="mt-1 text-center text-sm italic text-slate-400">{word.exampleSentenceEn}</p>

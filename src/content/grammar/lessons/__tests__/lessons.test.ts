@@ -65,9 +65,9 @@ describe('lesson contract (every lesson)', () => {
         }
       })
 
-      it('has 3–5 checkpoints, each gradable offline', () => {
-        expect(lesson.checkpoints.length).toBeGreaterThanOrEqual(3)
-        expect(lesson.checkpoints.length).toBeLessThanOrEqual(5)
+      it('has 10 checkpoints (M14.1 owner decision), each gradable offline', () => {
+        expect(lesson.checkpoints.length).toBeGreaterThanOrEqual(10)
+        expect(lesson.checkpoints.length).toBeLessThanOrEqual(12)
         const ids = new Set<string>()
         for (const cp of lesson.checkpoints) {
           expect(cp.id.trim().length).toBeGreaterThan(0)

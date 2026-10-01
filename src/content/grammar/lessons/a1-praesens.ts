@@ -6,7 +6,7 @@ import type { Lesson } from './types'
  */
 export const A1_PRAESENS_LESSON: Lesson = {
   topicId: 'g-a1-02',
-  minutes: 5,
+  minutes: 6,
   hook: 'Almost every German sentence you will ever say starts here. Learn six tiny endings once, and every regular verb — wohnen, lernen, machen, spielen, arbeiten — becomes usable today. That is thousands of verbs for the price of six.',
   sections: [
     {
@@ -69,7 +69,23 @@ export const A1_PRAESENS_LESSON: Lesson = {
       prose: [
         'Germans often trim the ich ending in speech: *ich komm’*, *ich glaub’*. Dropping the final e is natural in conversation — but keep the full **-e** while you are learning; it is never wrong.',
         'Questions simply flip the room, and the ending you just learned does the work: **Wohnst du in Berlin?** — Do you live in Berlin? **Arbeitet ihr viel?** — Do you (all) work a lot?',
+        'One more rhythm tip: the -st and -t endings are short and light — **wohnst**, **wohnt**. One syllable per ending is all German wants.',
       ],
+    },
+    {
+      heading: 'Step 5 · Flip it into a question',
+      prose: [
+        'Questions are built by **moving the conjugated verb**, and the ending you just learned does all the work. With a question word (W-word), the verb comes **right after it**, before the subject. Without a question word, the verb simply steps into first place for a yes/no question:',
+      ],
+      table: {
+        caption: 'One sentence, three lives',
+        headers: ['Form', 'German', 'English'],
+        rows: [
+          ['Statement', 'Du wohnst in Berlin.', 'You live in Berlin.'],
+          ['W-question', 'Wo wohnst du?', 'Where do you live?'],
+          ['Yes/no question', 'Wohnst du in Berlin?', 'Do you live in Berlin?'],
+        ],
+      },
     },
   ],
   mistakes: [
@@ -92,6 +108,11 @@ export const A1_PRAESENS_LESSON: Lesson = {
       wrong: 'Sie spielt Gitarre. (to a professor)',
       right: 'Sie spielen Gitarre.',
       why: 'Formal **Sie** conjugates like *they* — plural ending **-en**, never -t.',
+    },
+    {
+      wrong: 'Wo du wohnst?',
+      right: 'Wo wohnst du?',
+      why: 'In questions the conjugated verb comes **right after the W-word** — the subject follows the verb: Wo wohnst du?',
     },
   ],
   checkpoints: [
@@ -130,6 +151,41 @@ export const A1_PRAESENS_LESSON: Lesson = {
       answer: 2,
       explain: 'Formal **Sie** takes the plural ending -en: **Kommen** Sie?',
     },
+    {
+      id: 'cp-6',
+      question: '„___ ihr aus Österreich?“ (kommen)',
+      options: ['Kommst', 'Kommt', 'Kommen', 'Komme'],
+      answer: 1,
+      explain: 'ihr takes **-t**: Kommt ihr aus Österreich? (-st belongs to du alone.)',
+    },
+    {
+      id: 'cp-7',
+      question: '„Heute ___ ich viel.“ (machen)',
+      options: ['mache', 'machst', 'macht', 'machen'],
+      answer: 0,
+      explain: 'ich takes **-e**: Heute mache ich viel. (And see the flip — the verb still comes second when “heute” opens the sentence.)',
+    },
+    {
+      id: 'cp-8',
+      question: 'To your boss, formally: „___ Sie am Samstag?“ (arbeiten)',
+      options: ['Arbeitest', 'Arbeitet', 'Arbeiten', 'Arbeite'],
+      answer: 2,
+      explain: 'Formal **Sie** takes -en — and -t/-d stems insert their e only before -st/-t, so it is simply **Arbeiten** Sie?',
+    },
+    {
+      id: 'cp-9',
+      question: 'Which question is built correctly?',
+      options: ['Wo du wohnst?', 'Wo wohnst du?', 'Wohnst wo du?', 'Du wo wohnst?'],
+      answer: 1,
+      explain: 'W-word + **verb** + subject: Wo wohnst du?',
+    },
+    {
+      id: 'cp-10',
+      question: '„Das Kind ___ gern im Garten.“ (spielen)',
+      options: ['spiele', 'spielst', 'spielt', 'spielen'],
+      answer: 2,
+      explain: 'das Kind = er/sie/es → **-t**: Das Kind spielt gern im Garten.',
+    },
   ],
   cheatSheet: [
     'Stem + endings: **-e · -st · -t · -en · -t · -en** (ich · du · er/sie/es · wir · ihr · sie/Sie)',
@@ -137,5 +193,6 @@ export const A1_PRAESENS_LESSON: Lesson = {
     'Stems ending in **-t/-d** insert an e: du arbeit**e**st, er arbeit**e**t',
     '**sie** = she (sie wohnt) or they (sie wohnen) · **Sie** (capital S) = formal you (Sie spielen)',
     'The ich **-e** is often dropped in casual speech (ich komm’) — safe to keep it while learning',
+    'Questions: W-word + verb + subject (**Wo wohnst du?**) · yes/no question → verb first (**Wohnst du in Berlin?**)',
   ],
 }

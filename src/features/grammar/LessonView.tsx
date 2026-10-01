@@ -229,7 +229,20 @@ export default function LessonView({
         <Button variant="primary" onClick={onPractice} disabled={drillsCount === 0}>
           Now practice it → {drillsCount > 0 ? `(${drillsCount} drills)` : ''}
         </Button>
-        <Link to="/tutor" onClick={() => setTutorPrefill(`About the lesson “${topic.title}” (${topic.cefr}): `)}>
+        <Link
+          to="/tutor"
+          onClick={() =>
+            setTutorPrefill({
+              question: `About the lesson “${topic.title}” (${topic.cefr}): `,
+              // M14.1: carry the cheat sheet along so the tutor teaches grounded in
+              // what the lesson actually said (and can go deeper than it).
+              context: [
+                `Lesson topic: ${topic.title} (${topic.cefr}).`,
+                ...lesson.cheatSheet.map((line) => `- ${line.replace(/\*\*/g, '')}`),
+              ].join('\n'),
+            })
+          }
+        >
           <Button>💬 Ask about this lesson</Button>
         </Link>
       </div>

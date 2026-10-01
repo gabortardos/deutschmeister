@@ -20,6 +20,39 @@ function tabClass(active: boolean): string {
   }`
 }
 
+/** M14.1: completed-round counter per topic (localStorage nicety — powers the
+ *  "fresh drills on repeat visits" behaviour; a UI hint, not user data, never syncs). */
+const ROUNDS_KEY = 'dm-grammar-rounds'
+
+function readRounds(topicId: string): number {
+  try {
+    const raw = JSON.parse(localStorage.getItem(ROUNDS_KEY) ?? '{}') as Record<string, number>
+    return raw[topicId] ?? 0
+  } catch {
+    return 0
+  }
+}
+
+function bumpRounds(topicId: string): void {
+  try {
+    const raw = JSON.parse(localStorage.getItem(ROUNDS_KEY) ?? '{}') as Record<string, number>
+    raw[topicId] = (raw[topicId] ?? 0) + 1
+    localStorage.setItem(ROUNDS_KEY, JSON.stringify(raw))
+  } catch {
+    // Storage blocked — reshuffling still works; only the auto-fresh hint is lost.
+  }
+}
+
+/** Fisher–Yates on a copy — Math.random by design (round variety, like the mistake bank). */
+function shuffleDrills<T>(items: readonly T[]): T[] {
+  const out = [...items]
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
 
 export default function GrammarTopicPage() {
   const { topicId } = useParams<{ topicId: string }>()
@@ -28,6 +61,10 @@ export default function GrammarTopicPage() {
   const [drills, setDrills] = useState<DrillItem[] | null>(null)
   const [practicing, setPracticing] = useState(false)
   const [done, setDone] = useState(false)
+  // M14.1: round variety — the active round's drill set + a remount sequence.
+  const [practiceSet, setPracticeSet] = useState<DrillItem[] | null>(null)
+  const [roundSeq, setRoundSeq] = useState(0)
+  const [freshBusy, setFreshBusy] = useState(false)
   // M14: topics with an authored lesson open on the 📖 Lesson tab.
   const [tab, setTab] = useState<'lesson' | 'summary'>('lesson')
 
@@ -86,9 +123,42 @@ export default function GrammarTopicPage() {
     }
   }
 
+  /**
+   * M14.1 round starter. `fresh`: true → always add a new AI batch first;
+   * false → never call AI (offline-safe reshuffle); undefined → auto: only when
+   * the learner has completed rounds on this topic before, so repeat visits to
+   * an already-learned topic serve new drills instead of the same fixed set.
+   * Every round is reshuffled either way.
+   */
+  async function startPractice(fresh?: boolean): Promise<void> {
+    if (!topic || !topicId || freshBusy) return
+    const wantFresh = fresh ?? readRounds(topicId) > 0
+    let pool = drills ?? []
+    if (wantFresh && deps && !genBusy) {
+      setFreshBusy(true)
+      try {
+        const saved = await generateAndSaveDrills(deps, topicId, 5)
+        if (saved > 0) {
+          pool = await getDrillsForTopic(topicId)
+          setDrills(pool)
+        }
+      } catch {
+        // Fresh drills are a bonus, never a blocker — fall back to the reshuffled pool.
+      } finally {
+        setFreshBusy(false)
+      }
+    }
+    if (pool.length === 0) return
+    setDone(false)
+    setPracticeSet(shuffleDrills(pool))
+    setRoundSeq((n) => n + 1)
+    setPracticing(true)
+  }
+
   useEffect(() => {
     setTopic(null)
     setDrills(null)
+    setPracticeSet(null)
     setPracticing(false)
     setDone(false)
     setTab('lesson')
@@ -117,18 +187,20 @@ export default function GrammarTopicPage() {
     )
   }
 
-  if (practicing && drills && drills.length > 0) {
+  if (practicing && practiceSet && practiceSet.length > 0) {
     return (
       <div className="space-y-4">
         <Link to="/grammar" className="text-xs text-slate-400 hover:text-slate-600">
           ← Leave practice
         </Link>
         <DrillRunner
-          drills={drills}
+          key={roundSeq}
+          drills={practiceSet}
           title={topic.title}
           onFinish={() => {
             setPracticing(false)
             setDone(true)
+            if (topicId) bumpRounds(topicId)
             void bumpDrills()
             void refreshToday()
           }}
@@ -169,7 +241,7 @@ export default function GrammarTopicPage() {
             lesson={lesson}
             topic={topic}
             drillsCount={drills?.length ?? 0}
-            onPractice={() => setPracticing(true)}
+            onPractice={() => void startPractice()}
           />
         )}
         {(!lesson || tab === 'summary') && (
@@ -205,17 +277,36 @@ export default function GrammarTopicPage() {
               </div>
             )}
             <div className="mt-5 flex flex-wrap gap-2">
-              <Button variant="primary" onClick={() => setPracticing(true)} disabled={(drills?.length ?? 0) === 0}>
-                Practice {drills?.length ?? 0} drills →
+              <Button
+                variant="primary"
+                onClick={() => void startPractice()}
+                disabled={freshBusy || (drills?.length ?? 0) === 0}
+              >
+                {freshBusy ? 'Preparing fresh drills…' : `Practice ${drills?.length ?? 0} drills →`}
               </Button>
               <Link to="/vocab">
                 <Button>Study related words</Button>
               </Link>
             </div>
-            {done && (
-              <p className="mt-3 text-xs text-emerald-600">Round complete — attempts recorded, mastery updated.</p>
-            )}
           </>
+        )}
+
+        {done && !practicing && (
+          <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+            <p className="text-sm font-medium text-emerald-800">
+              Round complete — attempts recorded, mastery updated.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button disabled={freshBusy} onClick={() => void startPractice(false)}>
+                {freshBusy ? 'Preparing…' : '🔁 Practice again (new order)'}
+              </Button>
+              {deps && (
+                <Button variant="primary" disabled={freshBusy} onClick={() => void startPractice(true)}>
+                  ✨ Practice again + 5 new drills
+                </Button>
+              )}
+            </div>
+          </div>
         )}
       </Card>
     </div>

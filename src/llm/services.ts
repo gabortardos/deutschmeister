@@ -725,6 +725,8 @@ export interface TutorChatTurnInput {
   level: CefrLevel
   history: TutorHistoryTurn[]
   userText: string
+  /** M14.1: lesson context for "Ask about this lesson" — grounds the answer in what the lesson taught. */
+  lessonContext?: string
 }
 
 function tutorChatMessages(input: TutorChatTurnInput): ChatMessage[] {
@@ -747,7 +749,17 @@ function tutorChatMessages(input: TutorChatTurnInput): ChatMessage[] {
       : [
           `You are a friendly German tutor answering the learner's questions ABOUT the German language (grammar, vocabulary, usage, small culture). The learner studies at CEFR level ${input.level}.`,
           'Rules:',
-          '- Write "reply" in clear, simple ENGLISH, under ~120 words, with German examples where they help (proper orthography: ä ö ü ß).',
+          '- Write "reply" in clear ENGLISH, ~120–220 words — a full mini-lesson, not a hint.',
+          '- Structure it: 1) the rule in plain words, 2) WHY it works that way (the logic behind it), 3) 2–3 German examples with English translations (proper orthography: ä ö ü ß), 4) the classic mistake to avoid. Short paragraphs or "- " dashes — never one dense block.',
+          '- Simple wording (the learner is not a linguist), but never sacrifice depth for brevity — a small dash-list beats a vague summary.',
+          ...(input.lessonContext
+            ? [
+                'The learner just studied this built-in lesson — answer consistently with it and go deeper where the question invites it:',
+                '--- LESSON SUMMARY ---',
+                input.lessonContext,
+                '--- END LESSON SUMMARY ---',
+              ]
+            : []),
           '- "tutorQuestion" = "" and "replyTranslationEn" = "".',
           ...mistakeRules,
         ].join('\n')
@@ -774,7 +786,7 @@ export async function tutorChatTurn(
   input: TutorChatTurnInput,
 ): Promise<ConversationTurnResult> {
   const parsed = await chatJSON(deps.config, tutorChatMessages(input), ConversationReplySchema, {
-    maxTokens: 900,
+    maxTokens: 1100, // M14.1: ask-mode answers are structured mini-lessons now (~220 words)
     temperature: 0.7,
   })
   return {

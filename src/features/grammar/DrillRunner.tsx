@@ -27,6 +27,17 @@ const TYPE_LABEL: Record<string, string> = {
   translate_en_de: 'Translate → German',
 }
 
+/**
+ * M14.1: translation drills get an explicit, prominent direction instruction —
+ * "what language am I supposed to produce?" must never be a guessing game.
+ * Rendered above the prompt wherever DrillRunner is used (grammar topics,
+ * scenario practice mode, mistake-bank grammar drills).
+ */
+const TRANSLATE_LABEL: Record<string, string> = {
+  translate_en_de: '🇬🇧 → 🇩🇪 Translate this into German',
+  translate_de_en: '🇩🇪 → 🇬🇧 Translate this into English',
+}
+
 /** Interactive runner for one drill round: Enter submits, 1–4 pick options. */
 export default function DrillRunner({ drills, title, onFinish }: Props) {
   const [index, setIndex] = useState(0)
@@ -103,6 +114,11 @@ export default function DrillRunner({ drills, title, onFinish }: Props) {
       <Card>
         {instruction && (
           <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-indigo-600">{instruction}</p>
+        )}
+        {TRANSLATE_LABEL[item.type] && (
+          <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-indigo-600">
+            {TRANSLATE_LABEL[item.type]}
+          </p>
         )}
         <p className="text-center text-2xl font-bold leading-snug text-slate-900">{item.prompt}</p>
         {item.type === 'wordorder' && (

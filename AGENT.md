@@ -632,6 +632,40 @@ topics).
   lessons become Roadmap nodes. The M15 curriculum engine can key off
   `lessonForTopic()` to mark which topics have teaching content.
 
+## M14.1 Lessons feedback round (v2.36.0)
+
+Owner pilot feedback on M14, applied 2026-10-01:
+
+- **Lessons deepened + 10 checkpoints each** (owner decision, up from 3–5):
+  A1 gained "Step 5 · Flip it into a question" (W-word/yes-no verb movement);
+  A2 gained "Step 6 · Two free passes: after sein, and the plural"
+  (predicative = no ending; plural after article = always -en); B1 gained
+  "Step 5 · Mixing both inside one spoken story" (Perfekt frame with
+  war/hatte/modal Präteritum inside it, + regional note). Each lesson also
+  gained 1–2 typical mistakes and a cheat-sheet line; contract test now
+  asserts 10–12 checkpoints.
+- **Deeper tutor answers**: ask-mode prompt went from "under ~120 words" to a
+  structured mini-lesson (~120–220 words: rule → why → 2–3 examples → classic
+  trap); `tutorChatTurn` maxTokens 900 → 1100.
+- **Grounded lesson handoff**: `dm-tutor-prefill` payload is now an object
+  `{question, context?}` (plain-string legacy values still parse as the
+  question) — LessonView sends the lesson's cheat sheet as context,
+  TutorChatPage keeps it for the whole conversation ("New chat" clears it)
+  and passes it as `lessonContext` into `tutorChatTurn`.
+- **Drill variety (GrammarTopicPage)**: every round is reshuffled
+  (Fisher–Yates, Math.random by design); a completed-round counter in
+  localStorage `dm-grammar-rounds` makes repeat visits to an already-practiced
+  topic auto-generate a fresh 5-drill AI batch first (silent fallback to the
+  reshuffled pool when offline/no key); post-round panel offers
+  "🔁 Practice again (new order)" and (with AI) "✨ Practice again + 5 new
+  drills". DrillRunner remounts per round via a `key` sequence.
+- **Translation instructions everywhere**: DrillRunner shows a prominent
+  "🇬🇧 → 🇩🇪 Translate this into German" / "🇩🇪 → 🇬🇧 Translate this into
+  English" label above the prompt (covers grammar topics, scenario practice
+  mode, mistake-bank grammar drills); vocab StudySession choice/type phases
+  carry direction labels too.
+- Gate: tsc ✓ · 460/460 ✓ · build ✓ (same pre-existing chunk-size warning).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

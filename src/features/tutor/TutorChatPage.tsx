@@ -53,6 +53,9 @@ export default function TutorChatPage() {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<{ message: string; hint?: string } | null>(null)
+  // M14.1: lesson handoff context ("Ask about this lesson") — kept for the whole
+  // conversation so follow-up questions stay grounded in that lesson's content.
+  const [lessonContext, setLessonContext] = useState<string | null>(null)
 
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const sessionRef = useRef<string | null>(null)
@@ -88,8 +91,9 @@ export default function TutorChatPage() {
   // consume it once: switch to Ask mode and prefill the textarea.
   useEffect(() => {
     const prefill = takeTutorPrefill()
-    if (prefill && prefill.trim().length > 0) {
-      setInput(prefill)
+    if (prefill && prefill.question.trim().length > 0) {
+      setInput(prefill.question)
+      if (prefill.context) setLessonContext(prefill.context)
       setMode('ask')
     }
   }, [])
@@ -116,6 +120,7 @@ export default function TutorChatPage() {
         level,
         history: priorTurns.map((t) => ({ role: t.role, text: t.text })),
         userText: text,
+        lessonContext: lessonContext ?? undefined,
       })
       const userTurn = await addTurn(sessionRef.current, {
         role: 'user',
@@ -154,6 +159,7 @@ export default function TutorChatPage() {
     sessionRef.current = (await startTutorSession()).id
     setTurns([])
     setError(null)
+    setLessonContext(null)
   }
 
   const meta = TUTOR_MODES[mode]

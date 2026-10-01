@@ -3,7 +3,7 @@ import type { Lesson } from './types'
 /** Pilot lesson 3 — B1 "Perfekt vs. Präteritum" (topic g-b1-11). */
 export const B1_PERFEKT_LESSON: Lesson = {
   topicId: 'g-b1-11',
-  minutes: 6,
+  minutes: 7,
   hook: 'German has two workhorses for the past, and choosing between them is not about meaning — it is about **where your words live**: in the air (spoken) or on paper (written). Learn the register rule and your past tense suddenly sounds native.',
   sections: [
     {
@@ -53,6 +53,22 @@ export const B1_PERFEKT_LESSON: Lesson = {
         'Comfort for the exam-minded B1 speaker: in the speaking exam, **Perfekt + the sein/haben/modal exception** will carry every answer safely.',
       ],
     },
+    {
+      heading: 'Step 5 · Mixing both inside one spoken story',
+      prose: [
+        'Real speech is not a tense quiz — one story can mix freely. The frame: everyday actions stay in the **Perfekt**, while sein/haben/modals inside the very same sentence flip to their **Präteritum** forms, and nobody feels a “rule” being followed:',
+        '„Ich **hatte** am Samstag keine Zeit und **wollte** eigentlich arbeiten. Dann **ist** mein Nachbar **gekommen**, und wir **haben** stundenlang geredet.“ — hatte/wollte (Präteritum, because haben/modal) alongside ist gekommen / haben geredet (Perfekt, because ordinary verbs in speech).',
+        'Regional note: in southern Germany and Austria the Perfekt pushes even further into spoken territory (you may hear „ich bin gewesen“ there). The sein/haben/modal-Präteritum habit above is standard and safe everywhere.',
+      ],
+      table: {
+        caption: 'One weekend, two registers',
+        headers: ['Register', 'Version'],
+        rows: [
+          ['Spoken to a friend', 'Ich hatte keine Zeit und wollte arbeiten. Dann ist mein Nachbar gekommen.'],
+          ['Written to a colleague', 'Ich hatte keine Zeit und wollte arbeiten. Dann kam mein Nachbar.'],
+        ],
+      },
+    },
   ],
   mistakes: [
     {
@@ -74,6 +90,11 @@ export const B1_PERFEKT_LESSON: Lesson = {
       wrong: '(Casual speech) Ich arbeitete gestern bis acht.',
       right: '(Casual speech) Ich habe gestern bis acht gearbeitet.',
       why: 'Weak-verb Präteritum in speech sounds bookish — the **Perfekt** is the natural choice.',
+    },
+    {
+      wrong: 'Ich habe gestern ins Kino gewollt. (spoken)',
+      right: 'Ich wollte gestern ins Kino.',
+      why: 'Modals in speech take the **Präteritum** (wollte) — their Perfekt sounds wrong in everyday German.',
     },
   ],
   checkpoints: [
@@ -105,6 +126,48 @@ export const B1_PERFEKT_LESSON: Lesson = {
       answer: 1,
       explain: 'Strong-verb **Präteritum** is elegant in spoken narration: kam. („ist gekommen“ is not wrong — kam is simply more vivid.)',
     },
+    {
+      id: 'cp-5',
+      question: 'Chatting: „___ du gestern Kopfschmerzen?“',
+      options: ['Hattest', 'Hast gehabt', 'Hattest gehabt', 'Haben'],
+      answer: 0,
+      explain: 'haben in speech → **Präteritum**: Hattest du gestern Kopfschmerzen?',
+    },
+    {
+      id: 'cp-6',
+      question: 'A colleague tells you about the weekend (spoken): „Wir ___ ein Konzert besucht.“',
+      options: ['haben', 'hatten', 'sind', 'waren'],
+      answer: 0,
+      explain: 'Ordinary verb, spoken → **Perfekt**: Wir haben ein Konzert besucht.',
+    },
+    {
+      id: 'cp-7',
+      question: 'In a written short story: „Am Abend ___ der Junge nach Hause.“ (gehen)',
+      options: ['ging', 'ist gegangen', 'geht', 'ging gegangen'],
+      answer: 0,
+      explain: 'Written narration → **Präteritum** of the strong verb: ging.',
+    },
+    {
+      id: 'cp-8',
+      question: 'Spoken story: „Ich ___ keine Lust, also bin ich zu Hause geblieben.“ (haben)',
+      options: ['hatte', 'habe gehabt', 'habe', 'war'],
+      answer: 0,
+      explain: 'haben and modals flip to **Präteritum** even inside a spoken Perfekt story: Ich hatte keine Lust …',
+    },
+    {
+      id: 'cp-9',
+      question: 'A personal e-mail to a friend — which past tense is expected?',
+      options: ['Mostly Perfekt', 'Mostly Präteritum', 'Only Präteritum', 'Present tense'],
+      answer: 0,
+      explain: 'Personal e-mails count as **conversation** register → mostly Perfekt (plus war/hatte/modal Präteritum).',
+    },
+    {
+      id: 'cp-10',
+      question: 'Which sentence is a mistake in casual speech?',
+      options: ['Ich musste gestern arbeiten.', 'Ich hatte keine Lust.', 'Ich bin müde gewesen.', 'Wir sind spät gekommen.'],
+      answer: 2,
+      explain: 'The sein-Perfekt (bin … gewesen) sounds bureaucratic in speech → say **Ich war müde.**',
+    },
   ],
   cheatSheet: [
     '**Perfekt = spoken past** (haben/sein + Partizip II) · **Präteritum = written / narrative past** — same meaning, different register',
@@ -112,5 +175,6 @@ export const B1_PERFEKT_LESSON: Lesson = {
     '**Strong verbs love the Präteritum in spoken stories**: kam, ging, blieb, gab, fand',
     '**Weak verbs love the Perfekt in speech**: habe gearbeitet (not: arbeitete)',
     'Exam-safe speaking default: Perfekt + war/hatte/modal Präteritum',
+    'Inside a spoken Perfekt story, sein/haben/modals still go **Präteritum**: „Ich hatte keine Zeit und wollte schlafen — dann ist mein Nachbar gekommen“',
   ],
 }

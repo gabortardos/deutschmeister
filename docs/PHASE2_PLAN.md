@@ -559,6 +559,14 @@ optional cheap reply-shape check; extend the service tests.
   textbook (PDF preferred) or YouTube link → coverage map against the 74 topics +
   style/depth calibration (reference only — we write our own prose, keeps licensing clean).
 
+**M14.1 feedback round — ✅ SHIPPED (v2.36.0)**: lessons deepened + **10 checkpoints
+each**; ask-mode tutor answers are structured mini-lessons grounded in the lesson's
+cheat-sheet context; drill rounds reshuffle with fresh AI batches on repeat topics
++ post-round "more drills" offers; explicit translation-direction instructions on
+every translation drill app-wide. (Owner note: expanding lessons to all 74 topics
+stays M16 — batch it per level after credit reset; the per-lesson cost is now
+calibrated by M14/M14.1.)
+
 ### M15 — Learning Roadmap & guided flow ("be the flow")
 
 - Onboarding v2: goal interview (why German, target level, horizon, minutes/day) →

@@ -3,7 +3,7 @@ import type { Lesson } from './types'
 /** Pilot lesson 2 — A2 "Adjective endings" (topic g-a2-12). */
 export const A2_ADJEKTIV_LESSON: Lesson = {
   topicId: 'g-a2-12',
-  minutes: 7,
+  minutes: 8,
   hook: 'An adjective before a German noun wears a uniform, and the article in front of it chooses that uniform. One principle — **exactly one element shows gender and case** — generates the entire system, so you can derive every ending instead of memorising tables.',
   sections: [
     {
@@ -65,6 +65,23 @@ export const A2_ADJEKTIV_LESSON: Lesson = {
         '2) Say the whole phrase aloud once — *ein neuer Mann, eine neue Idee, ein neues Buch* — your ear learns the rhythm faster than any table.',
       ],
     },
+    {
+      heading: 'Step 6 · Two free passes: after sein, and the plural',
+      prose: [
+        'After **sein**, **werden** and **bleiben** the adjective sits *behind* the verb — predicative — and wears **no ending at all**: **Der Kaffee ist heiß.** Compare: **der heiß**e** Kaffee**. Declension only happens directly before a noun.',
+        'The plural rewards you with a shortcut: after **any** article (der-word or ein-word), nominative and accusative plural are **always -en** — **die neuen Autos · meine neuen Bücher**. Only with no article does the strong ending return: **neue Autos** (-e), **mit neuen Autos** (Dativ -en).',
+      ],
+      table: {
+        caption: 'One adjective (neu), four lives',
+        headers: ['Position', 'Example', 'Ending'],
+        rows: [
+          ['Before a noun', 'das neue Auto', 'declined (-e)'],
+          ['After sein', 'Das Auto ist neu.', 'no ending'],
+          ['Plural with article', 'die neuen Autos', 'always -en'],
+          ['Plural without article', 'neue Autos', 'strong -e'],
+        ],
+      },
+    },
   ],
   mistakes: [
     {
@@ -86,6 +103,16 @@ export const A2_ADJEKTIV_LESSON: Lesson = {
       wrong: 'Sie hilft einem klein Kind.',
       right: 'Sie hilft einem kleinen Kind.',
       why: 'Dativ is **-en country** — after ein-words too: einem klein**en** Kind.',
+    },
+    {
+      wrong: 'Die Suppe ist leckere.',
+      right: 'Die Suppe ist lecker.',
+      why: 'After **sein** the adjective is predicative — **no ending**. Endings only appear directly before a noun.',
+    },
+    {
+      wrong: 'meine neu Bücher',
+      right: 'meine neuen Bücher',
+      why: 'Plural after an article (meine) → **always -en** in nominative/accusative: meine neuen Bücher.',
     },
   ],
   checkpoints: [
@@ -124,6 +151,41 @@ export const A2_ADJEKTIV_LESSON: Lesson = {
       answer: 3,
       explain: 'No article + masculine accusative → the adjective wears the ending den would have: **heißen** Kaffee.',
     },
+    {
+      id: 'cp-6',
+      question: '„Der Film ist ___.“ (spannend)',
+      options: ['spannender', 'spannende', 'spannend', 'spannendes'],
+      answer: 2,
+      explain: 'After **sein** the adjective is predicative → **no ending**: Der Film ist spannend.',
+    },
+    {
+      id: 'cp-7',
+      question: '„Meine ___ Nachbarn sind sehr nett.“ (alt — plural, nominative)',
+      options: ['alte', 'alter', 'altes', 'alten'],
+      answer: 3,
+      explain: 'Plural after an article (meine) → **always -en**: meine alten Nachbarn.',
+    },
+    {
+      id: 'cp-8',
+      question: '„Sie kommt mit einer ___ Tasche.“ (schwer — Dativ)',
+      options: ['schwere', 'schwerer', 'schweres', 'schweren'],
+      answer: 3,
+      explain: 'Dativ is -en country — after ein-words too: mit einer schwer**en** Tasche.',
+    },
+    {
+      id: 'cp-9',
+      question: '„Eine ___ Idee!“ (gut — feminine, nominative)',
+      options: ['guter', 'gute', 'gutes', 'guten'],
+      answer: 1,
+      explain: 'eine already shows the feminine → the adjective relaxes to **-e**: Eine gute Idee!',
+    },
+    {
+      id: 'cp-10',
+      question: '„___ Wasser schmeckt hier gut.“ (kalt — no article, neuter, nominative)',
+      options: ['Kaltes', 'Kalte', 'Kalter', 'Kalten'],
+      answer: 0,
+      explain: 'No article → the adjective carries the neuter signal itself: **Kaltes** Wasser.',
+    },
   ],
   cheatSheet: [
     '**One signal rule**: exactly one element shows gender + case — the der-word, the ein-word, or the adjective',
@@ -131,6 +193,8 @@ export const A2_ADJEKTIV_LESSON: Lesson = {
     'ein-word m/n Nom/Akk: adjective shows the hidden gender → **-er / -es** · feminine -e · Dativ -en',
     'No article: adjective goes strong — Nom m **-er** / f **-e** / n **-es** · Akk m **-en** · Dativ **-em / -er / -em**',
     'Learn the rhythm, not the table: ein neuer Mann · eine neue Idee · ein neues Buch',
+    'After sein/werden/bleiben: **no ending** (Der Kaffee ist heiß) — endings only in front of a noun',
+    'Plural with any article (Nom/Akk): **always -en** — die neuen Autos · meine neuen Bücher (no article: neue Autos)',
   ],
 }
 
