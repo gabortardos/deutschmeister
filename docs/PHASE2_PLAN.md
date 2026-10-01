@@ -410,6 +410,103 @@ options.
     sich freuen über/auf), Reflexivverben mit Präposition, unbestimmte
     Pronomen (jeder/manche/alle). Fill as M12.8+.
 
+## Phase 2 extension — owner-approved 2026-10-01 (M13–M17 + Phase 3 definition)
+
+Owner vision (2026-10-01): guided user flow ("the road"), AI teacher (local-KB lessons
++ AI interactivity layer), an app-guide conversation, honest metering. Phase framing:
+**Phase 2 = finish all major functions + complete the knowledge base + integrate the new
+ideas. Phase 3 = deep testing, bug cleanup, menu/IA restructuring, refinement → ready
+for real users (v3.0).** Locked decisions (do not re-ask — build):
+
+1. **Build order:** M12.7 vocab batch 5 → M12.8 grammar audit → M13 metering honesty +
+   owner-ops → role-drift quick win → M14 Lessons pilot → M15 Roadmap & guided flow →
+   M16 lesson batches (A1→B1, then B2→C2) → M17 Guide assistant → writing-pieces sync
+   + M11.10b (owner-gated). Phase 3 opens after.
+2. **Lessons teach in English prose + rich German examples** (bilingual DE/EN from B2+).
+3. **Lessons pilot = 3 topics:** A1 Präsens/personal pronouns & verb endings ·
+   A2 adjective declension (existing `a2-adjektivendungen`, likely broadened to the
+   full system by M12.8) · B1 Perfekt vs. Präteritum (topic likely CREATED by the M12.8
+   audit — today only `a2-perfekt` + `a2-praeteritum-modal` exist; validates
+   audit-before-lessons). Three levels × three lesson shapes: paradigm table ·
+   multi-table system · usage contrast. If the format survives all three, it scales.
+4. **Conversation role-drift fix pulled into Phase 2** as a quick win after M13.
+5. **Roadmap visual = vertical path** + ETA projection panel.
+
+### M13 — metering honesty + owner ops (pre-test-user blocker)
+
+Owner report: a Plus test account burned its whole AI allowance in a few trials while
+real OpenAI spend was cents. Hypotheses, likelihood order: (a) metering uses
+reserved/max tokens (maxTokens 900 + reasoning headroom) instead of the API-reported
+`usage` tokens; (b) usage fields missing on some relay responses → worst-case fallback
+estimate; (c) price-table drift / input-token double count; (d) presentation: TTS char
+cap + chat budget conflated as "credits". Work: audit `ai-proxy` metering math against
+OpenAI dashboard actuals → meter on real usage; single price source of truth; honest
+"$X of $Y used" readout in Billing. Deliverable: consolidated **owner-ops checklist**
+(Supabase Google provider + SMTP, Paddle products incl. dormant Pro, price-map pastes,
+sandbox→live decision) — one click-by-click doc, prompted by the agent at that point.
+
+### Quick win — conversation role-drift fix (Phase 2, owner-approved pull-forward)
+
+Bug: after several conversation turns the AI took over the user's role (AI became the
+buyer). Fix: re-inject a compact role contract with every turn (or every N turns),
+strengthen "you are X, never the learner's role" phrasing in the system prompt,
+optional cheap reply-shape check; extend the service tests.
+
+### M14 — Lessons pilot (teaching knowledge base, 3 topics)
+
+- Lesson schema `src/content/grammar/lessons/*.ts`: hook/context (why it matters) →
+  step-by-step teaching prose → tables worked through (ich/du/er …) → common mistakes
+  & contrasts → 3–5 interactive comprehension checkpoints (offline-gradable,
+  engine-checked) → printable cheat-sheet summary. Local, typed, free, testable — the
+  deterministic "teacher at the blackboard".
+- UI: "📖 Lesson" tab on GrammarTopicPage above the drills → "Now practice it" CTA into
+  the existing drill round.
+- AI stays interactive: "Ask about this lesson" (tutor chat preloaded with lesson
+  context), fresh AI examples — never the base explanation.
+- Authoring pipeline: fixed lesson template → agent drafts → **owner reviews the German
+  didactics** (the one step that needs a teacher's eye). Owner supplies a German
+  textbook (PDF preferred) or YouTube link → coverage map against the 70 topics +
+  style/depth calibration (reference only — we write our own prose, keeps licensing clean).
+
+### M15 — Learning Roadmap & guided flow ("be the flow")
+
+- Onboarding v2: goal interview (why German, target level, horizon, minutes/day) →
+  placement becomes a first-class step → the reveal: "here is your road to B1".
+- `src/engine/curriculum.ts`: deterministic syllabus graph over existing content — per
+  level, ordered units = vocab theme cluster + 1–2 grammar topics + suggested
+  conversation scenario + milestone check (mastery gate reusing placement mechanics).
+  Computes known / left / ETA ("at 15 min/day you reach A2 around …") — the visible
+  investment→achievement path the owner described. Offline, testable, append-stable.
+- `#/roadmap` page: vertical path (level bands → units → current position,
+  completed/current/locked states) + ETA projection panel; Dashboard "What's next"
+  becomes its mini version. "Today" becomes a guided session playlist (reviews → new
+  words → lesson+drills → conversation) instead of menu picking.
+
+### M16 — lesson batch authoring (content marathon)
+
+All remaining topics A1→B1 first, then B2→C2; owner didactic review per level; lessons
+become nodes on the M15 Roadmap.
+
+### M17 — App-Guide assistant (conversation with the app itself)
+
+- Tier 1: guide chat = static app-manual KB + live user context (level, streak, goal,
+  untouched features, roadmap position); answers "how do I… / what should I do next";
+  every reply ends with 1–3 action buttons (deep links: open cloze review, set 10
+  words/day).
+- Tier 2: the model returns structured intents (`navigate` / `set_goal` /
+  `start_session` / `explain_feature`) via a zod contract (same pattern as
+  `llm/services.ts`); the app executes with guardrails — plan changes always confirmed
+  by a button. This is the "dynamic towards the user's requirements" layer.
+- Prereqs: M13 metering sane first; better after M15 (the guide guides through the flow).
+
+### Phase 3 definition (opens after M17 + writing sync + M11.10b)
+
+Test-user program + deep QA + test-result analysis · bug bash · IA/menu redesign
+(collapsible level sections, sticky level tabs, search/filter in Grammar — kills the
+A1→C2 scroll, merged thin menus, mobile "More" cleanup) · UX/performance/a11y polish →
+**v3.0 real-users-ready**. Dormant options stay dormant (gamification, C-level placement
+items, `glm-4.5-flash` switch); C-level placement is revisited once C lessons exist.
+
 Deferred design decisions recorded 2026-09-21 (owner-approved direction, build here):
 
 - **Mistake explanations — on demand, hybrid — SHIPPED as M11.3 (v2.15.0).** The conversation mistake pills
