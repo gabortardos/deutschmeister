@@ -428,6 +428,26 @@ options.
     Ordinalzahlen, Plusquamperfekt, Verben mit Präpositionen (warten auf,
     sich freuen über/auf), Reflexivverben mit Präposition, unbestimmte
     Pronomen (jeder/manche/alle). Fill as M12.8+.
+  - **M12.9 vocab scope picker + session skip (owner request 2026-10-01)**:
+    two learning-flow upgrades over the 5,000-word corpus.
+    (a) **Word-focus filter** — users choose which slice of the corpus to
+    learn: new persisted setting `vocabScope` (levels: CefrLevel[] +
+    themes: string[]; empty = all), pure engine
+    `src/engine/vocabScope.ts` (`applyVocabScope()`, unit-tested) wired
+    into `buildLessonPlan`, `nextUnseenWords`, practice/cloze draws and
+    the "unseen left" count; picker UI (level + theme chips with live
+    "N of 5,000 words selected" counts) on VocabPage, mirrored in
+    Settings→Learning; WordBankPage reuses it as a quick filter. The
+    batches shipped as themes (Health, Law, Economy, Science,
+    Environment …), so the theme filter IS the batch picker — no
+    per-row batch metadata (locked decision).
+    (b) **Session skip** — in StudySession (intro/choice/type) a
+    "Known — skip" action (+ `S` key) marks the word known (SM-2 quality
+    5 via `markWordKnown`) and advances immediately past the remaining
+    drill steps; skipped words appear in the session summary and never
+    count as wrong; ReviewPage gets an equivalent easy/skip. Kills the
+    boredom of drilling words the user already knows ("errands through
+    the material"). DoD: engine tests + full gate; v2.31.0.
 
 ## Phase 2 extension — owner-approved 2026-10-01 (M13–M17 + Phase 3 definition)
 
@@ -437,7 +457,8 @@ Owner vision (2026-10-01): guided user flow ("the road"), AI teacher (local-KB l
 ideas. Phase 3 = deep testing, bug cleanup, menu/IA restructuring, refinement → ready
 for real users (v3.0).** Locked decisions (do not re-ask — build):
 
-1. **Build order:** M12.7 vocab batch 5 → M12.8 grammar audit → M13 metering honesty +
+1. **Build order:** M12.7 vocab batch 5 → M12.8 grammar audit → M12.9 vocab scope picker +
+   session skip (owner-added 2026-10-01) → M13 metering honesty +
    owner-ops → role-drift quick win → M14 Lessons pilot → M15 Roadmap & guided flow →
    M16 lesson batches (A1→B1, then B2→C2) → M17 Guide assistant → writing-pieces sync
    + M11.10b (owner-gated). Phase 3 opens after.
