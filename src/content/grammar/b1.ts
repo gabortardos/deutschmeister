@@ -1,6 +1,6 @@
 import type { SeedTopic } from './types'
 
-/** B1 grammar syllabus (10 topics): passive → plusquamperfekt. */
+/** B1 grammar syllabus (14 topics): passive → plusquamperfekt + Perfekt vs. Präteritum, temporal/conditional/purpose clauses (M12.8). */
 export const B1_TOPICS: SeedTopic[] = [
   {
     key: 'b1-passiv',
@@ -457,6 +457,212 @@ When the object is a thing, use **da(r)- + preposition**:
       },
       { type: 'translate_en_de', prompt: 'The train had already left.', acceptedAnswers: ['Der Zug war schon abgefahren.'] },
       { type: 'translate_de_en', prompt: 'Sie hatte das Buch gelesen, bevor der Film kam.', acceptedAnswers: ['She had read the book before the film came out.', 'She had read the book before the movie came.'] },
+    ],
+  },
+  {
+    key: 'b1-perfekt-vs-praeteritum',
+    title: 'Perfekt vs. Präteritum',
+    cefr: 'B1',
+    focus: 'when to use the spoken Perfekt vs. the written/narrative Präteritum',
+    relatedVocabTheme: 'Time',
+    explanationMd: `Both tenses describe the past — the difference is **register and style**, not meaning.
+
+## The basic rule
+- **Perfekt** (haben/sein + Partizip II) = the past of **speech**: talking, chatting, e-mails.
+  - Ich **habe** ihn gestern **gesehen**. — informal, natural
+- **Präteritum** (ging, kam, sah …) = the past of **writing and narration**: news, reports, novels, fairy tales.
+  - Der Mann **ging** nach Hause. — literary style
+
+## Always Präteritum — even in speech
+For **sein**, **haben** and the **modal verbs**, Germans avoid the Perfekt:
+- Ich **war** krank. (not: ~~Ich bin krank gewesen.~~)
+- Wir **hatten** keine Zeit. · Sie **konnte** nicht kommen.
+
+## Strong verbs in spoken stories
+When you *tell a story*, strong-verb Präteritum is normal and elegant:
+- Plötzlich **kam** ein Auto. Ich **blieb** stehen. Es **gab** einen lauten Knall.
+
+## Weak verbs in speech
+With weak verbs, the Perfekt wins in speech: Ich **habe** gearbeitet.
+(~~Ich arbeitete~~ sounds stiff and bookish.)
+
+## Examples
+- (Chat) Was hast du am Wochenende gemacht? — Ich bin wandern gegangen.
+- (News) Die Polizei **fand** die Tasche am Bahnhof.
+- (Story) Es **war** einmal ein König, der **hatte** drei Töchter.`,
+    drills: [
+      { type: 'cloze', prompt: 'In einem Roman: Der Detektiv ___ das Zimmer. (betreten, Präteritum)', acceptedAnswers: ['betrat'] },
+      { type: 'cloze', prompt: 'Im Gespräch: Ich ___ gestern lange geschlafen. (haben, Perfekt)', acceptedAnswers: ['habe'] },
+      { type: 'cloze', prompt: 'Nachrichten: Die Polizei ___ die Tasche am Bahnhof. (finden, Präteritum)', acceptedAnswers: ['fand'] },
+      {
+        type: 'choice',
+        prompt: 'Welcher Satz klingt im Gespräch natürlicher?',
+        promptData: { options: ['Ich war müde.', 'Ich bin müde gewesen.', 'Ich bin müde.', 'Ich werde müde.'] },
+        acceptedAnswers: ['Ich war müde.'],
+      },
+      {
+        type: 'transform',
+        prompt: 'Ich bin nach Berlin gefahren.',
+        promptData: { instruction: 'Rewrite as written narration (Präteritum).' },
+        acceptedAnswers: ['Ich fuhr nach Berlin.'],
+      },
+      { type: 'translate_en_de', prompt: 'Yesterday I worked until six. (spoken register)', acceptedAnswers: ['Ich habe gestern bis sechs gearbeitet.', 'Ich arbeitete gestern bis sechs.'] },
+      { type: 'translate_de_en', prompt: 'Wir hatten keine Zeit.', acceptedAnswers: ['We did not have time.', 'We had no time.'] },
+      {
+        type: 'wordorder',
+        prompt: 'Build the sentence. (narrated past)',
+        promptData: { tokens: ['Der', 'Zug', 'hielt', 'am', 'Bahnhof'] },
+        acceptedAnswers: ['Der Zug hielt am Bahnhof.'],
+      },
+    ],
+  },
+  {
+    key: 'b1-temporalsaetze',
+    title: 'Temporal clauses: bevor, nachdem, während',
+    cefr: 'B1',
+    focus: 'before/after/while subordinate clauses and their tense sequence',
+    relatedVocabTheme: 'Time',
+    explanationMd: `**bevor / nachdem / während** put events in time order. Like all subordinate clauses: conjunction first, **verb last**.
+
+## bevor — before
+The subordinate-clause event happens **later**, so the same tense is fine:
+- **Bevor** ich esse, wasche ich mir die Hände. — Before I eat, I wash my hands.
+- **Bevor** du gehst, räum bitte auf.
+
+## nachdem — after
+The subordinate-clause event happened **earlier**, so its tense shifts one step back:
+- past narration: Präteritum main + **Plusquamperfekt** subordinate — **Nachdem** ich gegessen **hatte**, ging ich schlafen.
+- present/future: Präsens main + **Perfekt** subordinate — **Nachdem** ich gegessen **habe**, gehe ich schlafen.
+
+## während — while / during
+Two things happen at the same time (same tense in both clauses):
+- **Während** ich koche, höre ich Musik.
+- also + noun: **Während** des Essens erzählte er Witze. — during the meal
+
+## Examples
+- **Bevor** der Film begann, kauften wir Popcorn.
+- **Nachdem** er das Examen bestanden hatte, feierte er.`,
+    drills: [
+      { type: 'cloze', prompt: '___ ich esse, wasche ich mir die Hände. (before)', acceptedAnswers: ['Bevor'] },
+      { type: 'cloze', prompt: 'Nachdem ich gegessen ___, ging ich schlafen.', acceptedAnswers: ['hatte'] },
+      { type: 'cloze', prompt: '___ ich koche, höre ich Musik. (while)', acceptedAnswers: ['Während'] },
+      {
+        type: 'choice',
+        prompt: '___ er das Examen bestanden hatte, feierte er.',
+        promptData: { options: ['Nachdem', 'Bevor', 'Während', 'Als'] },
+        acceptedAnswers: ['Nachdem'],
+      },
+      {
+        type: 'transform',
+        prompt: 'Ich habe gefrühstückt. Dann ging ich zur Arbeit.',
+        promptData: { instruction: 'Combine into one sentence: „Nachdem … , ging ich zur Arbeit.“' },
+        acceptedAnswers: ['Nachdem ich gefrühstückt hatte, ging ich zur Arbeit.'],
+      },
+      {
+        type: 'wordorder',
+        prompt: 'Build the sentence.',
+        promptData: { tokens: ['Während', 'des', 'Essens', 'erzählte', 'er', 'Witze'] },
+        acceptedAnswers: ['Während des Essens erzählte er Witze.'],
+      },
+      { type: 'translate_en_de', prompt: 'Before I go to work, I drink a coffee.', acceptedAnswers: ['Bevor ich zur Arbeit gehe, trinke ich einen Kaffee.'] },
+      { type: 'translate_de_en', prompt: 'Nachdem ich gegessen hatte, ging ich schlafen.', acceptedAnswers: ['After I had eaten, I went to bed.', 'After eating, I went to bed.'] },
+    ],
+  },
+  {
+    key: 'b1-falls',
+    title: 'falls — if / in case',
+    cefr: 'B1',
+    focus: 'real, open conditions with falls (+ the border to unreal Konjunktiv II)',
+    relatedVocabTheme: 'Verbs',
+    explanationMd: `**falls** = *if / in case* for a **real, open condition** — you don't know yet whether it will happen. It is a close synonym of **wenn**, slightly more formal and uncertain.
+
+## Real condition → normal tense (Indikativ)
+- **Falls** es morgen regnet, bleiben wir zu Hause. — If it rains tomorrow, we'll stay home.
+- **Falls** ich Zeit habe, rufe ich dich an.
+
+## falls vs. wenn
+Same grammar, different flavour: **wenn** = whenever/if (general), **falls** = in the event that (one open possibility).
+- **Wenn** es regnet, nehme ich das Auto. (my general habit)
+- **Falls** es regnet, nehme ich das Auto. (tomorrow's trip, maybe)
+
+## Unreal → Konjunktiv II, not falls
+- **Wenn** ich mehr Zeit **hätte**, würde ich reisen. — unreal: falls does not fit here.
+
+## Verb last, comma before the main clause
+- Ich nehme ein Taxi, **falls** der Zug Verspätung hat.
+
+## Examples
+- **Falls** du mich suchst, bin ich im Büro.
+- Bring einen Regenschirm mit, **falls** es regnet.`,
+    drills: [
+      { type: 'cloze', prompt: '___ es morgen regnet, bleiben wir zu Hause. (if/in case)', acceptedAnswers: ['Falls'] },
+      { type: 'cloze', prompt: 'Bring einen Regenschirm mit, ___ es regnet. (if/in case)', acceptedAnswers: ['falls'] },
+      { type: 'cloze', prompt: 'Ich rufe dich an, ___ ich Zeit habe. (if/in case)', acceptedAnswers: ['falls'] },
+      {
+        type: 'choice',
+        prompt: '___ ich mehr Zeit hätte, würde ich reisen. (unreal)',
+        promptData: { options: ['Wenn', 'Falls', 'Ob', 'Bevor'] },
+        acceptedAnswers: ['Wenn'],
+      },
+      {
+        type: 'transform',
+        prompt: 'Wenn es regnet, nehme ich das Auto.',
+        promptData: { instruction: 'Rewrite with „falls“ — same meaning, one open possibility.' },
+        acceptedAnswers: ['Falls es regnet, nehme ich das Auto.'],
+      },
+      { type: 'translate_en_de', prompt: 'If I have time, I will call you.', acceptedAnswers: ['Falls ich Zeit habe, rufe ich dich an.'] },
+      { type: 'translate_de_en', prompt: 'Falls du mich suchst, bin ich im Büro.', acceptedAnswers: ['If you are looking for me, I am in the office.', "If you're looking for me, I'm in the office."] },
+    ],
+  },
+  {
+    key: 'b1-damit-umzu',
+    title: 'damit vs. um … zu',
+    cefr: 'B1',
+    focus: 'purpose clauses — damit for different subjects, um…zu for the same subject',
+    relatedVocabTheme: 'Work',
+    explanationMd: `Both answer the question **"why? / what for?"** — they express a purpose or goal.
+
+## um … zu + Infinitiv — same subject
+- Ich lerne Deutsch, **um** in Berlin **zu** arbeiten. — I learn German (in order) to work in Berlin.
+- Er steht früh auf, **um** den ersten Zug **zu** erwischen.
+- The **zu + infinitive** goes to the very end; both actions have the same subject.
+
+## damit — different subjects
+- Ich erkläre es langsam, **damit** alle es verstehen. — I explain slowly so that everyone understands.
+- Der Chef schickt eine E-Mail, **damit** niemand die Termine vergisst.
+- Normal subordinate clause: conjugated verb goes last.
+
+## The rule
+- Same subject → **um … zu**
+- Different subjects → **damit**
+- (Colloquial German sometimes uses damit for everything — understand it, prefer the rule.)
+
+## Examples
+- Sie spart Geld, **um** ein Auto **zu** kaufen.
+- Ich flüstere, **damit** das Baby nicht aufwacht.`,
+    drills: [
+      { type: 'cloze', prompt: 'Ich lerne Deutsch, ___ in Berlin zu arbeiten.', acceptedAnswers: ['um'] },
+      { type: 'cloze', prompt: 'Ich erkläre es langsam, ___ alle es verstehen.', acceptedAnswers: ['damit'] },
+      {
+        type: 'choice',
+        prompt: 'Sie spart Geld, ___ ein Auto zu kaufen.',
+        promptData: { options: ['um', 'damit', 'falls', 'bevor'] },
+        acceptedAnswers: ['um'],
+      },
+      {
+        type: 'choice',
+        prompt: 'Ich flüstere, ___ das Baby nicht aufwacht.',
+        promptData: { options: ['damit', 'um', 'dass', 'weil'] },
+        acceptedAnswers: ['damit'],
+      },
+      {
+        type: 'transform',
+        prompt: 'Ich gehe früh schlafen, weil ich fit sein will.',
+        promptData: { instruction: 'Rewrite as a purpose clause with „um … zu“.' },
+        acceptedAnswers: ['Ich gehe früh schlafen, um fit zu sein.'],
+      },
+      { type: 'translate_en_de', prompt: 'He gets up early to catch the first train.', acceptedAnswers: ['Er steht früh auf, um den ersten Zug zu erwischen.'] },
+      { type: 'translate_de_en', prompt: 'Der Chef schickt eine E-Mail, damit niemand die Termine vergisst.', acceptedAnswers: ['The boss sends an email so that nobody forgets the appointments.'] },
     ],
   },
 ]

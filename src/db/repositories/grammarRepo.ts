@@ -5,16 +5,17 @@ import type { DrillAttempt, DrillItem, GrammarTopic } from '../types'
 import { newId } from '../../utils/id'
 import { db } from '../dexie'
 
-/** Idempotent seeding: checks seed ids in bulk and inserts only missing rows. */
+/**
+ * Idempotent seeding: upserts the full seed syllabus (same pattern as
+ * ensureVocabSeeded). Upsert — not insert-only — so content releases can
+ * refresh explanationMd of existing topics and keep the global `order`
+ * consistent when topics are inserted mid-syllabus (M12.8). Seed rows are
+ * static (source: 'seed'); user/LLM-generated drills have different ids
+ * and are never touched.
+ */
 export async function ensureGrammarSeeded(): Promise<void> {
-  const [existingTopics, existingDrills] = await Promise.all([
-    db.grammarTopics.bulkGet(SEED_GRAMMAR_TOPICS.map((t) => t.id)),
-    db.drillItems.bulkGet(SEED_GRAMMAR_DRILLS.map((d) => d.id)),
-  ])
-  const missingTopics = SEED_GRAMMAR_TOPICS.filter((_, i) => existingTopics[i] === undefined)
-  const missingDrills = SEED_GRAMMAR_DRILLS.filter((_, i) => existingDrills[i] === undefined)
-  if (missingTopics.length > 0) await db.grammarTopics.bulkPut([...missingTopics])
-  if (missingDrills.length > 0) await db.drillItems.bulkPut([...missingDrills])
+  await db.grammarTopics.bulkPut([...SEED_GRAMMAR_TOPICS])
+  await db.drillItems.bulkPut([...SEED_GRAMMAR_DRILLS])
 }
 
 export async function getTopic(id: string): Promise<GrammarTopic | undefined> {

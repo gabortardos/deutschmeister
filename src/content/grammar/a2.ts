@@ -44,9 +44,9 @@ export const A2_TOPICS: SeedTopic[] = [
   },
   {
     key: 'a2-praeteritum-modal',
-    title: 'Präteritum: war, hatte & modals',
+    title: 'Präteritum: war, hatte, modals & full forms',
     cefr: 'A2',
-    focus: 'The written/simple past of sein, haben and the modal verbs',
+    focus: 'simple past forms — sein/haben/modals (spoken) plus weak -te and strong verbs (written)',
     relatedVocabTheme: 'Verbs',
     explanationMd: `The Präteritum (simple past) is mainly written. But for **sein**, **haben** and the **modal verbs**, Germans use it even in speech — so these forms are essential.
 
@@ -60,11 +60,23 @@ export const A2_TOPICS: SeedTopic[] = [
 - können → ich **konnte** · müssen → ich **musste** · wollen → ich **wollte**
 - dürfen → ich **durfte** · sollen → ich **sollte** · mögen → ich **mochte**
 
+## Weak (regular) verbs: stem + -te
+- machen → ich **machte** · spielen → er **spielte** · arbeiten → ich **arbeitete**
+- wir **spielten** · ihr **spieltet** · sie **spielten**
+
+## Strong verbs (mainly written & in stories)
+- gehen → **ging** · kommen → **kam** · sehen → **sah** · geben → **gab**
+- nehmen → **nahm** · bleiben → **blieb** · finden → **fand** · denken → **dachte** (mixed)
+- In everyday **speech** Germans prefer the Perfekt: Ich **bin** nach Hause **gegangen**.
+  In **writing** (news, novels) and storytelling, the Präteritum is standard: Ich **ging** nach Hause.
+
 ## Examples
 - Ich **war** gestern krank. — I was sick yesterday.
 - Wir **hatten** keine Zeit. — We had no time.
 - Sie **konnte** nicht kommen. — She could not come.
-- Als Kind **wollte** ich Pilot werden. — As a child I wanted to become a pilot.`,
+- Als Kind **wollte** ich Pilot werden. — As a child I wanted to become a pilot.
+- Er **spielte** als Kind viel draußen. — He played outside a lot as a child.
+- Der Zug **kam** um acht. — The train came at eight.`,
     drills: [
       { type: 'cloze', prompt: 'Ich ___ gestern krank.', acceptedAnswers: ['war'] },
       { type: 'cloze', prompt: 'Wir ___ keine Zeit.', acceptedAnswers: ['hatten'] },
@@ -88,6 +100,20 @@ export const A2_TOPICS: SeedTopic[] = [
         prompt: 'Build the sentence.',
         promptData: { tokens: ['Wir', 'waren', 'letzte', 'Woche', 'im', 'Urlaub'] },
         acceptedAnswers: ['Wir waren letzte Woche im Urlaub.'],
+      },
+      { type: 'cloze', prompt: 'Er ___ gestern Fußball. (spielen, Präteritum)', acceptedAnswers: ['spielte'] },
+      { type: 'cloze', prompt: 'Der Zug ___ um acht. (kommen, Präteritum)', acceptedAnswers: ['kam'] },
+      {
+        type: 'choice',
+        prompt: 'Sie ___ den Film nicht. (sehen, Präteritum)',
+        promptData: { options: ['sah', 'sahen', 'sieht', 'gesehen'] },
+        acceptedAnswers: ['sah'],
+      },
+      {
+        type: 'transform',
+        prompt: 'Ich bin nach Hause gegangen.',
+        promptData: { instruction: 'Rewrite in the Präteritum (written style).' },
+        acceptedAnswers: ['Ich ging nach Hause.'],
       },
     ],
   },
@@ -493,7 +519,7 @@ Add **bitte** or **doch mal**: Komm doch mal vorbei! — Do drop by!
     key: 'a2-adjektivendungen',
     title: 'Adjective endings',
     cefr: 'A2',
-    focus: '-e and -en after der-words; -e/-er/-e after ein-words (Nom/Akk)',
+    focus: 'the full system: weak after der-words, mixed after ein-words, strong without an article (Nom/Akk/Dativ)',
     relatedVocabTheme: 'Adjectives',
     explanationMd: `When an adjective stands **before a noun**, it takes an ending. The easy cases first:
 
@@ -512,10 +538,27 @@ Nominativ singular and non-masculine Akkusativ → **-e** · everything else →
 - ein **gut er** Mann · eine **gut e** Idee · ein **gut es** Buch
 - The adjective must show the gender that ein hides: -er (m), -e (f), -es (n)
 
+## Dativ — almost everything becomes -en
+- mit dem **alten** Auto (der-word) · mit einem **kleinen** Kind (ein-word)
+- Ich fahre mit dem neuen Zug. — with the new train.
+
+## Without any article (strong declension)
+The adjective itself carries the full ending:
+- **Kalte** Milch schmeckt gut. (Nominativ f: -e)
+- **Kalter** Kaffee schmeckt bitter. (Nominativ m: -er)
+- Ich trinke gern **frisches** Wasser. (Akkusativ n: -es)
+- mit **gutem** Wein · mit **kalter** Milch · mit **frischem** Brot (Dativ: -em/-er/-em)
+
+## The system in one line
+Exactly **one** element shows the gender/case signal: the article (der-word),
+the ein-word — or, when there is no article, the **adjective itself**.
+
 ## Examples
 - Das ist ein **schöner** Tag. — That is a beautiful day.
 - Ich habe eine **kleine** Frage. — I have a small question.
-- Wir suchen ein **billiges** Hotel. — We are looking for a cheap hotel.`,
+- Wir suchen ein **billiges** Hotel. — We are looking for a cheap hotel.
+- Sie hilft einem **kleinen** Kind. — She is helping a small child.
+- **Gute** Freunde sind wichtig. — Good friends are important. (no article, plural)`,
     drills: [
       { type: 'cloze', prompt: 'Das ist der ___ Wagen von meinem Vater. (neu)', acceptedAnswers: ['neue'] },
       { type: 'cloze', prompt: 'Ich sehe den ___ Mann. (alt)', acceptedAnswers: ['alten'] },
@@ -530,6 +573,16 @@ Nominativ singular and non-masculine Akkusativ → **-e** · everything else →
       },
       { type: 'translate_en_de', prompt: 'That is a beautiful city.', acceptedAnswers: ['Das ist eine schöne Stadt.'] },
       { type: 'translate_de_en', prompt: 'Der alte Mann wohnt hier.', acceptedAnswers: ['The old man lives here.'] },
+      { type: 'cloze', prompt: 'Ich fahre mit dem ___ Auto. (alt)', acceptedAnswers: ['alten'] },
+      { type: 'cloze', prompt: 'Sie hilft einem ___ Kind. (klein)', acceptedAnswers: ['kleinen'] },
+      { type: 'cloze', prompt: 'Ich trinke gern ___ Wasser. (frisch, without article)', acceptedAnswers: ['frisches'] },
+      {
+        type: 'choice',
+        prompt: '___ Kaffee schmeckt bitter. (kalt, without article)',
+        promptData: { options: ['Kalter', 'Kalte', 'Kalten', 'Kaltes'] },
+        acceptedAnswers: ['Kalter'],
+      },
+      { type: 'cloze', prompt: 'mit ___ Wein (gut, ohne Artikel, Dativ)', acceptedAnswers: ['gutem'] },
     ],
   },
 ]

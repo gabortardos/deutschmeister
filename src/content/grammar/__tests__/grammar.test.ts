@@ -5,11 +5,11 @@ import { SEED_VOCAB } from '../../vocab'
 import { drillInstruction, drillOptions, drillTokens, gradeDrill, needsGermanKeys } from '../../../engine/exerciseRunner'
 
 describe('seed grammar syllabus', () => {
-  it('covers 70 topics across A1–C2 (13/12/10/15/12/8)', () => {
-    expect(SEED_GRAMMAR_TOPICS.length).toBe(70)
+  it('covers 74 topics across A1–C2 (13/12/14/15/12/8)', () => {
+    expect(SEED_GRAMMAR_TOPICS.length).toBe(74)
     expect(SEED_GRAMMAR_COUNTS.A1).toBe(13)
     expect(SEED_GRAMMAR_COUNTS.A2).toBe(12)
-    expect(SEED_GRAMMAR_COUNTS.B1).toBe(10)
+    expect(SEED_GRAMMAR_COUNTS.B1).toBe(14)
     expect(SEED_GRAMMAR_COUNTS.B2).toBe(15)
     expect(SEED_GRAMMAR_COUNTS.C1).toBe(12)
     expect(SEED_GRAMMAR_COUNTS.C2).toBe(8)

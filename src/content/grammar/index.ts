@@ -70,7 +70,7 @@ for (const level of LEVELS) {
   })
 }
 
-/** Full grammar syllabus (70 topics, A1–C2), ordered by curriculum position. */
+/** Full grammar syllabus (74 topics, A1–C2), ordered by curriculum position. */
 export const SEED_GRAMMAR_TOPICS: readonly GrammarTopic[] = topics
 
 /** All seed drill items (≥6 per topic), ids deterministic per topic. */

@@ -420,14 +420,29 @@ options.
     55 collisions surfaced across 10 verification rounds and were
     swapped for verified-free words; the total lands exactly on 5,000
     with counts derived from the row arrays (no test edits needed).
-  - **M12.8 A1–B2 grammar completeness audit**: diff the topic list
-    against a standard curriculum (Goethe A1–B2 checklists); candidate
-    gaps already spotted: full Präteritum (alle starken Verben +
-    Erzählgebrauch), bevor/nachdem/während, falls, damit vs um…zu,
-    obwohl/trotz, Wortbildung-Basics (-ung/-heit/-keit, ver-/be-),
-    Ordinalzahlen, Plusquamperfekt, Verben mit Präpositionen (warten auf,
-    sich freuen über/auf), Reflexivverben mit Präposition, unbestimmte
-    Pronomen (jeder/manche/alle). Fill as M12.8+.
+  - **M12.8 A1–B2 grammar completeness audit — SHIPPED (v2.30.0,
+    2026-10-01)**: syllabus diffed against Goethe A1–B2 checklists.
+    Verdict: A1 ✓ complete · B2 ✓ complete · the real gaps sat in A2/B1.
+    Filled: (1) `a2-adjektivendungen` broadened to the full declension
+    system (weak after der-words · mixed after ein-words · strong
+    without article — Nom/Akk/Dativ + plural, +5 drills); (2)
+    `a2-praeteritum-modal` broadened to full Präteritum forms (weak -te,
+    strong verbs, speech-vs-writing usage, +4 drills); (3) NEW
+    `b1-perfekt-vs-praeteritum` (register/usage contrast — the M14
+    lessons-pilot topic); (4) NEW `b1-temporalsaetze` (bevor/nachdem/
+    während + tense sequencing with Plusquamperfekt/Perfekt); (5) NEW
+    `b1-falls` (real conditionals, border to Konjunktiv II); (6) NEW
+    `b1-damit-umzu` (same-subject um…zu vs different-subject damit).
+    B1 10 → 14 topics, syllabus 70 → 74, +39 drills. **Seeding fix**:
+    `ensureGrammarSeeded` was insert-only — broadened explanationMd and
+    the shifted global `order` values would never have reached existing
+    installs; it now upserts the full seed syllabus (same pattern as
+    `ensureVocabSeeded`; user/LLM drills untouched — different ids).
+    Deferred gaps (for M16 lesson-batch authoring): obwohl/trotzdem,
+    Wortbildung-Basics, Ordinalzahlen, Reflexivverben mit Präposition,
+    unbestimmte Pronomen (jeder/manche/alle). APP_VERSION 2.25.1 →
+    2.30.0 (grammar releases bump the visible version; vocab batches
+    M12.4–7 had not).
   - **M12.9 vocab scope picker + session skip (owner request 2026-10-01)**:
     two learning-flow upgrades over the 5,000-word corpus.
     (a) **Word-focus filter** — users choose which slice of the corpus to
@@ -464,10 +479,9 @@ for real users (v3.0).** Locked decisions (do not re-ask — build):
    + M11.10b (owner-gated). Phase 3 opens after.
 2. **Lessons teach in English prose + rich German examples** (bilingual DE/EN from B2+).
 3. **Lessons pilot = 3 topics:** A1 Präsens/personal pronouns & verb endings ·
-   A2 adjective declension (existing `a2-adjektivendungen`, likely broadened to the
-   full system by M12.8) · B1 Perfekt vs. Präteritum (topic likely CREATED by the M12.8
-   audit — today only `a2-perfekt` + `a2-praeteritum-modal` exist; validates
-   audit-before-lessons). Three levels × three lesson shapes: paradigm table ·
+   A2 adjective declension (`a2-adjektivendungen`, broadened to the full system
+   by M12.8 ✓) · B1 Perfekt vs. Präteritum (created by the M12.8 audit as
+   `b1-perfekt-vs-praeteritum` ✓). Three levels × three lesson shapes: paradigm table ·
    multi-table system · usage contrast. If the format survives all three, it scales.
 4. **Conversation role-drift fix pulled into Phase 2** as a quick win after M13.
 5. **Roadmap visual = vertical path** + ETA projection panel.
@@ -505,7 +519,7 @@ optional cheap reply-shape check; extend the service tests.
   context), fresh AI examples — never the base explanation.
 - Authoring pipeline: fixed lesson template → agent drafts → **owner reviews the German
   didactics** (the one step that needs a teacher's eye). Owner supplies a German
-  textbook (PDF preferred) or YouTube link → coverage map against the 70 topics +
+  textbook (PDF preferred) or YouTube link → coverage map against the 74 topics +
   style/depth calibration (reference only — we write our own prose, keeps licensing clean).
 
 ### M15 — Learning Roadmap & guided flow ("be the flow")
