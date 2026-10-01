@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Button, Card, Field, inputClass } from '../../../components/ui'
 import { llmConfigFromSettings, testConnection, type TestResult } from '../../../llm/adapter'
 import { getProvider, PROVIDERS, type ProviderId } from '../../../llm/providers'
-import { formatUsdMicros } from '../../../llm/entitlement'
 import { useAiRoute, useByoGate } from '../../../state/useLlmDeps'
 import { usePlatformStore } from '../../../state/platformStore'
 import { useAppStore } from '../../../state/store'
@@ -72,7 +71,7 @@ function PlatformAiCard() {
   return (
     <Card
       title="DeutschMeister AI — active"
-      description="No key needed: your AI features run on our key with a free $1 credit for this account. Setting your own key below switches to it (30-day free trial, then Supporter)."
+      description="No key needed: your AI features run on our key with a free starter credit for this account. Setting your own key below switches to it (30-day free trial, then Supporter)."
     >
       {exhausted ? (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
@@ -85,10 +84,8 @@ function PlatformAiCard() {
       ) : (
         <div>
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-slate-700">Free credit remaining</span>
-            <span className="font-mono text-slate-600">
-              {formatUsdMicros(remaining)} / {formatUsdMicros(capUsdMicros)}
-            </span>
+            <span className="font-medium text-slate-700">Free AI credit</span>
+            <span className="font-mono text-slate-600">{pct}% left</span>
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
             <div
@@ -143,7 +140,7 @@ function ByoSupporterBanner() {
         Your key is still stored here — but running it through DeutschMeister now needs the
         €11.99/year Supporter membership:{' '}
         <span className="font-medium">Account &amp; Billing → Annual → Supporter</span>. (A signed-in
-        account also keeps the free $1 managed AI credit.)
+        account also keeps the free managed AI starter credit.)
       </p>
     </div>
   )

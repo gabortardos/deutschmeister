@@ -52,7 +52,7 @@ export const PLAN_CATALOG: readonly PlanCatalogEntry[] = [
     ttsCharCap: FREE_TTS_CHAR_CAP,
     features: [
       'Full offline course — vocabulary, grammar, SRS review',
-      '$1 of managed AI credit (one-time welcome)',
+      'Free managed-AI starter credit (one-time welcome)',
       'HD voice taste: ~20k characters/month',
       'Browser voices free forever · own API key after a 30-day trial (Supporter €11.99/yr)',
     ],
@@ -172,7 +172,7 @@ export const CREDIT_PACKS: readonly CreditPackCatalogEntry[] = [
     priceEur: 2.9,
     creditUsdMicros: 3_000_000,
     features: [
-      '$3.00 of managed-AI credit — no API key needed',
+      'Small managed-AI top-up — no API key needed',
       'One-time purchase, no subscription',
       'Valid for 6 months · stacks with any plan',
     ],
@@ -183,7 +183,7 @@ export const CREDIT_PACKS: readonly CreditPackCatalogEntry[] = [
     priceEur: 5.9,
     creditUsdMicros: 7_000_000,
     features: [
-      '$7.00 of managed-AI credit (bonus vs. Starter)',
+      'Bigger managed-AI top-up (bonus vs. Starter)',
       'One-time purchase, no subscription',
       'Valid for 6 months · stacks with any plan',
     ],

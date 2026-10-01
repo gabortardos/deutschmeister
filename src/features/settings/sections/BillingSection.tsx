@@ -9,7 +9,6 @@ import {
   type OverlayResult,
 } from '../../../billing/paddleClient'
 import { Badge, Button, Card } from '../../../components/ui'
-import { formatUsdMicros } from '../../../llm/entitlement'
 import {
   annualSavingPercent,
   CREDIT_PACKS,
@@ -94,15 +93,18 @@ function overlayFailureText(res: Extract<OverlayResult, { ok: false }>): string 
   }
 }
 
-function UsageBar({ used, cap, label }: { used: number; cap: number; label: string }) {
+/**
+ * Simple usage bar. Money caps are nominal fair-use bookkeeping (not real
+ * charges), so for those we show ONLY the bar + percentage — no dollar
+ * amounts (M13.2). Real units (HD-voice characters) still show numbers.
+ */
+function UsageBar({ used, cap, label, unit }: { used: number; cap: number; label: string; unit?: string }) {
   const pct = cap > 0 ? Math.min(100, Math.round((used / cap) * 100)) : 0
   return (
     <div>
       <div className="flex items-baseline justify-between text-sm">
         <span className="font-medium text-slate-700">{label}</span>
-        <span className="text-slate-500">
-          {used.toLocaleString('en-US')} / {cap.toLocaleString('en-US')}
-        </span>
+        <span className="text-slate-500">{unit ? `${used.toLocaleString('en-US')} / ${cap.toLocaleString('en-US')} ${unit}` : `${pct}% used`}</span>
       </div>
       <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
         <div
@@ -162,7 +164,6 @@ export default function BillingSection() {
   }
 
   const plan = planById(meter.plan) ?? planById('free')!
-  const remaining = Math.max(0, meter.capUsdMicros - meter.spendUsdMicros)
   const validUntilText = meter.validUntil
     ? new Date(meter.validUntil).toLocaleDateString(undefined, {
         year: 'numeric',
@@ -307,11 +308,7 @@ export default function BillingSection() {
                 metered or capped here.
               </p>
             ) : (
-              <UsageBar
-                used={meter.spendUsdMicros}
-                cap={meter.capUsdMicros}
-                label={'Managed AI budget — ' + formatUsdMicros(remaining) + ' left'}
-              />
+              <UsageBar used={meter.spendUsdMicros} cap={meter.capUsdMicros} label="Managed AI usage (fair-use guard)" />
             )}
             {meter.plan !== 'free' && meter.plan !== 'byo-supporter' && (
               <p className="text-xs text-slate-500">
@@ -321,7 +318,7 @@ export default function BillingSection() {
             )}
             {meter.packsUsdMicros > 0 && (
               <p className="text-xs text-slate-500">
-                Includes {formatUsdMicros(meter.packsUsdMicros)} of credit-pack credit
+                Top-up credit is spent first
                 {meter.packsExpiresAt
                   ? ' — next pack expires ' +
                     new Date(meter.packsExpiresAt).toLocaleDateString(undefined, {
@@ -338,6 +335,7 @@ export default function BillingSection() {
                 used={meter.ttsCharsUsed}
                 cap={meter.ttsCharCap}
                 label="HD voice characters (this month)"
+                unit="chars"
               />
             ) : meter.plan === 'byo-supporter' ? (
               <p className="text-sm text-slate-500">
@@ -481,7 +479,7 @@ export default function BillingSection() {
 
           {options !== null && options.length === 0 && (
             <p className="mt-3 text-sm text-slate-500">
-              Plans are being set up — check back shortly. (Your signed-in $1 free AI credit
+              Plans are being set up — check back shortly. (Your signed-in free starter AI credit
               already works in the meantime: just use any AI feature.)
             </p>
           )}
