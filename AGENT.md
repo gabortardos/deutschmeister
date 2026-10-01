@@ -593,6 +593,45 @@ pollutes the dumped file — Heimweh and Verlangen slipped through, were caught
 by the in-process dup scan and replaced with Nostalgie/Leidenschaft. Never
 trust a text-file pipeline for corpus checks; always import the corpus.
 
+## M14 Lessons pilot (v2.35.0)
+
+The deterministic "teacher at the blackboard" layer — full static lessons for 3
+pilot topics, no AI required, no Dexie, no sync (bundle content like grammar
+topics).
+
+- **Schema** `src/content/grammar/lessons/types.ts`: `Lesson = hook →
+  sections[] (heading + prose + optional worked table) → mistakes[]
+  (wrong → right → why) → checkpoints[] (offline multiple choice) →
+  cheatSheet[]`. Prose/cells support the MiniMarkdown inline subset
+  (`**bold**` only — no headings/lists inside lesson text; those are typed
+  fields). EN prose + DE examples (bilingual prose starts at B2+ per plan).
+- **3 authored lessons**: `g-a1-02` Present tense: regular verbs (opens with
+  the pronoun cast), `g-a2-12` Adjective endings (one-signal principle, full
+  der-/ein-/no-article tables Nom/Akk/Dat), `g-b1-11` Perfekt vs. Präteritum
+  (register rule + the sein/haben/modal Präteritum exception). **The agent
+  drafted them; the owner's didactic review is the remaining human step of
+  the M14 authoring pipeline** (feedback → edit the three files in
+  `src/content/grammar/lessons/`; the content-contract tests keep edits safe).
+- **Engine** `src/engine/lessons.ts`: `gradeCheckpoint(cp, chosen)` and
+  `lessonProgress(checkpoints, answers)` — pure, +7 tests.
+- **UI**: `LessonView.tsx` inside GrammarTopicPage. Topics with a lesson get
+  a 📖 Lesson / ⚡ Quick reference segmented tab (lesson is default; the
+  summary tab is the old page unchanged; topics without a lesson render
+  exactly as before). Checkpoints grade instantly, allow retry, and reveal
+  the teaching explanation. The cheat sheet prints via a **hidden iframe**
+  (`printCheatSheet`) — deliberately no global print CSS. "Now practice it →"
+  runs the topic's existing drill round; "💬 Ask about this lesson" parks a
+  one-shot localStorage `dm-tutor-prefill` (`src/features/tutor/tutorPrefill.ts`)
+  that TutorChatPage consumes on mount (switches to Ask mode, prefills the
+  textarea, clears the key).
+- **Tests**: content contract (3 lessons, topic ids exist in
+  SEED_GRAMMAR_TOPICS, tables rectangular, checkpoints valid/unique, German
+  orthography present) + engine tests — 460/460 total.
+- **Lesson learned**: keep checkpoint answers in component state only
+  (pilot decision) — persistence/mastery wiring is deferred to M16 when
+  lessons become Roadmap nodes. The M15 curriculum engine can key off
+  `lessonForTopic()` to mark which topics have teaching content.
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

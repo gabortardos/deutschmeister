@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { MiniMarkdown } from '../../components/markdown'
 import { Badge, Button, Card } from '../../components/ui'
+import { lessonForTopic } from '../../content/grammar/lessons'
 import type { DrillItem, GrammarTopic } from '../../db/types'
 import { getDrillsForTopic, getTopic, recentWrongAnswers } from '../../db/repositories/grammarRepo'
 import { hintForLlmError } from '../../llm/adapter'
@@ -9,7 +10,16 @@ import { explainGrammar } from '../../llm/services'
 import { useAppStore } from '../../state/store'
 import { useLlmDeps } from '../../state/useLlmDeps'
 import DrillRunner from './DrillRunner'
+import LessonView from './LessonView'
 import { generateAndSaveDrills } from './drillGeneration'
+
+/** Segmented-tab styling for the 📖 Lesson / ⚡ Quick reference switch. */
+function tabClass(active: boolean): string {
+  return `rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+    active ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+  }`
+}
+
 
 export default function GrammarTopicPage() {
   const { topicId } = useParams<{ topicId: string }>()
@@ -18,6 +28,8 @@ export default function GrammarTopicPage() {
   const [drills, setDrills] = useState<DrillItem[] | null>(null)
   const [practicing, setPracticing] = useState(false)
   const [done, setDone] = useState(false)
+  // M14: topics with an authored lesson open on the 📖 Lesson tab.
+  const [tab, setTab] = useState<'lesson' | 'summary'>('lesson')
 
   // AI extras (only shown when a key is configured)
   const [explainMd, setExplainMd] = useState<string | null>(null)
@@ -28,6 +40,9 @@ export default function GrammarTopicPage() {
 
   // M8: BYO key → the user's provider; signed-in keyless → free $1 platform teaser.
   const { deps } = useLlmDeps('explain')
+
+  // M14: authored lesson for this topic (static bundle content — 3 pilot topics).
+  const lesson = topicId ? lessonForTopic(topicId) : undefined
 
   async function runExplain(): Promise<void> {
     if (!deps || !topic || explainBusy) return
@@ -76,6 +91,7 @@ export default function GrammarTopicPage() {
     setDrills(null)
     setPracticing(false)
     setDone(false)
+    setTab('lesson')
     if (!topicId) return
     void (async () => {
       const t = await getTopic(topicId)
@@ -134,46 +150,72 @@ export default function GrammarTopicPage() {
           <Badge tone="ok">{topic.cefr}</Badge>
           {topic.relatedVocabTheme && <Badge tone="warn">Pairs with “{topic.relatedVocabTheme}” vocabulary</Badge>}
         </div>
-        <div className="mt-3 space-y-2">
-          <MiniMarkdown md={topic.explanationMd} />
-        </div>
-        {deps && (
-          <div className="mt-4 space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <Button disabled={explainBusy} onClick={() => void runExplain()}>
-                {explainBusy ? 'Explaining…' : '✨ Explain for me'}
-              </Button>
-              <Button disabled={genBusy} onClick={() => void runGenerate()}>
-                {genBusy ? 'Generating…' : '✨ Generate 5 more drills'}
-              </Button>
-            </div>
-            {aiMessage && <p className="text-xs text-emerald-700">{aiMessage}</p>}
-            {aiError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-                <p className="text-xs font-medium text-red-700">AI call failed: {aiError.message}</p>
-                {aiError.hint && <p className="mt-1 text-xs text-red-600">{aiError.hint}</p>}
-              </div>
-            )}
-            {explainMd && (
-              <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-4">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
-                  AI explanation · tailored to your recent mistakes
-                </p>
-                <MiniMarkdown md={explainMd} />
-              </div>
-            )}
+        {lesson && (
+          <div
+            role="tablist"
+            aria-label="Topic content"
+            className="mt-3 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5"
+          >
+            <button type="button" role="tab" aria-selected={tab === 'lesson'} onClick={() => setTab('lesson')} className={tabClass(tab === 'lesson')}>
+              📖 Lesson
+            </button>
+            <button type="button" role="tab" aria-selected={tab === 'summary'} onClick={() => setTab('summary')} className={tabClass(tab === 'summary')}>
+              ⚡ Quick reference
+            </button>
           </div>
         )}
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Button variant="primary" onClick={() => setPracticing(true)} disabled={(drills?.length ?? 0) === 0}>
-            Practice {drills?.length ?? 0} drills →
-          </Button>
-          <Link to="/vocab">
-            <Button>Study related words</Button>
-          </Link>
-        </div>
-        {done && (
-          <p className="mt-3 text-xs text-emerald-600">Round complete — attempts recorded, mastery updated.</p>
+        {lesson && tab === 'lesson' && (
+          <LessonView
+            lesson={lesson}
+            topic={topic}
+            drillsCount={drills?.length ?? 0}
+            onPractice={() => setPracticing(true)}
+          />
+        )}
+        {(!lesson || tab === 'summary') && (
+          <>
+            <div className="mt-3 space-y-2">
+              <MiniMarkdown md={topic.explanationMd} />
+            </div>
+            {deps && (
+              <div className="mt-4 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Button disabled={explainBusy} onClick={() => void runExplain()}>
+                    {explainBusy ? 'Explaining…' : '✨ Explain for me'}
+                  </Button>
+                  <Button disabled={genBusy} onClick={() => void runGenerate()}>
+                    {genBusy ? 'Generating…' : '✨ Generate 5 more drills'}
+                  </Button>
+                </div>
+                {aiMessage && <p className="text-xs text-emerald-700">{aiMessage}</p>}
+                {aiError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                    <p className="text-xs font-medium text-red-700">AI call failed: {aiError.message}</p>
+                    {aiError.hint && <p className="mt-1 text-xs text-red-600">{aiError.hint}</p>}
+                  </div>
+                )}
+                {explainMd && (
+                  <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-4">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                      AI explanation · tailored to your recent mistakes
+                    </p>
+                    <MiniMarkdown md={explainMd} />
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button variant="primary" onClick={() => setPracticing(true)} disabled={(drills?.length ?? 0) === 0}>
+                Practice {drills?.length ?? 0} drills →
+              </Button>
+              <Link to="/vocab">
+                <Button>Study related words</Button>
+              </Link>
+            </div>
+            {done && (
+              <p className="mt-3 text-xs text-emerald-600">Round complete — attempts recorded, mastery updated.</p>
+            )}
+          </>
         )}
       </Card>
     </div>

@@ -16,6 +16,7 @@ import { tutorChatTurn } from '../../llm/services'
 import { isTutorChatMode, TUTOR_MODES, type TutorChatMode } from '../../engine/tutorChat'
 import { useAppStore } from '../../state/store'
 import { useLlmDeps } from '../../state/useLlmDeps'
+import { takeTutorPrefill } from './tutorPrefill'
 
 interface UiTurn {
   id: string
@@ -82,6 +83,16 @@ export default function TutorChatPage() {
   useEffect(() => {
     localStorage.setItem(MODE_KEY, mode)
   }, [mode])
+
+  // M14: lesson pages hand off a preseeded question ("Ask about this lesson") —
+  // consume it once: switch to Ask mode and prefill the textarea.
+  useEffect(() => {
+    const prefill = takeTutorPrefill()
+    if (prefill && prefill.trim().length > 0) {
+      setInput(prefill)
+      setMode('ask')
+    }
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

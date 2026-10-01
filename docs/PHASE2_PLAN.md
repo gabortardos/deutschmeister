@@ -543,7 +543,7 @@ buyer). Fix: re-inject a compact role contract with every turn (or every N turns
 strengthen "you are X, never the learner's role" phrasing in the system prompt,
 optional cheap reply-shape check; extend the service tests.
 
-### M14 — Lessons pilot (teaching knowledge base, 3 topics)
+### M14 — Lessons pilot (teaching knowledge base, 3 topics) — **✅ SHIPPED (v2.35.0)**
 
 - Lesson schema `src/content/grammar/lessons/*.ts`: hook/context (why it matters) →
   step-by-step teaching prose → tables worked through (ich/du/er …) → common mistakes
