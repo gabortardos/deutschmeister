@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card } from '../../components/ui'
 import { PLACEMENT_BANK } from '../../content/grammar/placement'
 import { assessPlacement, nextPlacementQuestion } from '../../engine/placement'
 import type { PlacementAnswer, PlacementQuestion } from '../../engine/placement'
+import { markWelcomeDone } from '../onboarding/welcome'
 import { useAppStore } from '../../state/store'
 
 /**
  * Adaptive placement quiz: A1→B1 staircase, max 20 questions.
  * Skippable at any time — the assessment uses whatever history exists.
+ * M15: `?from=welcome` makes the result screen hand over to the roadmap
+ * reveal instead of the grammar page.
  */
 export default function PlacementPage() {
   const { profile, patchProfile } = useAppStore()
@@ -16,6 +19,9 @@ export default function PlacementPage() {
   const [answered, setAnswered] = useState<{ q: PlacementQuestion; opt: string; correct: boolean } | null>(null)
   const [finished, setFinished] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [params] = useSearchParams()
+  const fromWelcome = params.get('from') === 'welcome'
+  const navigate = useNavigate()
 
   const question: PlacementQuestion | null = nextPlacementQuestion(PLACEMENT_BANK, history)
 
@@ -68,9 +74,26 @@ export default function PlacementPage() {
                 .join(' · ')}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link to="/grammar">
-            <Button variant="primary">Start learning at {assessment.assessedLevel} →</Button>
-          </Link>
+          {fromWelcome ? (
+            <>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  markWelcomeDone()
+                  navigate('/roadmap')
+                }}
+              >
+                See my roadmap 🗺️
+              </Button>
+              <Link to="/grammar">
+                <Button>Grammar overview</Button>
+              </Link>
+            </>
+          ) : (
+            <Link to="/grammar">
+              <Button variant="primary">Start learning at {assessment.assessedLevel} →</Button>
+            </Link>
+          )}
         </div>
       </Card>
     )

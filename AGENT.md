@@ -666,6 +666,55 @@ Owner pilot feedback on M14, applied 2026-10-01:
   carry direction labels too.
 - Gate: tsc ✓ · 460/460 ✓ · build ✓ (same pre-existing chunk-size warning).
 
+## M15 Learning Roadmap & guided flow (v2.37.0)
+
+The "be the flow" milestone: a deterministic curriculum over the existing content, a
+goal → placement → reveal onboarding arc, a `#/roadmap` page with ETA projection, and
+a guided daily playlist on the dashboard.
+
+- **Engine** `src/engine/curriculum.ts` (pure TS, no React, 14 tests):
+  - `buildCurriculum(topics, words, scenarios, ctx)` — per level A1–B2, grammar
+    topics are paired 2-at-a-time in syllabus `order` into units with append-stable
+    ids (`u-a1-1` … plus a per-level milestone `u-a1-m`). Each unit carries a vocab
+    theme cluster (the first topic's `relatedVocabTheme`, words below the cluster
+    80% line are part of it deterministically) and a conversation scenario cycled
+    deterministically over the level's scenario list.
+  - `computeProgress` — done/current/locked per unit; whole levels below the placed
+    `startLevel` are marked placed-over (done without undoing history).
+  - `unitIsComplete` — all unit topics mastered AND ≥80% of the theme cluster
+    introduced; milestone units pass when `placedLevel` is strictly above the level
+    or all level topics are mastered (empty levels pass vacuously — A2/B1/B2 seed
+    bands are currently empty, tests assert the A1 band).
+  - `curriculumStats` (units/words/topics left to a target level),
+    `projectEta({wordsLeft, topicsLeft, dailyWordGoal})` → arrive-by date, and
+    `toPathLevel` (clamps C1/C2 targets to B2 — the path tops out at B2 by design).
+- **Goal storage**: `LearnerGoal`/`GoalMotivation` in `db/types.ts`; optional
+  `UserProfile.goal` (LWW-sync-safe, no Dexie bump); profileRepo default `null`.
+  `welcome.ts` exports `GOAL_MOTIVATIONS` (work/life/travel/exam/culture — emoji +
+  label), `HORIZON_OPTIONS [12,26,52,104]`, `MINUTES_OPTIONS [5,10,15,30,45]`,
+  `GoalDraft`, `validateGoal` (all option lists are closed sets, +5 tests).
+- **Roadmap UI** `src/features/roadmap/`: `useCurriculum` hook (loads topics, words,
+  scenarios, introduced-set, mastery → one snapshot; shared by page + dashboard +
+  reveal); `GoalFields` chip editor (shared with onboarding); `RoadmapPage` at
+  `#/roadmap` — goal editor when unset, EtaPanel (arrive-by vs horizon with a
+  slack/tight/over verdict), level bands with unit-card steppers and deep links to
+  `/grammar/:id`, `/conversation/:id`, `/grammar/placement`. Nav entries in
+  Layout.tsx + MobileNav.tsx.
+- **Dashboard** `TodayPlaylist.tsx`: `TodayPlaylist` = ordered guided session
+  (reviews → new words → lesson+drills → conversation; the first unfinished item is
+  the single primary CTA; conversation counts as talked-today via `recentSessions`);
+  `RoadmapStrip` = current unit + ETA or a "set your goal" prompt. The old
+  DashboardPage focus logic/progress bar was removed.
+- **Onboarding v2**: WelcomeFlow is 7 steps — intro → account → basics → goal
+  interview (StepGoal, saves `profile.goal`) → placement (StepPlacement →
+  `/grammar/placement?from=welcome`; the welcome flag is marked done on exit so an
+  abandoned tour never re-loops; skip path continues) → AI choice → reveal
+  (StepReveal: "{name}, here is your road to {target}" — units/words/topics left +
+  arrive-by date vs horizon) landing on `#/roadmap` (or today's session).
+  PlacementPage honors `?from=welcome`: its result screen's primary CTA becomes
+  "See my roadmap 🗺️" (marks welcome done, navigates to `/roadmap`).
+- **Tests**: 479/479 (was 460: +14 curriculum engine, +5 validateGoal).
+
 ## Resume protocol for a new agent
 
 1. `git log --oneline -8` + read `ROADMAP.md` → know exactly what's done and what's next.

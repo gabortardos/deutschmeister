@@ -8,10 +8,11 @@ import { tts } from '../../speech/tts'
 import { useAppStore } from '../../state/store'
 import { useAuthStore } from '../../sync/authStore'
 import StatsZone from './StatsZone'
+import { RoadmapStrip, TodayPlaylist } from './TodayPlaylist'
 import { welcomeDone } from '../onboarding/welcome'
 
 export default function DashboardPage() {
-  const { hydrated, profile, apiKey, todayLog, dueCount, stats, refreshToday } = useAppStore()
+  const { hydrated, profile, apiKey, todayLog, stats, refreshToday } = useAppStore()
   const [introToday, setIntroToday] = useState(0)
   const { ready, configured, user } = useAuthStore()
   const navigate = useNavigate()
@@ -49,18 +50,6 @@ export default function DashboardPage() {
 
   const connectionOk = getLlmLog()[0]?.ok === true
   const setupDone = apiKey.trim().length > 0 && connectionOk && (stats?.introduced ?? 0) > 0
-
-  // One primary "What's next" action, by learning priority: placement → today's new words →
-  // due reviews → grammar topic of the day. The other cards stay secondary.
-  const newWordsTotal = todayLog?.newWordIds.length ?? 0
-  const wordsLeft = newWordsTotal - introToday
-  const focus = !profile.placementResult
-    ? 'placement'
-    : wordsLeft > 0
-      ? 'words'
-      : dueCount > 0
-        ? 'review'
-        : 'grammar'
 
   return (
     <div className="space-y-6">
@@ -109,44 +98,17 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <Card title="Today" description="Your daily vocabulary plan, generated once per calendar day.">
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="font-medium text-slate-700">
-            {introToday} / {todayLog?.newWordIds.length ?? profile.dailyWordGoal} new words
-          </span>
-          <span className="text-slate-300">·</span>
-          <Link to="/vocab">
-            <Button variant={focus === 'words' ? 'primary' : 'secondary'}>
-              {wordsLeft > 0
-                ? `Continue today’s words (${introToday}/${newWordsTotal}) →`
-                : 'Words ✓ — visit Vocabulary'}
-            </Button>
-          </Link>
-          <Link to="/review">
-            <Button variant={focus === 'review' ? 'primary' : 'secondary'}>
-              {dueCount > 0 ? `Review ${dueCount} due →` : 'Nothing due ✓'}
-            </Button>
-          </Link>
-          <Link to="/grammar">
-            <Button variant={focus === 'placement' || focus === 'grammar' ? 'primary' : 'secondary'}>
-              {!profile.placementResult ? 'Take grammar placement →' : 'Grammar topic of the day →'}
-            </Button>
-          </Link>
+      <Card
+        title="Today"
+        description="Your guided session — follow it top to bottom, or jump anywhere."
+      >
+        {/* M15: the Dashboard "What's next" is a mini roadmap — position + ETA. */}
+        <div className="mb-4">
+          <RoadmapStrip />
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
-          <div
-            className="h-full rounded-full bg-indigo-600 transition-all"
-            style={{
-              width: `${Math.round(
-                (Math.min(introToday, todayLog?.newWordIds.length ?? profile.dailyWordGoal) /
-                  Math.max(1, todayLog?.newWordIds.length ?? profile.dailyWordGoal)) *
-                  100,
-              )}%`,
-            }}
-          />
-        </div>
+        <TodayPlaylist introToday={introToday} />
         {stats && (
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-3 text-xs text-slate-400">
             Word bank: {stats.introduced} introduced · {stats.learning} learning · {stats.review} mature ·{' '}
             {stats.totalWords} total
           </p>

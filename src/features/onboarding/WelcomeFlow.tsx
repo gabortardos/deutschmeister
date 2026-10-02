@@ -2,36 +2,50 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Badge, Button, Card, Field, inputClass } from '../../components/ui'
 import type { CefrLevel } from '../../db/types'
+import { curriculumStats, projectEta, toPathLevel } from '../../engine/curriculum'
 import { setApiKey } from '../../llm/keyStore'
 import { PROVIDERS, type ProviderId } from '../../llm/providers'
 import { useAppStore } from '../../state/store'
 import { signInEmail, signInWithGoogle, signUpEmail } from '../../sync/authActions'
 import { useAuthStore } from '../../sync/authStore'
+import { GoalFields } from '../roadmap/GoalFields'
+import { useCurriculum } from '../roadmap/useCurriculum'
 import {
   WELCOME_GOALS,
   WELCOME_LEVELS,
   markWelcomeDone,
   normalizeName,
   validateBasics,
+  validateGoal,
+  type GoalDraft,
 } from './welcome'
 
-const STEP_TITLES = ['Welcome', 'Your account', 'A few basics', 'AI setup'] as const
+const STEP_TITLES = [
+  'Welcome',
+  'Your account',
+  'A few basics',
+  'Your goal',
+  'Placement',
+  'AI setup',
+  'Your road',
+] as const
 
 /**
- * M9.5 first-visit welcome & onboarding flow (/welcome). Four steps: what the
- * app is → optional account (Google / email / guest) → name, level, daily goal
- * → an EXPLICIT AI choice: the included DeutschMeister teaser (properly
- * introduced — what it offers, its limits, the live meter, what happens when it
- * runs out) vs the user's own API key. Auto-opens once per browser (flag in
+ * M9.5 first-visit welcome & onboarding flow (/welcome), extended in M15 to the
+ * full onboarding v2 arc: what the app is → optional account (Google / email /
+ * guest) → name, level, daily goal → GOAL INTERVIEW (why German, target level,
+ * horizon, minutes/day) → PLACEMENT as a first-class step → an explicit AI
+ * choice (included teaser vs own key) → THE REVEAL: "here is your road to B1"
+ * with ETA, landing on `#/roadmap`. Auto-opens once per browser (flag in
  * localStorage); "Replay welcome tour" in Settings → Getting started re-opens it.
  */
 export default function WelcomeFlow() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
 
-  const finish = (): void => {
+  const finish = (to: string = '/'): void => {
     markWelcomeDone()
-    navigate('/')
+    navigate(to)
   }
 
   return (
@@ -51,7 +65,10 @@ export default function WelcomeFlow() {
       {step === 0 && <StepIntro onNext={() => setStep(1)} />}
       {step === 1 && <StepAccount onNext={() => setStep(2)} onBack={() => setStep(0)} />}
       {step === 2 && <StepBasics onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-      {step === 3 && <StepAiChoice onBack={() => setStep(2)} onFinish={finish} />}
+      {step === 3 && <StepGoal onNext={() => setStep(4)} onBack={() => setStep(2)} />}
+      {step === 4 && <StepPlacement onNext={() => setStep(5)} onBack={() => setStep(3)} />}
+      {step === 5 && <StepAiChoice onBack={() => setStep(4)} onFinish={() => setStep(6)} />}
+      {step === 6 && <StepReveal onBack={() => setStep(5)} onFinish={finish} />}
     </Card>
   )
 }
@@ -481,4 +498,183 @@ interface AuthAction {
   ok: boolean
   error?: string
   needsConfirmation?: boolean
+}
+
+/* -------------------------------------------------- M15: goal / placement / reveal */
+
+function StepGoal({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+  const profile = useAppStore((s) => s.profile)
+  const patchProfile = useAppStore((s) => s.patchProfile)
+  const [draft, setDraft] = useState<GoalDraft>({
+    motivation: profile?.goal?.motivation ?? null,
+    targetLevel: profile?.goal?.targetLevel ?? 'B1',
+    horizonWeeks: profile?.goal?.horizonWeeks ?? 52,
+    minutesPerDay: profile?.goal?.minutesPerDay ?? 15,
+  })
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function next(): Promise<void> {
+    const err = validateGoal(draft)
+    setError(err)
+    if (err || draft.motivation === null) return
+    setBusy(true)
+    await patchProfile({
+      goal: {
+        motivation: draft.motivation,
+        targetLevel: draft.targetLevel,
+        horizonWeeks: draft.horizonWeeks,
+        minutesPerDay: draft.minutesPerDay,
+      },
+    })
+    setBusy(false)
+    onNext()
+  }
+
+  return (
+    <div className="grid gap-4">
+      <p className="text-sm text-slate-600">
+        Three quick questions — they shape your roadmap and its &ldquo;you&apos;ll be there
+        around …&rdquo; projection.
+      </p>
+      <GoalFields draft={draft} onChange={setDraft} />
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+        <Button variant="ghost" onClick={onBack}>
+          ← Back
+        </Button>
+        <Button variant="primary" disabled={busy} onClick={() => void next()}>
+          Continue →
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function StepPlacement({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+  const navigate = useNavigate()
+  const profile = useAppStore((s) => s.profile)
+
+  return (
+    <div className="grid gap-4">
+      <p className="text-sm text-slate-700">
+        A 3-minute adaptive quiz finds your true starting point, so your roadmap starts exactly
+        where you are — not from zero. You can skip it; the road still gets built from your level.
+      </p>
+      {profile?.placementResult && (
+        <p className="text-xs text-slate-400">
+          You already placed at {profile.placementResult.assessedLevel} — retake it only if that
+          feels wrong.
+        </p>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
+        <Button variant="ghost" onClick={onBack}>
+          ← Back
+        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" onClick={onNext}>
+            Skip — I know my level
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              // Leaving the tour counts as finishing it: the placement result
+              // screen (from=welcome) takes over and lands on the roadmap.
+              markWelcomeDone()
+              navigate('/grammar/placement?from=welcome')
+            }}
+          >
+            Take the placement →
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StepReveal({
+  onBack,
+  onFinish,
+}: {
+  onBack: () => void
+  onFinish: (to: string) => void
+}) {
+  const profile = useAppStore((s) => s.profile)
+  const { loading, snapshot } = useCurriculum()
+  const goal = profile?.goal ?? null
+
+  let body: JSX.Element
+  if (!goal || loading || !snapshot) {
+    body = (
+      <p className="text-sm text-slate-700">
+        Your roadmap is ready — every unit, word and grammar topic from where you are to where you
+        want to be, with a projection of when you&apos;ll arrive.
+      </p>
+    )
+  } else {
+    const target = toPathLevel(goal.targetLevel)
+    const stats = curriculumStats(snapshot.curriculum, snapshot.progress, target, snapshot.ctx)
+    const eta = projectEta({
+      wordsLeft: stats.wordsLeft,
+      topicsLeft: stats.topicsLeft,
+      dailyWordGoal: profile?.dailyWordGoal ?? 5,
+    })
+    const slackDays = goal.horizonWeeks * 7 - eta.days
+    body = (
+      <div className="grid gap-3">
+        <p className="text-lg font-semibold text-slate-900">
+          {profile?.name}, here is your road to {target}:
+        </p>
+        <ul className="grid gap-1 text-sm text-slate-700">
+          <li>
+            🧩 <span className="font-semibold">{stats.unitsTotal}</span> guided units from{' '}
+            {snapshot.ctx.startLevel}
+          </li>
+          <li>
+            📚 <span className="font-semibold">{stats.wordsLeft}</span> words to pick up
+          </li>
+          <li>
+            📖 <span className="font-semibold">{stats.topicsLeft}</span> grammar topics to master
+          </li>
+          <li>
+            ⏱️ at {profile?.dailyWordGoal} words/day that is around{' '}
+            <span className="font-semibold text-indigo-700">
+              {eta.arriveBy.toLocaleDateString(undefined, {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </span>{' '}
+            —{' '}
+            {slackDays >= 0
+              ? `comfortably inside your ${goal.horizonWeeks === 104 ? '2-year' : `${goal.horizonWeeks}-week`} horizon.`
+              : 'a bit past your horizon; a bigger daily goal closes the gap.'}
+          </li>
+        </ul>
+        <p className="text-xs text-slate-400">
+          A unit = grammar lesson + drills + a vocabulary cluster + a conversation scenario. Reviews
+          and speaking practice ride along every day.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid gap-4">
+      {body}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
+        <Button variant="ghost" onClick={onBack}>
+          ← Back
+        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" onClick={() => onFinish('/')}>
+            Start with today&apos;s session
+          </Button>
+          <Button variant="primary" onClick={() => onFinish('/roadmap')}>
+            Open my roadmap 🗺️
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
 }

@@ -15,12 +15,28 @@ export interface PlacementResult {
   takenAt: number
 }
 
+/** M15 goal interview — why German, where to, by when, at what pace. */
+export type GoalMotivation = 'work' | 'life' | 'travel' | 'exam' | 'culture'
+
+export interface LearnerGoal {
+  motivation: GoalMotivation
+  /** The road's destination (A1–B2 — the guided path ladder). */
+  targetLevel: CefrLevel
+  /** Self-declared horizon in weeks. */
+  horizonWeeks: number
+  /** Self-declared daily pace in minutes (informational — pacing stays
+   *  dailyWordGoal; this drives ETA honesty and on-track comparisons). */
+  minutesPerDay: number
+}
+
 export interface UserProfile extends BaseEntity {
   name: string
   level: CefrLevel
   dailyWordGoal: number
   currentGrammarTopicId: string | null
   placementResult: PlacementResult | null
+  /** Optional since M15 — older profiles (and older sync peers) simply lack it. */
+  goal?: LearnerGoal | null
 }
 
 export interface KeyPhrase {

@@ -18,6 +18,7 @@ const PRIMARY = [
 ]
 
 const SECONDARY = [
+  { to: '/roadmap', label: 'Roadmap', icon: '🗺️' },
   { to: '/practice', label: 'Speak & Listen', icon: '🎧' },
   { to: '/tutor', label: 'Tutor chat', icon: '🎓' },
   { to: '/writing', label: 'Free writing', icon: '✍️' },

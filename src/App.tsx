@@ -11,6 +11,7 @@ import WelcomeFlow from './features/onboarding/WelcomeFlow'
 
 const VocabPage = lazy(() => import('./features/vocab/VocabPage'))
 const WordBankPage = lazy(() => import('./features/vocab/WordBankPage'))
+const RoadmapPage = lazy(() => import('./features/roadmap/RoadmapPage'))
 const GrammarPage = lazy(() => import('./features/grammar/GrammarPage'))
 const GrammarTopicPage = lazy(() => import('./features/grammar/GrammarTopicPage'))
 const PlacementPage = lazy(() => import('./features/grammar/PlacementPage'))
@@ -47,6 +48,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="roadmap" element={<RoadmapPage />} />
           <Route path="vocab" element={<VocabPage />} />
           <Route path="words" element={<WordBankPage />} />
           <Route path="grammar" element={<GrammarPage />} />

@@ -28,6 +28,7 @@ function ThemeToggleButton() {
 
 const NAV_ITEMS = [
   { to: '/', label: 'Today', end: true },
+  { to: '/roadmap', label: 'Roadmap', end: false },
   { to: '/vocab', label: 'Vocabulary', end: false },
   { to: '/words', label: 'Word bank', end: false },
   { to: '/grammar', label: 'Grammar', end: false },

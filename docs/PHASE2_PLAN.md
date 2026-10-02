@@ -567,7 +567,7 @@ every translation drill app-wide. (Owner note: expanding lessons to all 74 topic
 stays M16 — batch it per level after credit reset; the per-lesson cost is now
 calibrated by M14/M14.1.)
 
-### M15 — Learning Roadmap & guided flow ("be the flow")
+### M15 — Learning Roadmap & guided flow ("be the flow") — **✅ SHIPPED (v2.37.0)**
 
 - Onboarding v2: goal interview (why German, target level, horizon, minutes/day) →
   placement becomes a first-class step → the reveal: "here is your road to B1".
@@ -580,6 +580,12 @@ calibrated by M14/M14.1.)
   completed/current/locked states) + ETA projection panel; Dashboard "What's next"
   becomes its mini version. "Today" becomes a guided session playlist (reviews → new
   words → lesson+drills → conversation) instead of menu picking.
+
+**Shipped notes**: goals live on `UserProfile.goal` (optional field — sync-safe LWW,
+no Dexie schema bump); placement-step exits mark the welcome tour done so an
+abandoned tour never loops; `projectEta`/`curriculumStats` are pure and unit-tested
+(14 engine tests); `TodayPlaylist` replaces the old dashboard focus logic and the
+`RoadmapStrip` is the roadmap's dashboard mini version.
 
 ### M16 — lesson batch authoring (content marathon)
 

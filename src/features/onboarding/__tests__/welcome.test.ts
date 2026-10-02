@@ -1,11 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  GOAL_MOTIVATIONS,
+  HORIZON_OPTIONS,
+  MINUTES_OPTIONS,
   WELCOME_GOALS,
   WELCOME_LEVELS,
   markWelcomeDone,
   normalizeName,
   resetWelcome,
   validateBasics,
+  validateGoal,
   welcomeDone,
 } from '../welcome'
 
@@ -61,5 +65,38 @@ describe('normalizeName', () => {
   it('trims and caps at 40 characters', () => {
     expect(normalizeName('  Anna  ')).toBe('Anna')
     expect(normalizeName(`  ${'y'.repeat(60)}  `)).toHaveLength(40)
+  })
+})
+
+describe('validateGoal (M15 goal interview)', () => {
+  const valid = {
+    motivation: 'work' as const,
+    targetLevel: 'B1' as const,
+    horizonWeeks: 52,
+    minutesPerDay: 15,
+  }
+
+  it('accepts a valid draft', () => {
+    expect(validateGoal(valid)).toBeNull()
+  })
+
+  it('rejects a missing motivation', () => {
+    expect(validateGoal({ ...valid, motivation: null })).toMatch(/for/i)
+  })
+
+  it('rejects a target level outside the A1–B2 ladder', () => {
+    expect(validateGoal({ ...valid, targetLevel: 'C1' as never })).toMatch(/target level/i)
+  })
+
+  it('rejects horizon and minutes outside the offered options', () => {
+    expect(validateGoal({ ...valid, horizonWeeks: 30 })).toMatch(/horizon/i)
+    expect(validateGoal({ ...valid, minutesPerDay: 20 })).toMatch(/minutes/i)
+    expect(HORIZON_OPTIONS).toEqual([12, 26, 52, 104])
+    expect(MINUTES_OPTIONS).toEqual([5, 10, 15, 30, 45])
+  })
+
+  it('offers every motivation with a label and emoji', () => {
+    expect(GOAL_MOTIVATIONS.map((m) => m.id)).toEqual(['work', 'life', 'travel', 'exam', 'culture'])
+    expect(GOAL_MOTIVATIONS.every((m) => m.label.length > 0 && m.emoji.length > 0)).toBe(true)
   })
 })

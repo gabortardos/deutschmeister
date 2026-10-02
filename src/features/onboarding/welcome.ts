@@ -1,4 +1,4 @@
-import type { CefrLevel } from '../../db/types'
+import type { CefrLevel, GoalMotivation } from '../../db/types'
 
 /**
  * M9.5 first-visit welcome flow — completion flag + pure validation.
@@ -62,4 +62,38 @@ export function validateBasics(d: BasicsDraft): string | null {
 
 export function normalizeName(raw: string): string {
   return raw.trim().slice(0, 40)
+}
+
+/* ------------------------------------------------------------------ */
+/* M15 goal interview (welcome step + roadmap inline editor).           */
+/* ------------------------------------------------------------------ */
+
+export const GOAL_MOTIVATIONS: readonly { id: GoalMotivation; label: string; emoji: string }[] = [
+  { id: 'work', label: 'Work or study', emoji: '💼' },
+  { id: 'life', label: 'Life in Germany', emoji: '🏡' },
+  { id: 'travel', label: 'Travel', emoji: '✈️' },
+  { id: 'exam', label: 'An exam (Goethe, TELC…)', emoji: '📝' },
+  { id: 'culture', label: 'Culture & fun', emoji: '🎭' },
+]
+
+export const HORIZON_OPTIONS: readonly number[] = [12, 26, 52, 104]
+
+export const MINUTES_OPTIONS: readonly number[] = [5, 10, 15, 30, 45]
+
+export interface GoalDraft {
+  motivation: GoalMotivation | null
+  targetLevel: CefrLevel
+  horizonWeeks: number
+  minutesPerDay: number
+}
+
+/** Returns an error message for the goal step, or null when valid (unit-tested). */
+export function validateGoal(d: GoalDraft): string | null {
+  if (d.motivation === null || !GOAL_MOTIVATIONS.some((m) => m.id === d.motivation)) {
+    return 'Pick what German is for.'
+  }
+  if (!WELCOME_LEVELS.includes(d.targetLevel)) return 'Pick a target level.'
+  if (!HORIZON_OPTIONS.includes(d.horizonWeeks)) return 'Pick a time horizon.'
+  if (!MINUTES_OPTIONS.includes(d.minutesPerDay)) return 'Pick your daily minutes.'
+  return null
 }

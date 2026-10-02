@@ -14,6 +14,7 @@ export async function getProfile(): Promise<UserProfile> {
     dailyWordGoal: 5,
     currentGrammarTopicId: null,
     placementResult: null,
+    goal: null,
   }
   await db.userProfiles.put(profile)
   return profile
